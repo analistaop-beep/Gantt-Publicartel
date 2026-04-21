@@ -1,17 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Toaster } from 'sileo';
 import { Sidebar } from './components/Sidebar';
 import { MembersSidebar } from './components/MembersSidebar';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { MembersPage } from './pages/MembersPage';
-import { VehiclesPage } from './pages/VehiclesPage';
-import { GanttPage } from './pages/GanttPage';
-import { HerreriaPage } from './pages/HerreriaPage';
-import { CorporeasPage } from './pages/CorporeasPage';
-import { LonasVinilosPage } from './pages/LonasVinilosPage';
-import { PinturaPage } from './pages/PinturaPage';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { LoginPage } from './pages/LoginPage';
 import { useStore } from './store/useStore';
+
+// Lazy load pages for better performance
+const MembersPage = lazy(() => import('./pages/MembersPage').then(m => ({ default: m.MembersPage })));
+const VehiclesPage = lazy(() => import('./pages/VehiclesPage').then(m => ({ default: m.VehiclesPage })));
+const GanttPage = lazy(() => import('./pages/GanttPage').then(m => ({ default: m.GanttPage })));
+const HerreriaPage = lazy(() => import('./pages/HerreriaPage').then(m => ({ default: m.HerreriaPage })));
+const CorporeasPage = lazy(() => import('./pages/CorporeasPage').then(m => ({ default: m.CorporeasPage })));
+const LonasVinilosPage = lazy(() => import('./pages/LonasVinilosPage').then(m => ({ default: m.LonasVinilosPage })));
+const PinturaPage = lazy(() => import('./pages/PinturaPage').then(m => ({ default: m.PinturaPage })));
+
+const LoadingView = () => (
+  <div className="h-full w-full flex flex-col items-center justify-center bg-gray-900 gap-4">
+    <Loader2 className="text-blue-500 animate-spin" size={40} />
+    <p className="text-slate-400 font-medium animate-pulse">Cargando sección...</p>
+  </div>
+);
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -21,25 +30,34 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
   const fetchData = useStore(state => state.fetchData);
-  // error state is still in store, but we'll use sileo for display if possible
+  const subscribeToChanges = useStore(state => state.subscribeToChanges);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchData();
+      // Activate Realtime synchronization
+      const unsubscribe = subscribeToChanges();
+      return () => unsubscribe();
     }
-  }, [fetchData, isAuthenticated]);
+  }, [fetchData, subscribeToChanges, isAuthenticated]);
 
   const renderContent = () => {
-    switch (activeTab) {
-      case 'members': return <MembersPage />;
-      case 'vehicles': return <VehiclesPage />;
-      case 'gantt': return <GanttPage />;
-      case 'herreria': return <HerreriaPage />;
-      case 'corporeas': return <CorporeasPage />;
-      case 'lonas': return <LonasVinilosPage />;
-      case 'pintura': return <PinturaPage />;
-      default: return <GanttPage />;
-    }
+    return (
+      <Suspense fallback={<LoadingView />}>
+        {(() => {
+          switch (activeTab) {
+            case 'members': return <MembersPage />;
+            case 'vehicles': return <VehiclesPage />;
+            case 'gantt': return <GanttPage />;
+            case 'herreria': return <HerreriaPage />;
+            case 'corporeas': return <CorporeasPage />;
+            case 'lonas': return <LonasVinilosPage />;
+            case 'pintura': return <PinturaPage />;
+            default: return <GanttPage />;
+          }
+        })()}
+      </Suspense>
+    );
   };
 
   return (

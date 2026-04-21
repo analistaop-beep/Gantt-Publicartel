@@ -58,6 +58,7 @@ interface AppState {
     clearTasksRange: (startDate: string, endDate: string, type?: string) => Promise<void>;
     resetDatabase: () => Promise<void>;
     clearError: () => void;
+    subscribeToChanges: () => () => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -276,4 +277,17 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     clearError: () => set({ error: null }),
+
+    subscribeToChanges: () => {
+        const channel = supabase
+            .channel('db-changes')
+            .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+                get().fetchData();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }
 }));
