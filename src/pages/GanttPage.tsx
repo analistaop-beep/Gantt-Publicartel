@@ -247,7 +247,7 @@ export const GanttPage: React.FC = () => {
         setIsDragging(false);
     };
     
-    const handleDrop = async (e: React.DragEvent, teamId: string, date: Date) => {
+    const handleDrop = async (e: React.DragEvent, teamId: string | null, date: Date) => {
         e.preventDefault();
         setIsDragging(false);
         const taskId = e.dataTransfer.getData('taskId');
@@ -289,7 +289,7 @@ export const GanttPage: React.FC = () => {
             
         if (!matches) {
             // If it doesn't match, perform a normal reschedule to the target task's date/team
-            await handleDrop(e, targetTask.teamId || '', new Date((targetTask.date || '') + 'T12:00:00'));
+            await handleDrop(e, targetTask.teamId || null, new Date((targetTask.date || '') + 'T12:00:00'));
             return;
         }
         
@@ -712,7 +712,7 @@ export const GanttPage: React.FC = () => {
                                     <div
                                         key={day.toString()}
                                         onDragOver={handleDragOver}
-                                        onDrop={(e) => handleDrop(e, '', day)}
+                                        onDrop={(e) => handleDrop(e, null, day)}
                                         className={`p-4 border-r border-white/5 min-h-[500px] flex flex-col gap-3 transition-colors ${isWeekend(day) ? 'bg-white/[0.02]' : ''} ${isDragging ? 'bg-blue-500/[0.03]' : ''}`}
                                     >
                                         {/* Task List */}
