@@ -1,0 +1,427 @@
+{
+  "members": [
+    {
+      "id": "6d95938d-1c6a-4fcd-814e-5458672bb9c2",
+      "name": "Claudio Cardozo",
+      "role": "Encargado de Herrería",
+      "sector": "Herrería"
+    },
+    {
+      "id": "6d3e647e-2fc6-42cd-b5a0-0bf2daec8cdf",
+      "name": "Sergio Charle",
+      "role": "Encargado de Instalaciones",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "1800753d-7ee0-43fb-94a6-d8b7d44d6a44",
+      "name": "Diego Charle",
+      "role": "Encargado de Instalaciones",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "315ff263-2657-42ec-be37-d5d592bebe5e",
+      "name": "Victor Ferreira",
+      "role": "",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "8e1d86f1-9c39-418b-b833-258532d340dd",
+      "name": "Tabaré Guevara",
+      "role": "Encargado de Instalaciones",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "3f91fdd9-84f7-4767-96bf-d457cfc30437",
+      "name": "Claudio Siri",
+      "role": "Encargado de Instalaciones",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "963cf064-d84a-42e3-b74d-d230343cacd0",
+      "name": "Fernando Vizozo",
+      "role": "",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "11387ac5-3e62-4c6c-b156-4cf082b1a97b",
+      "name": "Mauricio da Silva",
+      "role": "",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "62626879-679a-4c7d-9f57-20e33705cf2f",
+      "name": "Daniel Chaviano",
+      "role": "Encargado de Instalaciones",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "5f62a668-ae60-448b-86d4-4d2100bc2a29",
+      "name": "Julio Rodríguez",
+      "role": "",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "30223fa1-2117-4a5f-b5d2-34afb50f3610",
+      "name": "Fabián De Prate",
+      "role": "",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "53b1e9fe-719d-4d84-84f6-f8daa12405a6",
+      "name": "Sebastián Ferreira",
+      "role": "",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "1e4816e2-1688-478f-a847-e70ae49d2ffd",
+      "name": "Ignacio Musetti",
+      "role": "",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "542acab7-fbf8-4fa4-8373-82cbc118be4f",
+      "name": "Michael Igarzabal",
+      "role": "Encargado de Instalaciones",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "2525c5eb-74ba-4a9d-aa6f-3ff640ba1e2b",
+      "name": "Benjazmín Calleros",
+      "role": "",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "918358c7-ecdc-4f91-b186-5cbff6672896",
+      "name": "Gonzalo Rodríguez",
+      "role": "",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "e090cd4b-8e1a-49bd-99f2-39784019941e",
+      "name": "Ruben Sotto",
+      "role": "Encargado de Instalaciones",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "3ea7c3dc-e7c8-4b9f-adfe-a7f033332acc",
+      "name": "Matías Pírez",
+      "role": "",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "114117a3-df25-4374-957a-2d993317e276",
+      "name": "Pablo Rodríguez",
+      "role": "",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "86a76394-d194-4acb-8dd9-25687eeaa3e1",
+      "name": "Enzo Méndez",
+      "role": "",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "47577299-b1cc-4218-b861-5a628c5e3665",
+      "name": "Gabriel Maquieira",
+      "role": "",
+      "sector": "Instalaciones"
+    },
+    {
+      "id": "93ed877d-14eb-4b2b-9f66-e84b93953932",
+      "name": "Gastón Paiva",
+      "role": "",
+      "sector": "Pintura"
+    },
+    {
+      "id": "cb60e00d-13a7-4de1-b962-049414ca30f8",
+      "name": "Matías Grieco",
+      "role": "",
+      "sector": "Pintura"
+    },
+    {
+      "id": "ef65634c-63ec-4234-b0da-02fc58ebc982",
+      "name": "Enzo Cuenca",
+      "role": "",
+      "sector": "Herrería"
+    },
+    {
+      "id": "195fde8c-9bb9-4ffd-85eb-17d3d7bf3d9e",
+      "name": "Enzo Nieves",
+      "role": "",
+      "sector": "Herrería"
+    },
+    {
+      "id": "71cf03ca-f7ec-4547-bfeb-78a55caf32c9",
+      "name": "Lucas Rojas",
+      "role": "",
+      "sector": "Herrería"
+    },
+    {
+      "id": "c724ac78-22c8-4e82-ae39-fd4d62a418a2",
+      "name": "Anthony Muniz",
+      "role": "",
+      "sector": "Herrería"
+    },
+    {
+      "id": "c92e9e17-b1b5-4457-946c-9045ca1b32f4",
+      "name": "Richard Silva",
+      "role": "",
+      "sector": "Herrería"
+    },
+    {
+      "id": "54078feb-20ec-419d-9f37-eada0d86418d",
+      "name": "Mael Mujica",
+      "role": "",
+      "sector": "Herrería"
+    },
+    {
+      "id": "866fe22d-5860-43e1-b7dc-e9d18121d7af",
+      "name": "Willian Rodríguez",
+      "role": "",
+      "sector": "Herrería"
+    },
+    {
+      "id": "eb3c16aa-02c9-4e49-ac5f-d14aa476dcfb",
+      "name": "Francisco Giménez",
+      "role": "",
+      "sector": "Herrería"
+    },
+    {
+      "id": "8874cfb4-6fcf-4d25-a61e-2e7eb917498e",
+      "name": "Fernando Bordenave",
+      "role": "",
+      "sector": "Herrería"
+    },
+    {
+      "id": "97c30156-2f60-4330-bc40-760db8496b9a",
+      "name": "Natan Maciel",
+      "role": "",
+      "sector": "Herrería"
+    },
+    {
+      "id": "23b69667-71a0-4e8c-8e1e-c3c9b86342eb",
+      "name": "Ignacio Baliño",
+      "role": "",
+      "sector": "Herrería"
+    },
+    {
+      "id": "f4395f0b-838f-4478-905c-c722fa869adf",
+      "name": "Manuel Amato",
+      "role": "",
+      "sector": "Herrería"
+    },
+    {
+      "id": "d62f3b02-4e89-4f2f-89e0-9960dedfc85d",
+      "name": "Fernando Cardozo",
+      "role": "",
+      "sector": "Herrería"
+    },
+    {
+      "id": "d36be0b4-bc76-41c6-98f1-18709931783a",
+      "name": "Sebastián Elordi",
+      "role": "",
+      "sector": "Herrería"
+    },
+    {
+      "id": "5ae7a710-df98-424a-bc43-38e2498ee7d5",
+      "name": "Sergio Revetria",
+      "role": "",
+      "sector": "Corpóreas"
+    },
+    {
+      "id": "5c15bb33-cbed-4898-bad9-c41d54248eca",
+      "name": "Julio Sanchez",
+      "role": "",
+      "sector": "Corpóreas"
+    },
+    {
+      "id": "f1c6225e-4dac-479b-a39c-063140a99aef",
+      "name": "Diego Rodríguez",
+      "role": "",
+      "sector": "Corpóreas"
+    },
+    {
+      "id": "27029222-0eb4-4609-9967-5e9d72920e0e",
+      "name": "Franco Pacheco",
+      "role": "",
+      "sector": "Corpóreas"
+    },
+    {
+      "id": "3f40bf3f-e442-4b42-802e-a54cf947ae2b",
+      "name": "Florencia García",
+      "role": "",
+      "sector": "Corpóreas"
+    },
+    {
+      "id": "45633147-fd2c-48d5-a825-7e06142ea1db",
+      "name": "Maicol Villanueva",
+      "role": "",
+      "sector": "Vinilos"
+    },
+    {
+      "id": "c4330f1b-a399-4aae-94af-5199fba24c47",
+      "name": "Lidia Córdoba",
+      "role": "",
+      "sector": "Lonas"
+    },
+    {
+      "id": "4b5340cb-6fc8-4e88-bee9-2b74c406a2e8",
+      "name": "Hermes Pérez",
+      "role": "",
+      "sector": "Lonas"
+    },
+    {
+      "id": "91083ea8-a6c7-4719-8b62-7265c06f4663",
+      "name": "Marcos Olivera",
+      "role": "",
+      "sector": "Impresión"
+    },
+    {
+      "id": "51f63e24-8fed-485f-a774-0140c12c761e",
+      "name": "Daniel Dattole",
+      "role": "",
+      "sector": "Carpintería"
+    }
+  ],
+  "vehicles": [
+    {
+      "id": "a6edba41-f166-44ef-9110-5e70041d1484",
+      "name": "Mercedes 912",
+      "plate": "ABC 123"
+    }
+  ],
+  "teams": [
+    {
+      "id": "1",
+      "name": "Cuadrilla 1"
+    },
+    {
+      "id": "2",
+      "name": "Cuadrilla 2"
+    },
+    {
+      "id": "3",
+      "name": "Cuadrilla 3"
+    },
+    {
+      "id": "4",
+      "name": "Taller"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "0331798a-3e02-4604-9e0d-f5b4e2c6816f",
+      "opNumber": "156421",
+      "name": "dwqedw",
+      "client": "dwqsa",
+      "address": "sad33w1",
+      "date": "2026-04-13",
+      "totalHours": 16,
+      "duration": 16,
+      "teamId": null,
+      "vehicleId": null,
+      "type": "instalacion",
+      "groupId": "0331798a-3e02-4604-9e0d-f5b4e2c6816f",
+      "additionalJobs": "[]",
+      "section": "Instalaciones"
+    },
+    {
+      "id": "f1bcc3af-ace7-4016-8fa7-b838f3c0c5a5",
+      "opNumber": "123456",
+      "name": "dsadeq",
+      "client": "dqew12",
+      "address": "Montevideo",
+      "date": "2026-04-14",
+      "totalHours": 16,
+      "duration": 1,
+      "teamId": null,
+      "vehicleId": null,
+      "type": "herreria",
+      "groupId": "f1bcc3af-ace7-4016-8fa7-b838f3c0c5a5",
+      "additionalJobs": "[]",
+      "section": "Herrería"
+    },
+    {
+      "id": "b66a2937-7536-451e-8a27-7ab19b295eea",
+      "opNumber": "15791",
+      "name": "Prueba Instalaciones",
+      "client": "Inst 1",
+      "address": "",
+      "date": "2026-04-14",
+      "totalHours": 36,
+      "duration": 18,
+      "teamId": null,
+      "vehicleId": null,
+      "type": "instalacion",
+      "groupId": "9b3f21cc-79bd-4c46-9611-98fe56b12952",
+      "additionalJobs": "[]",
+      "section": "Instalaciones"
+    },
+    {
+      "id": "db624184-8909-442b-be90-ef9546ebfcfe",
+      "opNumber": "156421",
+      "name": "dwqedw",
+      "client": "dwqsa",
+      "address": "sad33w1",
+      "date": "2026-04-14",
+      "totalHours": 16,
+      "duration": 16,
+      "teamId": null,
+      "vehicleId": null,
+      "type": "instalacion",
+      "groupId": "0331798a-3e02-4604-9e0d-f5b4e2c6816f",
+      "additionalJobs": "[]",
+      "section": "Instalaciones"
+    },
+    {
+      "id": "288134ac-337c-45fe-ae23-c41a1200cab7",
+      "opNumber": "156421",
+      "name": "dwqedw",
+      "client": "dwqsa",
+      "address": "sad33w1",
+      "date": "",
+      "totalHours": 48,
+      "duration": 48,
+      "teamId": null,
+      "vehicleId": null,
+      "type": "instalacion",
+      "groupId": "0331798a-3e02-4604-9e0d-f5b4e2c6816f",
+      "additionalJobs": "[]",
+      "section": "Instalaciones"
+    }
+  ],
+  "task_members": [
+    {
+      "taskId": "0331798a-3e02-4604-9e0d-f5b4e2c6816f",
+      "memberId": "315ff263-2657-42ec-be37-d5d592bebe5e",
+      "hours": 8
+    },
+    {
+      "taskId": "db624184-8909-442b-be90-ef9546ebfcfe",
+      "memberId": "315ff263-2657-42ec-be37-d5d592bebe5e",
+      "hours": 8
+    },
+    {
+      "taskId": "b66a2937-7536-451e-8a27-7ab19b295eea",
+      "memberId": "963cf064-d84a-42e3-b74d-d230343cacd0",
+      "hours": 8
+    },
+    {
+      "taskId": "b66a2937-7536-451e-8a27-7ab19b295eea",
+      "memberId": "62626879-679a-4c7d-9f57-20e33705cf2f",
+      "hours": 8
+    },
+    {
+      "taskId": "f1bcc3af-ace7-4016-8fa7-b838f3c0c5a5",
+      "memberId": "195fde8c-9bb9-4ffd-85eb-17d3d7bf3d9e",
+      "hours": 8
+    },
+    {
+      "taskId": "f1bcc3af-ace7-4016-8fa7-b838f3c0c5a5",
+      "memberId": "71cf03ca-f7ec-4547-bfeb-78a55caf32c9",
+      "hours": 8
+    }
+  ],
+  "task_vehicles": [],
+  "reminders": []
+}

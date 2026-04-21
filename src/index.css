@@ -1,0 +1,225 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --animate-in: fadeIn 0.5s ease-out;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #0f172a;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: #0f172a;
+}
+
+#root {
+  width: 100%;
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+  }
+
+  .btn {
+    @apply px-6 py-3 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2 active:scale-95;
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20;
+  }
+
+  .btn-secondary {
+    @apply bg-white/5 hover:bg-white/10 text-white border border-white/10;
+  }
+
+  .input {
+    @apply bg-white/5 border border-white/10 rounded-2xl px-5 py-3 outline-none focus:border-blue-500/50 transition-all text-white placeholder:text-slate-500;
+  }
+
+  .input-sm {
+    @apply bg-white/5 border border-white/10 rounded-xl px-4 py-2 outline-none focus:border-blue-500/50 transition-all text-white placeholder:text-slate-500 text-sm;
+  }
+
+  select option {
+    background-color: #1e293b;
+    color: white;
+  }
+
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-700/50 rounded-full hover:bg-slate-600;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   LIGHT MODE THEME
+   Applied when <html class="light"> is set
+══════════════════════════════════════════════ */
+html.light {
+  color-scheme: light;
+  color: #1e293b;
+  background-color: #dbe4ff;
+}
+
+html.light body {
+  background-color: #f1f5f9;
+}
+
+html.light .glass {
+  background: rgba(255, 255, 255, 0.80) !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+  backdrop-filter: blur(20px);
+}
+
+html.light .bg-gray-900 {
+  background-color: #f1f5f9 !important;
+}
+
+html.light .text-white {
+  color: #0f172a !important;
+}
+
+html.light .text-white\/90 {
+  color: rgba(15, 23, 42, 0.9) !important;
+}
+
+html.light .text-white\/60 {
+  color: rgba(15, 23, 42, 0.6) !important;
+}
+
+html.light .text-slate-400 {
+  color: #475569 !important;
+}
+
+html.light .text-slate-500 {
+  color: #64748b !important;
+}
+
+html.light .text-slate-300 {
+  color: #334155 !important;
+}
+
+html.light .border-white\/10 {
+  border-color: rgba(148, 163, 184, 0.4) !important;
+}
+
+html.light .border-white\/5 {
+  border-color: rgba(148, 163, 184, 0.25) !important;
+}
+
+html.light .bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.65) !important;
+}
+
+html.light .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+html.light .bg-slate-800\/40 {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+}
+
+html.light .bg-slate-800\/60 {
+  background-color: rgba(241, 245, 249, 0.95) !important;
+}
+
+html.light .bg-slate-900\/50 {
+  background-color: rgba(255, 255, 255, 0.60) !important;
+}
+
+html.light .bg-slate-900 {
+  background-color: #f8fafc !important;
+}
+
+
+html.light .input,
+html.light .input-sm,
+html.light .input-xs {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(148, 163, 184, 0.45) !important;
+  color: #0f172a !important;
+}
+
+html.light .input::placeholder,
+html.light .input-sm::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.light select option {
+  background-color: white !important;
+  color: #0f172a !important;
+}
+
+
+html.light .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.5) !important;
+}
+
+/* Root app container in light mode */
+html.light .bg-gray-900 {
+  background-color: #dbe4ff !important;
+}
+
+html.light body {
+  background-color: #dbe4ff !important;
+}
+
+/* Calendar backgrounds in light mode */
+html.light .bg-\[\#0f172a\] {
+  background-color: #ffffff !important;
+}
+
+/* Scrollbar track for light mode */
+html.light .custom-scrollbar::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Weekend highlight in light mode */
+html.light .bg-white\/5 {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+/* Context Menu Overrides */
+html.light .bg-slate-800\/90 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+html.light .hover\:bg-white\/5:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
