@@ -196,14 +196,14 @@ export const useStore = create<AppState>((set, get) => ({
 
             if (members.length > 0) {
                 const { error: mError } = await supabase.from('task_members').insert(
-                    members.map(m => ({ taskId, memberId: m.id, hours: m.hours }))
+                    members.map((m: any) => ({ taskId, memberId: m.id, hours: m.hours }))
                 );
                 if (mError) throw mError;
             }
 
             if (vehicles.length > 0) {
                 const { error: vError } = await supabase.from('task_vehicles').insert(
-                    vehicles.map(vId => ({ taskId, vehicleId: vId }))
+                    vehicles.map((vId: string) => ({ taskId, vehicleId: vId }))
                 );
                 if (vError) throw vError;
             }
