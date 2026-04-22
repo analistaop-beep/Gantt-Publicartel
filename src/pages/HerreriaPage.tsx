@@ -78,6 +78,7 @@ export const HerreriaPage: React.FC = () => {
 
     // Pending Tasks state
     const [isPendingTasksOpen, setIsPendingTasksOpen] = useState(false);
+    const [isCapacityOpen, setIsCapacityOpen] = useState(true);
 
     // Filter pending tasks (tasks with no date)
     const pendingTasks = useMemo(() => {
@@ -278,26 +279,26 @@ export const HerreriaPage: React.FC = () => {
         e.preventDefault();
         e.stopPropagation();
         setIsDragging(false);
-        
+
         const sourceTaskId = e.dataTransfer.getData('taskId') || e.dataTransfer.getData('taskid');
         if (!sourceTaskId || sourceTaskId === targetTask.id) return;
-        
+
         const sourceTask = tasks.find(t => t.id === sourceTaskId);
         if (!sourceTask) return;
-        
+
         // Verify matching criteria for unification
-        const matches = 
+        const matches =
             sourceTask.opNumber === targetTask.opNumber &&
             sourceTask.name === targetTask.name &&
             sourceTask.client === targetTask.client &&
             sourceTask.totalHours === targetTask.totalHours;
-            
+
         if (!matches) {
             // If it doesn't match, perform a normal reschedule to the target task's date/team
             await handleDrop(e, targetTask.teamId || null, new Date((targetTask.date || '') + 'T12:00:00'));
             return;
         }
-        
+
         try {
             // Unify members (sum hours if same member)
             const combinedMembers = [...(targetTask.members || [])];
@@ -312,20 +313,20 @@ export const HerreriaPage: React.FC = () => {
                     combinedMembers.push(sm);
                 }
             });
-            
+
             // Unify additional jobs
             const combinedJobs = [
                 ...(targetTask.additionalJobs || []),
                 ...(sourceTask.additionalJobs || [])
             ];
-            
+
             await updateTask({
                 ...targetTask,
                 totalHours: (targetTask.totalHours || 0) + (sourceTask.totalHours || 0),
                 members: combinedMembers,
                 additionalJobs: combinedJobs
             });
-            
+
             await deleteTask(sourceTaskId);
             sileo.success({ title: `Tareas UNIFICADAS: OP ${targetTask.opNumber}` });
         } catch (err) {
@@ -545,7 +546,7 @@ export const HerreriaPage: React.FC = () => {
     }, [allDaysInWeek]);
 
     return (
-        <div className="h-full flex flex-col animate-in fade-in duration-500 border-none relative">
+        <div className="h-full flex flex-col overflow-hidden animate-in fade-in duration-500 border-none relative">
             {/* Header */}
             <div className="flex flex-col xl:flex-row justify-between items-center gap-6 p-6">
                 <div className="flex items-center gap-5">
@@ -675,11 +676,11 @@ export const HerreriaPage: React.FC = () => {
             </div>
 
             {/* Gantt Timeline */}
-            <div className="flex-1 min-h-0 bg-[#0f172a] flex flex-col overflow-hidden border border-white/5 mx-10 mb-4 rounded-[2rem] relative shadow-2xl">
-                <div className="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar" ref={timelineRef}>
-                    <div className="w-full h-full flex flex-col">
+            <div className="flex-1 min-h-0 bg-[#0f172a] flex flex-col overflow-hidden border border-white/5 mx-10 mb-2 rounded-[2rem] relative shadow-2xl">
+                <div className="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar flex flex-col" ref={timelineRef}>
+                    <div className="w-full flex-1 flex flex-col">
                         {/* Timeline Days Header */}
-                        <div className="sticky top-0 z-20 bg-[#0f172a] border-b border-white/5 w-full overflow-hidden">
+                        <div className="sticky top-0 z-40 bg-[#1e293b] border-b border-white/10 w-full">
                             <div
                                 className="grid grid-cols-6 transition-all duration-700 ease-in-out"
                                 style={{
@@ -691,12 +692,12 @@ export const HerreriaPage: React.FC = () => {
                                     <div
                                         key={day.toString()}
                                         className={`p-3 text-center border-r border-white/5 flex flex-col items-center gap-1 transition-all duration-700 ${isWeekend(day) ? 'bg-white/5' : ''
-                                            } ${isZoomed ? 'scale-100' : 'scale-100'}`}
+                                            } ${isToday(day) ? 'bg-blue-500/[0.05]' : ''}`}
                                     >
-                                        <span className={`uppercase font-bold text-slate-500 transition-all ${isZoomed ? 'text-xs' : 'text-[10px]'}`}>
+                                        <span className={`uppercase font-bold text-slate-400 transition-all ${isZoomed ? 'text-xs' : 'text-[10px]'}`}>
                                             {format(day, 'EEE', { locale: es })}
                                         </span>
-                                        <span className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold ${isToday(day) ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-300'
+                                        <span className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold ${isToday(day) ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-200'
                                             }`}>
                                             {format(day, 'd')}
                                         </span>
@@ -722,7 +723,7 @@ export const HerreriaPage: React.FC = () => {
                                         key={day.toString()}
                                         onDragOver={handleDragOver}
                                         onDrop={(e) => handleDrop(e, null, day)}
-                                        className={`p-4 border-r border-white/5 min-h-[500px] flex flex-col gap-3 transition-colors ${isWeekend(day) ? 'bg-white/[0.02]' : ''} ${isDragging ? 'bg-blue-500/[0.03]' : ''}`}
+                                        className={`p-4 border-r border-white/5 min-h-[500px] flex flex-col gap-3 transition-colors ${isWeekend(day) ? 'bg-white/[0.02]' : ''} ${isToday(day) ? 'bg-blue-500/[0.03]' : ''} ${isDragging ? 'bg-blue-500/[0.03]' : ''}`}
                                     >
                                         {/* Task List */}
                                         <div className="space-y-3 flex-1">
@@ -797,16 +798,15 @@ export const HerreriaPage: React.FC = () => {
                                                         }}
                                                         onContextMenu={(e) => handleContextMenu(e, task)}
                                                         onClick={() => handleEditTask(task)}
-                                                        className="bg-slate-800/40 hover:bg-slate-800/60 border border-white/10 rounded-xl p-3 text-[10px] relative group/task cursor-move transition-all hover:scale-[1.02] hover:z-50 shadow-lg overflow-hidden"
+                                                        className="bg-slate-800/40 hover:bg-slate-800/60 border border-white/10 rounded-xl p-3 text-[10px] relative group/task cursor-move transition-all hover:scale-[1.02] hover:z-30 shadow-lg overflow-hidden"
                                                     >
                                                         {/* Hero Hours Background Watermark */}
-                                                        <div className={`absolute inset-0 flex items-center justify-center pointer-events-none select-none transition-all duration-700 opacity-20 ${
-                                                            totalAssignedHours >= task.totalHours 
-                                                                ? 'text-emerald-500' 
-                                                                : totalAssignedHours > 0 
-                                                                    ? 'text-amber-500' 
+                                                        <div className={`absolute inset-0 flex items-center justify-center pointer-events-none select-none transition-all duration-700 opacity-20 ${totalAssignedHours >= task.totalHours
+                                                                ? 'text-emerald-500'
+                                                                : totalAssignedHours > 0
+                                                                    ? 'text-amber-500'
                                                                     : 'text-red-500'
-                                                        }`}>
+                                                            }`}>
                                                             <span className={`font-black whitespace-nowrap transition-all duration-700 ${isZoomed ? 'text-6xl' : 'text-4xl'}`}>
                                                                 {totalAssignedHours.toFixed(0)}/{task.totalHours.toFixed(0)}
                                                             </span>
@@ -946,88 +946,100 @@ export const HerreriaPage: React.FC = () => {
 
                         {/* Available Members Footer Row */}
                         <div
-                            className="border-t border-white/10 bg-[#0f172a] shadow-[0_-4px_20px_rgba(0,0,0,0.5)] sticky bottom-0 z-[30] mt-auto transition-all duration-700 ease-in-out"
+                            className={`border-t border-white/10 bg-[#0f172a] shadow-[0_-4px_20px_rgba(0,0,0,0.5)] sticky bottom-0 z-[30] mt-auto transition-all duration-500 ease-in-out ${isCapacityOpen ? 'min-h-[140px]' : 'h-10'}`}
                             style={{
                                 width: isZoomed ? '200%' : '100%',
                                 transform: isZoomed ? `translateX(-${(zoomOffset / 6) * 100}%)` : 'translateX(0)'
                             }}
                         >
-                            <div className="grid grid-cols-6 w-full">
-                                {allDaysInWeek.map((day) => {
-                                    const dayStr = format(day, 'yyyy-MM-dd');
-                                    const availableOnDay = (membersByDay[dayStr] || []).filter(m => m.sector === 'Herrería');
+                            {/* Toggle Tab */}
+                            <div
+                                className="absolute -top-6 left-1/2 -translate-x-1/2 px-6 py-1 bg-[#0f172a] border border-white/10 border-b-0 rounded-t-xl cursor-pointer flex items-center gap-2 group hover:bg-[#1e293b] transition-all"
+                                onClick={() => setIsCapacityOpen(!isCapacityOpen)}
+                            >
+                                <Users size={12} className="text-emerald-400" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Capacidad</span>
+                                <ChevronRight size={14} className={`text-slate-500 transition-transform duration-300 ${isCapacityOpen ? 'rotate-90' : '-rotate-90'}`} />
+                            </div>
 
-                                    return (
-                                        <div
-                                            key={day.toString()}
-                                            className={`p-3 border-r border-white/5 min-h-[100px] flex flex-col gap-2 transition-all duration-700 ${isWeekend(day) ? 'bg-white/[0.03]' : ''} ${isDragging ? 'bg-emerald-500/5' : ''}`}
-                                            onDragOver={(e) => {
-                                                const isMemberDrag = Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'memberid');
-                                                if (isMemberDrag) {
-                                                    e.preventDefault();
-                                                    e.dataTransfer.dropEffect = 'move';
-                                                }
-                                            }}
-                                            onDrop={async (e) => {
-                                                const memberId = e.dataTransfer.getData('memberId') || e.dataTransfer.getData('memberid');
-                                                const sourceTaskId = e.dataTransfer.getData('sourceTaskId') || e.dataTransfer.getData('sourcetaskid');
+                            <div className={`transition-all duration-500 ${isCapacityOpen ? 'opacity-100 h-auto' : 'opacity-0 h-0 overflow-hidden'}`}>
+                                <div className="grid grid-cols-6 w-full">
+                                    {allDaysInWeek.map((day) => {
+                                        const dayStr = format(day, 'yyyy-MM-dd');
+                                        const availableOnDay = (membersByDay[dayStr] || []).filter(m => m.sector === 'Herrería');
 
-                                                if (memberId && sourceTaskId) {
-                                                    e.preventDefault();
-                                                    const sourceTask = (sourceTaskId.startsWith('temp-') ? [] : tasks).find(t => t.id === sourceTaskId) || instalacionTasks.find(t => t.id === sourceTaskId);
-                                                    if (sourceTask) {
-                                                        try {
-                                                            await updateTask({
-                                                                ...sourceTask,
-                                                                members: sourceTask.members.filter((m: any) => (typeof m === 'string' ? m : m.id) !== memberId)
-                                                            });
-                                                            sileo.success({ title: "Integrante desasignado" });
-                                                        } catch (err) {
-                                                            sileo.error({ title: "No se pudo desasignar el integrante" });
+                                        return (
+                                            <div
+                                                key={day.toString()}
+                                                className={`p-3 border-r border-white/5 min-h-[140px] flex flex-col gap-2 transition-all duration-700 ${isWeekend(day) ? 'bg-white/[0.03]' : ''} ${isToday(day) ? 'bg-blue-500/[0.05]' : ''} ${isDragging ? 'bg-emerald-500/5' : ''}`}
+                                                onDragOver={(e) => {
+                                                    const isMemberDrag = Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'memberid');
+                                                    if (isMemberDrag) {
+                                                        e.preventDefault();
+                                                        e.dataTransfer.dropEffect = 'move';
+                                                    }
+                                                }}
+                                                onDrop={async (e) => {
+                                                    const memberId = e.dataTransfer.getData('memberId') || e.dataTransfer.getData('memberid');
+                                                    const sourceTaskId = e.dataTransfer.getData('sourceTaskId') || e.dataTransfer.getData('sourcetaskid');
+
+                                                    if (memberId && sourceTaskId) {
+                                                        e.preventDefault();
+                                                        const sourceTask = (sourceTaskId.startsWith('temp-') ? [] : tasks).find(t => t.id === sourceTaskId) || instalacionTasks.find(t => t.id === sourceTaskId);
+                                                        if (sourceTask) {
+                                                            try {
+                                                                await updateTask({
+                                                                    ...sourceTask,
+                                                                    members: sourceTask.members.filter((m: any) => (typeof m === 'string' ? m : m.id) !== memberId)
+                                                                });
+                                                                sileo.success({ title: "Integrante desasignado" });
+                                                            } catch (err) {
+                                                                sileo.error({ title: "No se pudo desasignar el integrante" });
+                                                            }
                                                         }
                                                     }
-                                                }
-                                            }}
-                                        >
-                                            <div className="flex items-center justify-between px-1">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500/70">Capacidad</span>
-                                                <span className="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded text-[8px] font-black border border-emerald-500/20">
-                                                    {availableOnDay.length} Libres
-                                                </span>
-                                            </div>
+                                                }}
+                                            >
+                                                <div className="flex items-center justify-between px-1">
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500/70">Capacidad</span>
+                                                    <span className="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded text-[8px] font-black border border-emerald-500/20">
+                                                        {availableOnDay.length} Libres
+                                                    </span>
+                                                </div>
 
-                                            <div className="flex flex-wrap gap-1.5 content-start">
-                                                {availableOnDay.length === 0 ? (
-                                                    <div className="w-full text-center py-4 border border-dashed border-white/5 rounded-xl">
-                                                        <p className="text-[9px] text-slate-600 font-bold uppercase italic">Sin disponibilidad</p>
-                                                    </div>
-                                                ) : (
-                                                    availableOnDay.map(member => {
-                                                        const isPartial = member.assignedHours > 0;
-                                                        return (
-                                                            <div
-                                                                key={member.id}
-                                                                draggable
-                                                                onDragStart={(e) => {
-                                                                    e.dataTransfer.setData('memberId', member.id);
-                                                                    e.dataTransfer.effectAllowed = 'copy';
-                                                                }}
-                                                                className={`rounded-lg bg-white/5 border border-white/10 ${isPartial
-                                                                    ? 'hover:border-yellow-500/30 hover:bg-yellow-500/5 hover:text-yellow-400'
-                                                                    : 'hover:border-emerald-500/30 hover:bg-emerald-500/5 hover:text-emerald-400'
-                                                                    } transition-all ${isZoomed ? 'text-sm px-2.5 py-1' : 'text-[9px] px-1.5 py-0.5'} font-semibold text-slate-400 cursor-grab active:cursor-grabbing group flex items-center gap-1.5`}
-                                                                title={member.name + (isPartial ? ` (${member.assignedHours}h asignadas)` : ' (Libre)')}
-                                                            >
-                                                                <div className={`w-1.5 h-1.5 rounded-full ${isPartial ? 'bg-yellow-500/50 group-hover:bg-yellow-400 shadow-[0_0_8px_rgba(234,179,8,0.3)]' : 'bg-emerald-500/50 group-hover:bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.3)]'} transition-colors`}></div>
-                                                                {getCompactName(member.name, isZoomed, member.code)}
-                                                            </div>
-                                                        );
-                                                    })
-                                                )}
+                                                <div className="flex flex-wrap gap-1.5 content-start">
+                                                    {availableOnDay.length === 0 ? (
+                                                        <div className="w-full text-center py-4 border border-dashed border-white/5 rounded-xl">
+                                                            <p className="text-[9px] text-slate-600 font-bold uppercase italic">Sin disponibilidad</p>
+                                                        </div>
+                                                    ) : (
+                                                        availableOnDay.map(member => {
+                                                            const isPartial = member.assignedHours > 0;
+                                                            return (
+                                                                <div
+                                                                    key={member.id}
+                                                                    draggable
+                                                                    onDragStart={(e) => {
+                                                                        e.dataTransfer.setData('memberId', member.id);
+                                                                        e.dataTransfer.effectAllowed = 'copy';
+                                                                    }}
+                                                                    className={`rounded-lg bg-white/5 border border-white/10 ${isPartial
+                                                                        ? 'hover:border-yellow-500/30 hover:bg-yellow-500/5 hover:text-yellow-400'
+                                                                        : 'hover:border-emerald-500/30 hover:bg-emerald-500/5 hover:text-emerald-400'
+                                                                        } transition-all ${isZoomed ? 'text-sm px-2.5 py-1' : 'text-[9px] px-1.5 py-0.5'} font-semibold text-slate-400 cursor-grab active:cursor-grabbing group flex items-center gap-1.5`}
+                                                                    title={member.name + (isPartial ? ` (${member.assignedHours}h asignadas)` : ' (Libre)')}
+                                                                >
+                                                                    <div className={`w-1.5 h-1.5 rounded-full ${isPartial ? 'bg-yellow-500/50 group-hover:bg-yellow-400 shadow-[0_0_8px_rgba(234,179,8,0.3)]' : 'bg-emerald-500/50 group-hover:bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.3)]'} transition-colors`}></div>
+                                                                    {getCompactName(member.name, isZoomed, member.code)}
+                                                                </div>
+                                                            );
+                                                        })
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1240,7 +1252,7 @@ export const HerreriaPage: React.FC = () => {
 
                                                     <div className="relative mb-2">
                                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={12} />
-                                                        <input 
+                                                        <input
                                                             type="text"
                                                             placeholder="Buscar empleado..."
                                                             className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-[10px] focus:border-blue-500/50 outline-none transition-colors"
@@ -1258,7 +1270,7 @@ export const HerreriaPage: React.FC = () => {
                                                                 const originalTaskMember = editingTask?.members?.find((am: any) => am.id === m.id);
                                                                 const originalHoursInThisTask = originalTaskMember ? (originalTaskMember.hours || 8) : 0;
                                                                 const otherHours = (dailyMemberHours[formData.date]?.[m.id] || 0) - originalHoursInThisTask;
-                                                                
+
                                                                 return isAlreadyInTask || otherHours < 8;
                                                             })
                                                             .sort((a, b) => {
@@ -1269,49 +1281,49 @@ export const HerreriaPage: React.FC = () => {
                                                                 return a.name.localeCompare(b.name);
                                                             })
                                                             .map(m => {
-                                                            const assignedMember = formData.members.find(am => am.id === m.id);
-                                                            const isChecked = !!assignedMember;
-                                                            return (
-                                                                <div key={m.id} className="flex items-center justify-between gap-3 px-3 py-2 hover:bg-white/10 rounded-lg transition-colors group/member">
-                                                                    <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500"
-                                                                            checked={isChecked}
-                                                                            onChange={(e) => {
-                                                                                const newMembers = e.target.checked
-                                                                                    ? [...formData.members, { id: m.id, hours: 8 }]
-                                                                                    : formData.members.filter(am => am.id !== m.id);
-                                                                                setFormData({
-                                                                                    ...formData,
-                                                                                    members: newMembers
-                                                                                });
-                                                                            }}
-                                                                        />
-                                                                        <span className="text-xs text-slate-300 font-medium truncate">{m.name}</span>
-                                                                    </label>
-                                                                    {isChecked && (
-                                                                        <div className="flex items-center gap-1 animate-in slide-in-from-right-2 duration-200">
+                                                                const assignedMember = formData.members.find(am => am.id === m.id);
+                                                                const isChecked = !!assignedMember;
+                                                                return (
+                                                                    <div key={m.id} className="flex items-center justify-between gap-3 px-3 py-2 hover:bg-white/10 rounded-lg transition-colors group/member">
+                                                                        <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
                                                                             <input
-                                                                                type="number"
-                                                                                step="0.5"
-                                                                                min="0"
-                                                                                className="w-12 h-6 bg-blue-500/10 border border-blue-500/30 rounded text-[10px] text-center font-bold text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                                                                                value={assignedMember.hours}
+                                                                                type="checkbox"
+                                                                                className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500"
+                                                                                checked={isChecked}
                                                                                 onChange={(e) => {
-                                                                                    const hours = parseFloat(e.target.value) || 0;
-                                                                                    const newMembers = formData.members.map(am =>
-                                                                                        am.id === m.id ? { ...am, hours } : am
-                                                                                    );
-                                                                                    setFormData({ ...formData, members: newMembers });
+                                                                                    const newMembers = e.target.checked
+                                                                                        ? [...formData.members, { id: m.id, hours: 8 }]
+                                                                                        : formData.members.filter(am => am.id !== m.id);
+                                                                                    setFormData({
+                                                                                        ...formData,
+                                                                                        members: newMembers
+                                                                                    });
                                                                                 }}
                                                                             />
-                                                                            <span className="text-[8px] font-bold text-slate-500 uppercase">h</span>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        })}
+                                                                            <span className="text-xs text-slate-300 font-medium truncate">{m.name}</span>
+                                                                        </label>
+                                                                        {isChecked && (
+                                                                            <div className="flex items-center gap-1 animate-in slide-in-from-right-2 duration-200">
+                                                                                <input
+                                                                                    type="number"
+                                                                                    step="0.5"
+                                                                                    min="0"
+                                                                                    className="w-12 h-6 bg-blue-500/10 border border-blue-500/30 rounded text-[10px] text-center font-bold text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                                                                    value={assignedMember.hours}
+                                                                                    onChange={(e) => {
+                                                                                        const hours = parseFloat(e.target.value) || 0;
+                                                                                        const newMembers = formData.members.map(am =>
+                                                                                            am.id === m.id ? { ...am, hours } : am
+                                                                                        );
+                                                                                        setFormData({ ...formData, members: newMembers });
+                                                                                    }}
+                                                                                />
+                                                                                <span className="text-[8px] font-bold text-slate-500 uppercase">h</span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
                                                     </div>
                                                 </div>
                                             </div>
@@ -1535,7 +1547,7 @@ export const HerreriaPage: React.FC = () => {
 
             {/* Bottom Drawer: Tareas Pendientes */}
             <div
-                className={`relative mx-10 mb-4 z-[60] glass rounded-[2.5rem] border border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-500 ease-in-out ${isPendingTasksOpen ? 'h-[350px]' : 'h-16'
+                className={`relative mx-10 mb-6 z-[60] glass rounded-[2.5rem] border border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-500 ease-in-out ${isPendingTasksOpen ? 'h-[20vh] max-h-[20vh]' : 'h-16'
                     }`}
             >
                 {/* Header / Toggle Button */}
@@ -1589,7 +1601,7 @@ export const HerreriaPage: React.FC = () => {
 
                 {/* Content */}
                 <div className={`px-10 pb-10 overflow-hidden transition-opacity duration-300 ${isPendingTasksOpen ? 'opacity-100' : 'opacity-0'}`}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[250px] overflow-y-auto custom-scrollbar pr-2 pt-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[calc(20vh-80px)] overflow-y-auto custom-scrollbar pr-2 pt-2">
                         {pendingTasks.length === 0 ? (
                             <div className="col-span-full py-10 text-center text-slate-500 italic">
                                 No hay tareas pendientes para herrería.

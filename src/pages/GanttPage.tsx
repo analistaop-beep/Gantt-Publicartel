@@ -77,6 +77,7 @@ export const GanttPage: React.FC = () => {
 
     // Pending Tasks state
     const [isPendingTasksOpen, setIsPendingTasksOpen] = useState(false);
+    const [isCapacityOpen, setIsCapacityOpen] = useState(true);
     const [memberSearch, setMemberSearch] = useState('');
 
     // Filter pending tasks (tasks with no date)
@@ -541,7 +542,7 @@ export const GanttPage: React.FC = () => {
     }, [allDaysInWeek]);
 
     return (
-        <div className="h-full flex flex-col animate-in fade-in duration-500 border-none">
+        <div className="h-full flex flex-col overflow-hidden animate-in fade-in duration-500 border-none">
             {/* Header */}
             <div className="flex flex-col xl:flex-row justify-between items-center gap-6 p-6">
                 <div className="flex flex-col md:flex-row items-center gap-6">
@@ -666,11 +667,11 @@ export const GanttPage: React.FC = () => {
             </div>
 
             {/* Gantt Timeline */}
-            <div className="flex-1 min-h-0 bg-[#0f172a] flex flex-col overflow-hidden border border-white/5 mx-10 mb-4 rounded-[2rem] relative shadow-2xl">
-                <div className="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar" ref={timelineRef}>
-                    <div className="w-full h-full flex flex-col">
+            <div className="flex-1 min-h-0 bg-[#0f172a] flex flex-col overflow-hidden border border-white/5 mx-10 mb-2 rounded-[2rem] relative shadow-2xl">
+                <div className="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar flex flex-col" ref={timelineRef}>
+                    <div className="w-full flex-1 flex flex-col">
                         {/* Timeline Days Header */}
-                        <div className="sticky top-0 z-20 bg-[#0f172a] border-b border-white/5 w-full overflow-hidden">
+                        <div className="sticky top-0 z-40 bg-[#1e293b] border-b border-white/10 w-full">
                             <div
                                 className="grid grid-cols-6 transition-all duration-700 ease-in-out"
                                 style={{
@@ -682,12 +683,12 @@ export const GanttPage: React.FC = () => {
                                     <div
                                         key={day.toString()}
                                         className={`p-3 text-center border-r border-white/5 flex flex-col items-center gap-1 transition-all duration-700 ${isWeekend(day) ? 'bg-white/5' : ''
-                                            } ${isZoomed ? 'scale-100' : 'scale-100'}`}
+                                            } ${isToday(day) ? 'bg-blue-500/[0.05]' : ''}`}
                                     >
-                                        <span className={`uppercase font-bold text-slate-500 transition-all ${isZoomed ? 'text-xs' : 'text-[10px]'}`}>
+                                        <span className={`uppercase font-bold text-slate-400 transition-all ${isZoomed ? 'text-xs' : 'text-[10px]'}`}>
                                             {format(day, 'EEE', { locale: es })}
                                         </span>
-                                        <span className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold ${isToday(day) ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-300'
+                                        <span className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold ${isToday(day) ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-200'
                                             }`}>
                                             {format(day, 'd')}
                                         </span>
@@ -713,7 +714,7 @@ export const GanttPage: React.FC = () => {
                                         key={day.toString()}
                                         onDragOver={handleDragOver}
                                         onDrop={(e) => handleDrop(e, null, day)}
-                                        className={`p-4 border-r border-white/5 min-h-[500px] flex flex-col gap-3 transition-colors ${isWeekend(day) ? 'bg-white/[0.02]' : ''} ${isDragging ? 'bg-blue-500/[0.03]' : ''}`}
+                                        className={`p-4 border-r border-white/5 min-h-[500px] flex flex-col gap-3 transition-colors ${isWeekend(day) ? 'bg-white/[0.02]' : ''} ${isToday(day) ? 'bg-blue-500/[0.03]' : ''} ${isDragging ? 'bg-blue-500/[0.03]' : ''}`}
                                     >
                                         {/* Task List */}
                                         <div className="space-y-3 flex-1">
@@ -788,7 +789,7 @@ export const GanttPage: React.FC = () => {
                                                                     }}
                                                                     onContextMenu={(e) => handleContextMenu(e, task)}
                                                                     onClick={() => handleEditTask(task)}
-                                                                    className="bg-slate-800/40 hover:bg-slate-800/60 border border-white/10 rounded-xl p-3 text-[10px] relative group/task cursor-move transition-all hover:scale-[1.02] hover:z-50 shadow-lg overflow-hidden"
+                                                                    className="bg-slate-800/40 hover:bg-slate-800/60 border border-white/10 rounded-xl p-3 text-[10px] relative group/task cursor-move transition-all hover:scale-[1.02] hover:z-30 shadow-lg overflow-hidden"
                                                                 >
                                                                     {/* Hero Hours Background Watermark */}
                                                                     <div className={`absolute inset-0 flex items-center justify-center pointer-events-none select-none transition-all duration-700 opacity-20 ${
@@ -937,13 +938,24 @@ export const GanttPage: React.FC = () => {
 
                             {/* Available Members Footer Row */}
                             <div
-                                className="border-t border-white/10 bg-[#0f172a] shadow-[0_-4px_20px_rgba(0,0,0,0.5)] sticky bottom-0 z-[30] mt-auto transition-all duration-700 ease-in-out"
+                                className={`border-t border-white/10 bg-[#0f172a] shadow-[0_-4px_20px_rgba(0,0,0,0.5)] sticky bottom-0 z-[30] mt-auto transition-all duration-500 ease-in-out ${isCapacityOpen ? 'min-h-[140px]' : 'h-10'}`}
                                 style={{
                                     width: isZoomed ? '200%' : '100%',
                                     transform: isZoomed ? `translateX(-${(zoomOffset / 6) * 100}%)` : 'translateX(0)'
                                 }}
                             >
-                                <div className="grid grid-cols-6 w-full">
+                                {/* Toggle Tab */}
+                                <div 
+                                    className="absolute -top-6 left-1/2 -translate-x-1/2 px-6 py-1 bg-[#0f172a] border border-white/10 border-b-0 rounded-t-xl cursor-pointer flex items-center gap-2 group hover:bg-[#1e293b] transition-all"
+                                    onClick={() => setIsCapacityOpen(!isCapacityOpen)}
+                                >
+                                    <Users size={12} className="text-emerald-400" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Capacidad</span>
+                                    <ChevronRight size={14} className={`text-slate-500 transition-transform duration-300 ${isCapacityOpen ? 'rotate-90' : '-rotate-90'}`} />
+                                </div>
+
+                                <div className={`transition-all duration-500 ${isCapacityOpen ? 'opacity-100 h-auto' : 'opacity-0 h-0 overflow-hidden'}`}>
+                                    <div className="grid grid-cols-6 w-full">
                                     {allDaysInWeek.map((day) => {
                                         const dayStr = format(day, 'yyyy-MM-dd');
                                         const availableOnDay = (membersByDay[dayStr] || []).filter(m => m.sector === 'Instalaciones');
@@ -951,7 +963,7 @@ export const GanttPage: React.FC = () => {
                                         return (
                                             <div
                                                 key={day.toString()}
-                                                className={`p-3 border-r border-white/5 min-h-[100px] flex flex-col gap-2 transition-all duration-700 ${isWeekend(day) ? 'bg-white/[0.03]' : ''} ${isDragging ? 'bg-emerald-500/5' : ''}`}
+                                                className={`p-3 border-r border-white/5 min-h-[140px] flex flex-col gap-2 transition-all duration-700 ${isWeekend(day) ? 'bg-white/[0.03]' : ''} ${isToday(day) ? 'bg-blue-500/[0.05]' : ''} ${isDragging ? 'bg-emerald-500/5' : ''}`}
                                                 onDragOver={(e) => {
                                                     const isMemberDrag = Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'memberid');
                                                     if (isMemberDrag) {
@@ -1019,6 +1031,7 @@ export const GanttPage: React.FC = () => {
                                             </div>
                                         );
                                     })}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1522,7 +1535,7 @@ export const GanttPage: React.FC = () => {
 
             {/* Bottom Drawer: Tareas Pendientes */}
             <div
-                className={`relative mx-10 mb-4 z-[60] glass rounded-[2.5rem] border border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-500 ease-in-out ${isPendingTasksOpen ? 'h-[350px]' : 'h-16'
+                className={`relative mx-10 mb-6 z-[60] glass rounded-[2.5rem] border border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-500 ease-in-out ${isPendingTasksOpen ? 'h-[20vh] max-h-[20vh]' : 'h-16'
                     }`}
             >
                 {/* Header / Toggle Button */}
@@ -1576,7 +1589,7 @@ export const GanttPage: React.FC = () => {
 
                 {/* Content */}
                 <div className={`px-10 pb-10 overflow-hidden transition-opacity duration-300 ${isPendingTasksOpen ? 'opacity-100' : 'opacity-0'}`}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[250px] overflow-y-auto custom-scrollbar pr-2 pt-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[calc(20vh-80px)] overflow-y-auto custom-scrollbar pr-2 pt-2">
                         {pendingTasks.length === 0 ? (
                             <div className="col-span-full py-10 text-center text-slate-500 italic">
                                 No hay tareas pendientes para instalaciones.

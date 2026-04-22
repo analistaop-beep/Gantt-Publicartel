@@ -183,7 +183,7 @@ export const useStore = create<AppState>((set, get) => ({
         try {
             set({ error: null });
             const taskId = uuidv4();
-            const { vehicles = [], members = [], additionalJobs = [], ...taskData } = task;
+            const { vehicles = [], members = [], additionalJobs = [], task_members, task_vehicles, id, ...taskData } = task as any;
 
             const { error: taskError } = await supabase.from('tasks').insert([{
                 id: taskId,
