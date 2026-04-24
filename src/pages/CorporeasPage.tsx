@@ -46,7 +46,7 @@ export const CorporeasPage: React.FC = () => {
         members: [] as Array<{ id: string, hours: number }>,
         additionalJobs: [] as Array<{ description: string; client: string }>,
         date: '',
-        teamId: null,
+        teamId: null as string | null,
         section: 'Corpóreas'
     });
 
@@ -1101,8 +1101,8 @@ export const CorporeasPage: React.FC = () => {
                                                 <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Equipo</label>
                                                 <select
                                                     className="input-sm w-full"
-                                                    value={formData.teamId}
-                                                    onChange={(e) => setFormData({ ...formData, teamId: e.target.value })}
+                                                    value={formData.teamId || ''}
+                                                    onChange={(e) => setFormData({ ...formData, teamId: e.target.value || null })}
                                                     required
                                                 >
                                                     <option value="" disabled>Equipo...</option>

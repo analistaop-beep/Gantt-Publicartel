@@ -46,7 +46,7 @@ export const GanttPage: React.FC = () => {
         members: [] as Array<{ id: string, hours: number }>,
         additionalJobs: [] as Array<{ description: string; client: string }>,
         date: format(new Date(), 'yyyy-MM-dd'),
-        teamId: null,
+        teamId: null as string | null,
         section: 'Instalaciones'
     });
 
@@ -1095,8 +1095,8 @@ export const GanttPage: React.FC = () => {
                                                             <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Equipo</label>
                                                             <select
                                                                 className="input-sm w-full"
-                                                                value={formData.teamId}
-                                                                onChange={(e) => setFormData({ ...formData, teamId: e.target.value })}
+                                                                value={formData.teamId || ''}
+                                                                onChange={(e) => setFormData({ ...formData, teamId: e.target.value || null })}
                                                                 required
                                                             >
                                                                 <option value="" disabled>Equipo...</option>

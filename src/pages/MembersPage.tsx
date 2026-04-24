@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Plus, Trash2, Edit2, User, Search, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Edit2, User, Search } from 'lucide-react';
 import { getInitials } from '../utils/stringUtils';
 import { sileo } from 'sileo';
 
 export const MembersPage: React.FC = () => {
-    const { members, addMember, updateMember, deleteMember, error, clearError } = useStore();
+    const { members, addMember, updateMember, deleteMember } = useStore();
     const [isEditing, setIsEditing] = useState<string | null>(null);
     const [formData, setFormData] = useState({ name: '', role: '', sector: '', ci: '', code: '' });
     const [searchQuery, setSearchQuery] = useState('');
