@@ -1263,8 +1263,7 @@ export const CorporeasPage: React.FC = () => {
 
                                         <div className="glass rounded-xl p-3 h-32 overflow-y-auto custom-scrollbar space-y-1">
                                             {members
-                                                .filter(m => m.sector === 'Corpóreas')
-                                                .filter(m => m.name.toLowerCase().includes(memberSearch.toLowerCase()))
+                                                .filter(m => m.sector === formData.section && m.name.toLowerCase().includes(memberSearch.toLowerCase()))
                                                 .filter(m => {
                                                     const isAlreadyInTask = formData.members.some(am => am.id === m.id);
                                                     const originalTaskMember = editingTask?.members?.find((am: any) => am.id === m.id);
