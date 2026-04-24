@@ -121,9 +121,16 @@ export const useStore = create<AppState>((set, get) => ({
         await get().fetchData();
     },
     updateMember: async (member) => {
-        const { error } = await supabase.from('members').update(member).eq('id', member.id);
-        if (error) throw error;
-        await get().fetchData();
+        try {
+            set({ error: null });
+            const { id, ...data } = member;
+            const { error } = await supabase.from('members').update(data).eq('id', id);
+            if (error) throw error;
+            await get().fetchData();
+        } catch (err: any) {
+            set({ error: err.message });
+            throw err;
+        }
     },
     deleteMember: async (id) => {
         const { error } = await supabase.from('members').delete().eq('id', id);
@@ -137,9 +144,16 @@ export const useStore = create<AppState>((set, get) => ({
         await get().fetchData();
     },
     updateVehicle: async (vehicle) => {
-        const { error } = await supabase.from('vehicles').update(vehicle).eq('id', vehicle.id);
-        if (error) throw error;
-        await get().fetchData();
+        try {
+            set({ error: null });
+            const { id, ...data } = vehicle;
+            const { error } = await supabase.from('vehicles').update(data).eq('id', id);
+            if (error) throw error;
+            await get().fetchData();
+        } catch (err: any) {
+            set({ error: err.message });
+            throw err;
+        }
     },
     deleteVehicle: async (id) => {
         const { error } = await supabase.from('vehicles').delete().eq('id', id);
@@ -153,9 +167,16 @@ export const useStore = create<AppState>((set, get) => ({
         await get().fetchData();
     },
     updateTeam: async (team) => {
-        const { error } = await supabase.from('teams').update(team).eq('id', team.id);
-        if (error) throw error;
-        await get().fetchData();
+        try {
+            set({ error: null });
+            const { id, ...data } = team;
+            const { error } = await supabase.from('teams').update(data).eq('id', id);
+            if (error) throw error;
+            await get().fetchData();
+        } catch (err: any) {
+            set({ error: err.message });
+            throw err;
+        }
     },
     deleteTeam: async (id) => {
         const { error } = await supabase.from('teams').delete().eq('id', id);
@@ -169,9 +190,16 @@ export const useStore = create<AppState>((set, get) => ({
         await get().fetchData();
     },
     updateReminder: async (reminder) => {
-        const { error } = await supabase.from('reminders').update(reminder).eq('id', reminder.id);
-        if (error) throw error;
-        await get().fetchData();
+        try {
+            set({ error: null });
+            const { id, ...data } = reminder;
+            const { error } = await supabase.from('reminders').update(data).eq('id', id);
+            if (error) throw error;
+            await get().fetchData();
+        } catch (err: any) {
+            set({ error: err.message });
+            throw err;
+        }
     },
     deleteReminder: async (id) => {
         const { error } = await supabase.from('reminders').delete().eq('id', id);
@@ -184,6 +212,11 @@ export const useStore = create<AppState>((set, get) => ({
             set({ error: null });
             const taskId = uuidv4();
             const { vehicles = [], members = [], additionalJobs = [], task_members, task_vehicles, id, ...taskData } = task as any;
+
+            // Sanitize teamId: empty string violates foreign key constraint in Supabase/Postgres
+            if (taskData.teamId === '') {
+                taskData.teamId = null;
+            }
 
             const { error: taskError } = await supabase.from('tasks').insert([{
                 id: taskId,
@@ -219,6 +252,11 @@ export const useStore = create<AppState>((set, get) => ({
         try {
             set({ error: null });
             const { vehicles = [], members = [], additionalJobs = [], task_members, task_vehicles, ...taskData } = task;
+
+            // Sanitize teamId: empty string violates foreign key constraint in Supabase/Postgres
+            if (taskData.teamId === '') {
+                taskData.teamId = null;
+            }
 
             const { error: taskError } = await supabase.from('tasks').update({
                 ...taskData,

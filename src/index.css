@@ -203,6 +203,14 @@ html.light .bg-\[\#0f172a\] {
   background-color: #ffffff !important;
 }
 
+html.light .bg-\[\#1e293b\] {
+  background-color: #96b5d5 !important;
+}
+
+html.light .hover\:bg-\[\#1e293b\]:hover {
+  background-color: #96b5d5 !important;
+}
+
 /* Scrollbar track for light mode */
 html.light .custom-scrollbar::-webkit-scrollbar-track {
   background-color: rgba(0, 0, 0, 0.05) !important;

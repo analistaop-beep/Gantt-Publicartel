@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Plus, Trash2, Edit2, User, Search } from 'lucide-react';
+import { Plus, Trash2, Edit2, User, Search, AlertCircle } from 'lucide-react';
 import { getInitials } from '../utils/stringUtils';
+import { sileo } from 'sileo';
 
 export const MembersPage: React.FC = () => {
-    const { members, addMember, updateMember, deleteMember } = useStore();
+    const { members, addMember, updateMember, deleteMember, error, clearError } = useStore();
     const [isEditing, setIsEditing] = useState<string | null>(null);
     const [formData, setFormData] = useState({ name: '', role: '', sector: '', ci: '', code: '' });
     const [searchQuery, setSearchQuery] = useState('');
@@ -13,28 +14,32 @@ export const MembersPage: React.FC = () => {
         member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (member.role || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (member.sector || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (member.ci || '').includes(searchQuery) ||
+        (member.ci || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (member.code || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const finalCode = formData.code?.trim() ? formData.code.trim().toUpperCase() : getInitials(formData.name);
-        const dataToSave = { ...formData, code: finalCode };
+        try {
+            const finalCode = formData.code?.trim() ? formData.code.trim().toUpperCase() : getInitials(formData.name);
+            const dataToSave = { ...formData, code: finalCode };
 
-        if (isEditing) {
-            await updateMember({ id: isEditing, ...dataToSave });
-            setIsEditing(null);
-            
-            const sileo = (window as any).sileo;
-            if (sileo) {
+            if (isEditing) {
+                await updateMember({ id: isEditing, ...dataToSave });
+                setIsEditing(null);
                 sileo.success({ title: "Integrante actualizado" });
+            } else {
+                await addMember(dataToSave);
+                sileo.success({ title: "Integrante agregado" });
             }
-        } else {
-            await addMember(dataToSave);
+            setFormData({ name: '', role: '', sector: '', ci: '', code: '' });
+        } catch (err: any) {
+            sileo.error({ 
+                title: "Error al guardar",
+                description: err.message || "No se pudo procesar la solicitud"
+            });
         }
-        setFormData({ name: '', role: '', sector: '', ci: '', code: '' });
     };
 
     return (
@@ -66,12 +71,14 @@ export const MembersPage: React.FC = () => {
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             required
                         />
+
                         <input
                             className="input text-sm w-32"
                             placeholder="N° C.I."
                             value={formData.ci}
                             onChange={(e) => setFormData({ ...formData, ci: e.target.value })}
                         />
+
                         <input
                             className="input text-sm w-20 uppercase font-bold"
                             placeholder="Cód."
@@ -80,6 +87,8 @@ export const MembersPage: React.FC = () => {
                             title="Código de operario (Autogenerado si está vacío)"
                             onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                         />
+
+
                         <select
                             className="input text-sm"
                             value={formData.sector}
@@ -112,6 +121,8 @@ export const MembersPage: React.FC = () => {
                                 <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Integrante</th>
                                 <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Código</th>
                                 <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">N° C.I.</th>
+
+
                                 <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Sector</th>
                                 <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Rol / Especialidad</th>
                                 <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Acciones</th>
@@ -135,12 +146,16 @@ export const MembersPage: React.FC = () => {
                                                 <span className="font-bold text-white text-sm">{member.name}</span>
                                             </div>
                                         </td>
+
                                         <td className="px-8 py-1.5 text-blue-400 font-bold text-xs uppercase">
                                             {member.code || getInitials(member.name)}
                                         </td>
+
                                         <td className="px-8 py-1.5 text-slate-400 font-mono text-[10px]">
                                             {member.ci || '—'}
                                         </td>
+
+
                                         <td className="px-8 py-1.5 text-center">
                                             {member.sector && (
                                                 <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-full text-[9px] font-black uppercase tracking-widest border border-blue-500/20">
@@ -207,6 +222,7 @@ export const MembersPage: React.FC = () => {
                                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                                 />
                             </div>
+
                             <div className="space-y-2">
                                 <label className="text-sm text-slate-400">N° C.I. (Opcional)</label>
                                 <input
@@ -215,6 +231,7 @@ export const MembersPage: React.FC = () => {
                                     onChange={(e) => setFormData({ ...formData, ci: e.target.value })}
                                 />
                             </div>
+
                             <div className="space-y-2">
                                 <label className="text-sm text-slate-400">Código</label>
                                 <input
@@ -225,6 +242,8 @@ export const MembersPage: React.FC = () => {
                                     onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                                 />
                             </div>
+
+
                             <div className="space-y-2">
                                 <label className="text-sm text-slate-400">Sector</label>
                                 <select

@@ -46,7 +46,7 @@ export const LonasVinilosPage: React.FC = () => {
         members: [] as Array<{ id: string, hours: number }>,
         additionalJobs: [] as Array<{ description: string; client: string }>,
         date: '',
-        teamId: '',
+        teamId: null,
         section: 'Lonas'
     });
 
@@ -929,7 +929,7 @@ export const LonasVinilosPage: React.FC = () => {
 
                                             <button
                                                 onClick={() => {
-                                                    setSelectedContext({ teamId: '', date: day });
+                                                    setSelectedContext({ teamId: null as any, date: day });
                                                     setIsTaskModalOpen(true);
                                                 }}
                                                 className="w-full h-10 rounded-xl border-2 border-dashed border-white/10 hover:border-blue-500/40 hover:bg-blue-500/5 transition-all flex items-center justify-center text-slate-500 hover:text-blue-400 mt-2 font-bold text-xs group"
@@ -1076,7 +1076,7 @@ export const LonasVinilosPage: React.FC = () => {
                             </div>
 
                             <form onSubmit={handleTaskSubmit} className="flex flex-col gap-4 overflow-hidden">
-                                <div className="flex-1 pr-2 custom-scrollbar pb-1 space-y-4">
+                                <div className="flex-1 pr-2 overflow-y-auto custom-scrollbar pb-1 space-y-4">
                                     {/* Top Section: Conditional Columns */}
                                     <div className={`grid grid-cols-1 ${formData.date !== '' ? 'lg:grid-cols-2' : ''} gap-4`}>
                                         <div className="space-y-4">

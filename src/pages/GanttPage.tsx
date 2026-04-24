@@ -46,7 +46,7 @@ export const GanttPage: React.FC = () => {
         members: [] as Array<{ id: string, hours: number }>,
         additionalJobs: [] as Array<{ description: string; client: string }>,
         date: format(new Date(), 'yyyy-MM-dd'),
-        teamId: '',
+        teamId: null,
         section: 'Instalaciones'
     });
 
@@ -922,7 +922,7 @@ export const GanttPage: React.FC = () => {
 
                                             <button
                                                 onClick={() => {
-                                                    setSelectedContext({ teamId: '', date: day });
+                                                    setSelectedContext({ teamId: null as any, date: day });
                                                     setIsTaskModalOpen(true);
                                                 }}
                                                 className="w-full h-10 rounded-xl border-2 border-dashed border-white/10 hover:border-blue-500/40 hover:bg-blue-500/5 transition-all flex items-center justify-center text-slate-500 hover:text-blue-400 mt-2 font-bold text-xs group"
@@ -937,16 +937,10 @@ export const GanttPage: React.FC = () => {
                         </div>
 
                             {/* Available Members Footer Row */}
-                            <div
-                                className={`border-t border-white/10 bg-[#0f172a] shadow-[0_-4px_20px_rgba(0,0,0,0.5)] sticky bottom-0 z-[30] mt-auto transition-all duration-500 ease-in-out ${isCapacityOpen ? 'min-h-[140px]' : 'h-10'}`}
-                                style={{
-                                    width: isZoomed ? '200%' : '100%',
-                                    transform: isZoomed ? `translateX(-${(zoomOffset / 6) * 100}%)` : 'translateX(0)'
-                                }}
-                            >
+                            <div className="sticky bottom-0 z-[30] mt-auto w-full">
                                 {/* Toggle Tab */}
                                 <div 
-                                    className="absolute -top-6 left-1/2 -translate-x-1/2 px-6 py-1 bg-[#0f172a] border border-white/10 border-b-0 rounded-t-xl cursor-pointer flex items-center gap-2 group hover:bg-[#1e293b] transition-all"
+                                    className="absolute -top-6 left-1/2 -translate-x-1/2 px-6 py-1 bg-[#0f172a] border border-white/10 border-b-0 rounded-t-xl cursor-pointer flex items-center gap-2 group hover:bg-[#1e293b] transition-all z-40"
                                     onClick={() => setIsCapacityOpen(!isCapacityOpen)}
                                 >
                                     <Users size={12} className="text-emerald-400" />
@@ -954,7 +948,14 @@ export const GanttPage: React.FC = () => {
                                     <ChevronRight size={14} className={`text-slate-500 transition-transform duration-300 ${isCapacityOpen ? 'rotate-90' : '-rotate-90'}`} />
                                 </div>
 
-                                <div className={`transition-all duration-500 ${isCapacityOpen ? 'opacity-100 h-auto' : 'opacity-0 h-0 overflow-hidden'}`}>
+                                <div
+                                    className={`border-t border-white/10 bg-[#0f172a] shadow-[0_-4px_20px_rgba(0,0,0,0.5)] transition-all duration-500 ease-in-out ${isCapacityOpen ? 'min-h-[140px]' : 'h-10'}`}
+                                    style={{
+                                        width: isZoomed ? '200%' : '100%',
+                                        transform: isZoomed ? `translateX(-${(zoomOffset / 6) * 100}%)` : 'translateX(0)'
+                                    }}
+                                >
+                                    <div className={`transition-all duration-500 ${isCapacityOpen ? 'opacity-100 h-auto' : 'opacity-0 h-0 overflow-hidden'}`}>
                                     <div className="grid grid-cols-6 w-full">
                                     {allDaysInWeek.map((day) => {
                                         const dayStr = format(day, 'yyyy-MM-dd');
@@ -1037,6 +1038,7 @@ export const GanttPage: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            </div>
 
             {/* Modals */}
             {
@@ -1069,7 +1071,7 @@ export const GanttPage: React.FC = () => {
                             </div>
 
                             <form onSubmit={handleTaskSubmit} className="flex flex-col gap-4 overflow-hidden">
-                                <div className="flex-1 pr-2 custom-scrollbar pb-1 space-y-4">
+                                <div className="flex-1 pr-2 overflow-y-auto custom-scrollbar pb-1 space-y-4">
                                     {/* Top Section: Conditional Columns */}
                                     <div className={`grid grid-cols-1 ${formData.date !== '' ? 'lg:grid-cols-2' : ''} gap-4`}>
                                         <div className="space-y-4">

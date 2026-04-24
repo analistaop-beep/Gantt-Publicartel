@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Plus, Trash2, Edit2, Truck } from 'lucide-react';
+import { sileo } from 'sileo';
 
 export const VehiclesPage: React.FC = () => {
     const { vehicles, addVehicle, updateVehicle, deleteVehicle } = useStore();
@@ -9,13 +10,22 @@ export const VehiclesPage: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (isEditing) {
-            await updateVehicle({ id: isEditing, ...formData });
-            setIsEditing(null);
-        } else {
-            await addVehicle(formData);
+        try {
+            if (isEditing) {
+                await updateVehicle({ id: isEditing, ...formData });
+                setIsEditing(null);
+                sileo.success({ title: "Vehículo actualizado" });
+            } else {
+                await addVehicle(formData);
+                sileo.success({ title: "Vehículo agregado" });
+            }
+            setFormData({ name: '', plate: '' });
+        } catch (err: any) {
+            sileo.error({
+                title: "Error al guardar",
+                description: err.message || "No se pudo procesar la solicitud"
+            });
         }
-        setFormData({ name: '', plate: '' });
     };
 
     return (
