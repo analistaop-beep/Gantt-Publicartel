@@ -20,7 +20,7 @@ export const CorporeasPage: React.FC = () => {
     const {
         teams, tasks: instalacionTasks, corporeasTasks: tasks, members, vehicles, reminders,
         addTask, deleteTask, addMember, addVehicle, updateTask,
-        updateTaskLocal, deleteTaskLocal,
+        updateTaskLocal, deleteTaskLocal, addTaskLocal,
         saveAllChanges, hasPendingChanges, isSaving,
         clearTasksRange, error, clearError,
         addReminder, updateReminder, deleteReminder

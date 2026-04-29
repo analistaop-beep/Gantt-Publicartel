@@ -20,7 +20,7 @@ export const GanttPage: React.FC = () => {
     const {
         teams, tasks, herreriaTasks, members, vehicles, reminders,
         addTask, addMember, addVehicle, updateTask, deleteTask,
-        updateTaskLocal, deleteTaskLocal,
+        updateTaskLocal, deleteTaskLocal, addTaskLocal,
         saveAllChanges, hasPendingChanges, isSaving,
         clearTasksRange, error, clearError,
         addReminder, updateReminder, deleteReminder
