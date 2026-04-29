@@ -31,6 +31,8 @@ function App() {
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
   const fetchData = useStore(state => state.fetchData);
   const subscribeToChanges = useStore(state => state.subscribeToChanges);
+  const hasPendingChanges = useStore(state => state.hasPendingChanges);
+  const saveAllChanges = useStore(state => state.saveAllChanges);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -40,6 +42,21 @@ function App() {
       return () => unsubscribe();
     }
   }, [fetchData, subscribeToChanges, isAuthenticated]);
+
+  // Warn user before closing/refreshing if there are unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasPendingChanges) {
+        // Attempt to save before unload
+        saveAllChanges();
+        e.preventDefault();
+        e.returnValue = 'Hay cambios sin guardar. ¿Seguro que quieres salir?';
+        return e.returnValue;
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasPendingChanges, saveAllChanges]);
 
   const renderContent = () => {
     return (

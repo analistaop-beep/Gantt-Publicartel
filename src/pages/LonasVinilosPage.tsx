@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { sileo } from 'sileo';
-import { Plus, Minus, Calendar, ChevronLeft, ChevronRight, Trash2, LayoutGrid, Users, Truck, Bell, ArrowDownToLine, Copy, Search } from 'lucide-react';
+import { Plus, Minus, Calendar, ChevronLeft, ChevronRight, Trash2, LayoutGrid, Users, Truck, Bell, ArrowDownToLine, Copy, Search, Save, Loader2 } from 'lucide-react';
 import {
     format,
     addDays,
@@ -20,6 +20,8 @@ export const LonasVinilosPage: React.FC = () => {
     const {
         teams, tasks: instalacionTasks, lonasTasks: tasks, members, vehicles, reminders,
         addTask, deleteTask, addMember, addVehicle, updateTask,
+        updateTaskLocal, deleteTaskLocal,
+        saveAllChanges, hasPendingChanges, isSaving,
         clearTasksRange, error, clearError,
         addReminder, updateReminder, deleteReminder
     } = useStore();
@@ -253,7 +255,7 @@ export const LonasVinilosPage: React.FC = () => {
         setIsDragging(false);
     };
 
-    const handleDrop = async (e: React.DragEvent, teamId: string | null, date: Date) => {
+    const handleDrop = (e: React.DragEvent, teamId: string | null, date: Date) => {
         e.preventDefault();
         setIsDragging(false);
         const taskId = e.dataTransfer.getData('taskId') || e.dataTransfer.getData('taskid');
@@ -263,16 +265,12 @@ export const LonasVinilosPage: React.FC = () => {
         const newDate = format(date, 'yyyy-MM-dd');
         if (task.teamId === teamId && task.date === newDate) return;
 
-        try {
-            await updateTask({
-                ...task,
-                teamId,
-                date: newDate
-            });
-            sileo.success({ title: `Tarea RE-PROGRAMADA: OP ${task.opNumber}` });
-        } catch (err) {
-            // Error handled by store
-        }
+        updateTaskLocal({
+            ...task,
+            teamId,
+            date: newDate
+        });
+        sileo.success({ title: `Tarea RE-PROGRAMADA: OP ${task.opNumber}` });
     };
 
     const handleTaskDropOnTask = async (e: React.DragEvent, targetTask: any) => {
@@ -299,39 +297,35 @@ export const LonasVinilosPage: React.FC = () => {
             return;
         }
 
-        try {
-            // Unify members (sum hours if same member)
-            const combinedMembers = [...(targetTask.members || [])];
-            (sourceTask.members || []).forEach((sm: any) => {
-                const existingIdx = combinedMembers.findIndex(tm => tm.id === sm.id);
-                if (existingIdx !== -1) {
-                    combinedMembers[existingIdx] = {
-                        ...combinedMembers[existingIdx],
-                        hours: (combinedMembers[existingIdx].hours || 0) + (sm.hours || 0)
-                    };
-                } else {
-                    combinedMembers.push(sm);
-                }
-            });
+        // Unify members (sum hours if same member)
+        const combinedMembers = [...(targetTask.members || [])];
+        (sourceTask.members || []).forEach((sm: any) => {
+            const existingIdx = combinedMembers.findIndex(tm => tm.id === sm.id);
+            if (existingIdx !== -1) {
+                combinedMembers[existingIdx] = {
+                    ...combinedMembers[existingIdx],
+                    hours: (combinedMembers[existingIdx].hours || 0) + (sm.hours || 0)
+                };
+            } else {
+                combinedMembers.push(sm);
+            }
+        });
 
-            // Unify additional jobs
-            const combinedJobs = [
-                ...(targetTask.additionalJobs || []),
-                ...(sourceTask.additionalJobs || [])
-            ];
+        // Unify additional jobs
+        const combinedJobs = [
+            ...(targetTask.additionalJobs || []),
+            ...(sourceTask.additionalJobs || [])
+        ];
 
-            await updateTask({
-                ...targetTask,
-                totalHours: (targetTask.totalHours || 0) + (sourceTask.totalHours || 0),
-                members: combinedMembers,
-                additionalJobs: combinedJobs
-            });
+        updateTaskLocal({
+            ...targetTask,
+            totalHours: (targetTask.totalHours || 0) + (sourceTask.totalHours || 0),
+            members: combinedMembers,
+            additionalJobs: combinedJobs
+        });
 
-            await deleteTask(sourceTaskId);
-            sileo.success({ title: `Tareas UNIFICADAS: OP ${targetTask.opNumber}` });
-        } catch (err) {
-            sileo.error({ title: "Error al unificar tareas" });
-        }
+        deleteTaskLocal(sourceTaskId);
+        sileo.success({ title: `Tareas UNIFICADAS: OP ${targetTask.opNumber}` });
     };
 
     const handleDragOver = (e: React.DragEvent) => {
@@ -769,12 +763,11 @@ export const LonasVinilosPage: React.FC = () => {
                                                                     return;
                                                                 }
 
-                                                                try {
                                                                     // If it comes from another task, remove it from there first
                                                                     if (sourceTaskId) {
                                                                         const sourceTask = (sourceTaskId.startsWith('temp-') ? [] : tasks).find(t => t.id === sourceTaskId) || instalacionTasks.find(t => t.id === sourceTaskId);
                                                                         if (sourceTask) {
-                                                                            await updateTask({
+                                                                            updateTaskLocal({
                                                                                 ...sourceTask,
                                                                                 members: sourceTask.members.filter((m: any) => (typeof m === 'string' ? m : m.id) !== memberId)
                                                                             });
@@ -782,15 +775,12 @@ export const LonasVinilosPage: React.FC = () => {
                                                                     }
 
                                                                     const newMembers = [...currentMembers, { id: memberId, hours: 8 }];
-                                                                    await updateTask({
+                                                                    updateTaskLocal({
                                                                         ...task,
                                                                         members: newMembers,
                                                                         totalHours: task.totalHours || 8
                                                                     });
                                                                     sileo.success({ title: `Integrante re-asignado a OP: ${task.opNumber}` });
-                                                                } catch (err) {
-                                                                    sileo.error({ title: "No se pudo re-asignar el integrante" });
-                                                                }
                                                             } else if (draggedTaskId) {
                                                                 handleTaskDropOnTask(e, task);
                                                             }
@@ -895,16 +885,16 @@ export const LonasVinilosPage: React.FC = () => {
                                                                             pt.id !== task.id
                                                                         );
 
-                                                                        if (existingPending) {
-                                                                            await updateTask({
+                                                                    if (existingPending) {
+                                                                            updateTaskLocal({
                                                                                 ...existingPending,
                                                                                 totalHours: (existingPending.totalHours || 0) + (task.totalHours || 0),
                                                                                 duration: (existingPending.duration || 0) + (task.duration || 0)
                                                                             });
-                                                                            deleteTask(task.id);
+                                                                            deleteTaskLocal(task.id);
                                                                             sileo.success({ title: "Tarea agrupada en pendientes" });
                                                                         } else {
-                                                                            await updateTask({
+                                                                            updateTaskLocal({
                                                                                 ...task,
                                                                                 date: '',
                                                                                 teamId: null,
@@ -913,9 +903,6 @@ export const LonasVinilosPage: React.FC = () => {
                                                                             });
                                                                             sileo.success({ title: "Tarea movida a pendientes" });
                                                                         }
-                                                                    } catch (err) {
-                                                                        sileo.error({ title: "No se pudo mover la tarea" });
-                                                                    }
                                                                 }}
                                                                 title="Mover a pendientes"
                                                                 className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover/task:opacity-100 transition-opacity shadow-xl z-20 border-2 border-[#0f172a]"
@@ -986,15 +973,11 @@ export const LonasVinilosPage: React.FC = () => {
                                                         e.preventDefault();
                                                         const sourceTask = (sourceTaskId.startsWith('temp-') ? [] : tasks).find(t => t.id === sourceTaskId) || instalacionTasks.find(t => t.id === sourceTaskId);
                                                         if (sourceTask) {
-                                                            try {
-                                                                await updateTask({
-                                                                    ...sourceTask,
-                                                                    members: sourceTask.members.filter((m: any) => (typeof m === 'string' ? m : m.id) !== memberId)
-                                                                });
-                                                                sileo.success({ title: "Integrante desasignado" });
-                                                            } catch (err) {
-                                                                sileo.error({ title: "No se pudo desasignar el integrante" });
-                                                            }
+                                                            updateTaskLocal({
+                                                                ...sourceTask,
+                                                                members: sourceTask.members.filter((m: any) => (typeof m === 'string' ? m : m.id) !== memberId)
+                                                            });
+                                                            sileo.success({ title: "Integrante desasignado" });
                                                         }
                                                     }
                                                 }}
@@ -1889,6 +1872,34 @@ export const LonasVinilosPage: React.FC = () => {
                     </div>
                 )
             }
+
+            {/* Floating Save Button */}
+            {hasPendingChanges && (
+                <div className="fixed bottom-8 right-8 z-[100] flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="bg-amber-500/10 border border-amber-500/30 text-amber-400 px-4 py-2.5 rounded-2xl text-sm font-bold backdrop-blur-xl shadow-2xl">
+                        Hay cambios sin guardar
+                    </div>
+                    <button
+                        onClick={async () => {
+                            try {
+                                await saveAllChanges();
+                                sileo.success({ title: 'Cambios guardados con éxito' });
+                            } catch (err) {
+                                sileo.error({ title: 'Error al guardar los cambios' });
+                            }
+                        }}
+                        disabled={isSaving}
+                        className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-2xl shadow-emerald-500/30 active:scale-95 flex items-center gap-2.5 text-sm border border-emerald-400/20"
+                    >
+                        {isSaving ? (
+                            <Loader2 size={18} className="animate-spin" />
+                        ) : (
+                            <Save size={18} />
+                        )}
+                        {isSaving ? 'Guardando...' : 'Guardar'}
+                    </button>
+                </div>
+            )}
 
         </div >
     );
