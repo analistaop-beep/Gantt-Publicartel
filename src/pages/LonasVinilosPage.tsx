@@ -362,7 +362,7 @@ export const LonasVinilosPage: React.FC = () => {
         try {
             const task = contextMenu.task;
             const nextDay = getNextWorkingDay(task.date);
-            await addTask({
+            addTaskLocal({
                 ...task,
                 id: undefined,
                 date: nextDay
@@ -392,7 +392,7 @@ export const LonasVinilosPage: React.FC = () => {
             }));
 
             // Actualizar la tarea original con las horas divididas
-            await updateTask({
+            updateTaskLocal({
                 ...fragmentTargetTask,
                 totalHours: dividedHours,
                 duration: dividedHours,
@@ -406,7 +406,7 @@ export const LonasVinilosPage: React.FC = () => {
                 const nextDay = addDays(startDate, i);
                 const nextDayStr = format(nextDay, 'yyyy-MM-dd');
 
-                await addTask({
+                addTaskLocal({
                     ...fragmentTargetTask,
                     id: undefined, // Nueva ID para la copia
                     date: nextDayStr,
@@ -1536,6 +1536,48 @@ export const LonasVinilosPage: React.FC = () => {
             <div
                 className={`relative mx-10 mb-6 z-[60] glass rounded-[2.5rem] border border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-500 ease-in-out ${isPendingTasksOpen ? 'h-[20vh] max-h-[20vh]' : 'h-16'
                     }`}
+                onDragOver={(e) => {
+                    const isTaskDrag = Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'taskid');
+                    if (isTaskDrag) {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                    }
+                }}
+                onDrop={(e) => {
+                    const draggedTaskId = e.dataTransfer.getData('taskId') || e.dataTransfer.getData('taskid');
+                    if (draggedTaskId) {
+                        e.preventDefault();
+                        const task = tasks.find(t => t.id === draggedTaskId);
+                        if (task && task.date !== '') {
+                            const existingPending = pendingTasks.find(pt => 
+                                pt.opNumber === task.opNumber && 
+                                pt.client === task.client && 
+                                pt.name === task.name && 
+                                pt.address === task.address &&
+                                pt.id !== task.id
+                            );
+
+                            if (existingPending) {
+                                updateTaskLocal({
+                                    ...existingPending,
+                                    totalHours: (existingPending.totalHours || 0) + (task.totalHours || 0),
+                                    duration: (existingPending.duration || 0) + (task.duration || 0)
+                                });
+                                deleteTaskLocal(task.id);
+                                sileo.success({ title: "Tarea agrupada en pendientes" });
+                            } else {
+                                updateTaskLocal({
+                                    ...task,
+                                    date: '',
+                                    teamId: null,
+                                    members: [],
+                                    vehicles: []
+                                });
+                                sileo.success({ title: "Tarea movida a pendientes" });
+                            }
+                        }
+                    }
+                }}
             >
                 {/* Header / Toggle Button */}
                 <div

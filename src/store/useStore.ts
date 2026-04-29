@@ -25,6 +25,7 @@ interface AppState {
     // Pending changes tracking
     pendingChanges: PendingChanges;
     hasPendingChanges: boolean;
+    autoSaveTimer: any;
 
     fetchData: () => Promise<void>;
 
@@ -71,9 +72,10 @@ interface AppState {
     clearError: () => void;
     subscribeToChanges: () => () => void;
 
-    // Local-only operations for drag-and-drop (no DB call)
+    // Local-only operations for drag-and-drop and fragmentation (no DB call)
     updateTaskLocal: (task: any) => void;
     deleteTaskLocal: (id: string) => void;
+    addTaskLocal: (task: any) => void;
 
     // Flush all pending local changes to the database
     saveAllChanges: () => Promise<void>;
@@ -106,13 +108,9 @@ export const useStore = create<AppState>((set, get) => ({
     isLoading: false,
     isSaving: false,
     error: null,
-
-    // Pending changes tracking
-    pendingChanges: {
-        updatedTasks: new Map(),
-        deletedTaskIds: new Set(),
-    },
+    pendingChanges: { updatedTasks: new Map(), deletedTaskIds: new Set() },
     hasPendingChanges: false,
+    autoSaveTimer: null as any,
 
     fetchData: async () => {
         set({ isLoading: true });
@@ -398,6 +396,14 @@ export const useStore = create<AppState>((set, get) => ({
             pendingChanges: newPending,
             hasPendingChanges: true,
         } as any);
+
+        // Schedule auto-save after 30s of inactivity
+        const stateAfter = get();
+        if (stateAfter.autoSaveTimer) clearTimeout(stateAfter.autoSaveTimer);
+        const timer = setTimeout(() => {
+            get().saveAllChanges();
+        }, 30000);
+        set({ autoSaveTimer: timer });
     },
 
     deleteTaskLocal: (id: string) => {
@@ -428,6 +434,46 @@ export const useStore = create<AppState>((set, get) => ({
             pendingChanges: newPending,
             hasPendingChanges: true,
         });
+
+        // Schedule auto-save after 30s of inactivity
+        const stateAfter = get();
+        if (stateAfter.autoSaveTimer) clearTimeout(stateAfter.autoSaveTimer);
+        const timer = setTimeout(() => {
+            get().saveAllChanges();
+        }, 30000);
+        set({ autoSaveTimer: timer });
+    },
+    
+    addTaskLocal: (task: any) => {
+        const state = get();
+        const taskType = task.type || 'instalacion';
+        const listKey = getTaskListKey(taskType);
+        
+        // Ensure the task has an ID
+        const newTask = { ...task, id: task.id || uuidv4() };
+
+        // Add to the appropriate list
+        const updatedList = [...state[listKey], newTask];
+
+        // Track in pending changes (as an update/insert)
+        const newPending = { ...state.pendingChanges };
+        const newUpdatedTasks = new Map(newPending.updatedTasks);
+        newUpdatedTasks.set(newTask.id, newTask);
+        newPending.updatedTasks = newUpdatedTasks;
+
+        set({
+            [listKey]: updatedList,
+            pendingChanges: newPending,
+            hasPendingChanges: true,
+        } as any);
+
+        // Schedule auto-save after 30s of inactivity
+        const stateAfter = get();
+        if (stateAfter.autoSaveTimer) clearTimeout(stateAfter.autoSaveTimer);
+        const timer = setTimeout(() => {
+            get().saveAllChanges();
+        }, 30000);
+        set({ autoSaveTimer: timer });
     },
 
     // ============================================================
@@ -436,9 +482,14 @@ export const useStore = create<AppState>((set, get) => ({
 
     saveAllChanges: async () => {
         const state = get();
-        if (!state.hasPendingChanges) return;
+        if (!state.hasPendingChanges || state.isSaving) return;
 
-        set({ isSaving: true, error: null });
+        // Clear any pending auto-save timer
+        if (state.autoSaveTimer) {
+            clearTimeout(state.autoSaveTimer);
+        }
+
+        set({ isSaving: true, error: null, autoSaveTimer: null });
 
         try {
             const { updatedTasks, deletedTaskIds } = state.pendingChanges;

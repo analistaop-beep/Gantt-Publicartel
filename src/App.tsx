@@ -31,6 +31,8 @@ function App() {
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
   const fetchData = useStore(state => state.fetchData);
   const subscribeToChanges = useStore(state => state.subscribeToChanges);
+  const hasPendingChanges = useStore(state => state.hasPendingChanges);
+  const saveAllChanges = useStore(state => state.saveAllChanges);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -40,6 +42,29 @@ function App() {
       return () => unsubscribe();
     }
   }, [fetchData, subscribeToChanges, isAuthenticated]);
+
+  // Auto-save when the user hides the tab or closes the window
+  useEffect(() => {
+    const handleAutoSave = () => {
+      if (hasPendingChanges) {
+        saveAllChanges();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        handleAutoSave();
+      }
+    };
+
+    window.addEventListener('pagehide', handleAutoSave);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('pagehide', handleAutoSave);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [hasPendingChanges, saveAllChanges]);
 
 
 
