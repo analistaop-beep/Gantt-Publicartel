@@ -874,35 +874,34 @@ export const LonasVinilosPage: React.FC = () => {
                                                             )}
 
                                                             <button
-                                                                onClick={async (e) => {
+                                                                onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    try {
-                                                                        const existingPending = pendingTasks.find(pt =>
-                                                                            pt.opNumber === task.opNumber &&
-                                                                            pt.client === task.client &&
-                                                                            pt.name === task.name &&
-                                                                            pt.address === task.address &&
-                                                                            pt.id !== task.id
-                                                                        );
+                                                                    const existingPending = pendingTasks.find(pt =>
+                                                                        pt.opNumber === task.opNumber &&
+                                                                        pt.client === task.client &&
+                                                                        pt.name === task.name &&
+                                                                        pt.address === task.address &&
+                                                                        pt.id !== task.id
+                                                                    );
 
                                                                     if (existingPending) {
-                                                                            updateTaskLocal({
-                                                                                ...existingPending,
-                                                                                totalHours: (existingPending.totalHours || 0) + (task.totalHours || 0),
-                                                                                duration: (existingPending.duration || 0) + (task.duration || 0)
-                                                                            });
-                                                                            deleteTaskLocal(task.id);
-                                                                            sileo.success({ title: "Tarea agrupada en pendientes" });
-                                                                        } else {
-                                                                            updateTaskLocal({
-                                                                                ...task,
-                                                                                date: '',
-                                                                                teamId: null,
-                                                                                members: [],
-                                                                                vehicles: []
-                                                                            });
-                                                                            sileo.success({ title: "Tarea movida a pendientes" });
-                                                                        }
+                                                                        updateTaskLocal({
+                                                                            ...existingPending,
+                                                                            totalHours: (existingPending.totalHours || 0) + (task.totalHours || 0),
+                                                                            duration: (existingPending.duration || 0) + (task.duration || 0)
+                                                                        });
+                                                                        deleteTaskLocal(task.id);
+                                                                        sileo.success({ title: "Tarea agrupada en pendientes" });
+                                                                    } else {
+                                                                        updateTaskLocal({
+                                                                            ...task,
+                                                                            date: '',
+                                                                            teamId: null,
+                                                                            members: [],
+                                                                            vehicles: []
+                                                                        });
+                                                                        sileo.success({ title: "Tarea movida a pendientes" });
+                                                                    }
                                                                 }}
                                                                 title="Mover a pendientes"
                                                                 className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover/task:opacity-100 transition-opacity shadow-xl z-20 border-2 border-[#0f172a]"
