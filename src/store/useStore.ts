@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { supabase } from '../utils/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 
+// Track which tasks have been locally modified but not yet saved to the database
+interface PendingChanges {
+    updatedTasks: Map<string, any>;    // taskId -> full task object with local changes
+    deletedTaskIds: Set<string>;       // taskIds that were locally deleted
+}
+
 interface AppState {
     members: any[];
     vehicles: any[];
@@ -13,7 +19,12 @@ interface AppState {
     pinturaTasks: any[];
     reminders: any[];
     isLoading: boolean;
+    isSaving: boolean;
     error: string | null;
+
+    // Pending changes tracking
+    pendingChanges: PendingChanges;
+    hasPendingChanges: boolean;
 
     fetchData: () => Promise<void>;
 
@@ -59,6 +70,27 @@ interface AppState {
     resetDatabase: () => Promise<void>;
     clearError: () => void;
     subscribeToChanges: () => () => void;
+
+    // Local-only operations for drag-and-drop (no DB call)
+    updateTaskLocal: (task: any) => void;
+    deleteTaskLocal: (id: string) => void;
+
+    // Flush all pending local changes to the database
+    saveAllChanges: () => Promise<void>;
+
+    // Discard all pending local changes and reload from DB
+    discardChanges: () => Promise<void>;
+}
+
+// Helper: categorize a task into the correct state bucket based on its type
+function getTaskListKey(type: string): 'tasks' | 'herreriaTasks' | 'corporeasTasks' | 'lonasTasks' | 'pinturaTasks' {
+    switch (type) {
+        case 'herreria': return 'herreriaTasks';
+        case 'corporeas': return 'corporeasTasks';
+        case 'lonas': return 'lonasTasks';
+        case 'pintura': return 'pinturaTasks';
+        default: return 'tasks';
+    }
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -72,7 +104,15 @@ export const useStore = create<AppState>((set, get) => ({
     pinturaTasks: [],
     reminders: [],
     isLoading: false,
+    isSaving: false,
     error: null,
+
+    // Pending changes tracking
+    pendingChanges: {
+        updatedTasks: new Map(),
+        deletedTaskIds: new Set(),
+    },
+    hasPendingChanges: false,
 
     fetchData: async () => {
         set({ isLoading: true });
@@ -320,12 +360,155 @@ export const useStore = create<AppState>((set, get) => ({
         const channel = supabase
             .channel('db-changes')
             .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-                get().fetchData();
+                // Only auto-refresh from DB if there are NO pending local changes.
+                // Otherwise we'd overwrite the user's unsaved work.
+                if (!get().hasPendingChanges) {
+                    get().fetchData();
+                }
             })
             .subscribe();
 
         return () => {
             supabase.removeChannel(channel);
         };
-    }
+    },
+
+    // ============================================================
+    // LOCAL-ONLY task operations (no DB calls, just state updates)
+    // ============================================================
+
+    updateTaskLocal: (task: any) => {
+        const state = get();
+        const taskType = task.type || 'instalacion';
+        const listKey = getTaskListKey(taskType);
+
+        // Update the task in the appropriate list
+        const updatedList = state[listKey].map((t: any) =>
+            t.id === task.id ? { ...t, ...task } : t
+        );
+
+        // Track in pending changes
+        const newPending = { ...state.pendingChanges };
+        const newUpdatedTasks = new Map(newPending.updatedTasks);
+        newUpdatedTasks.set(task.id, { ...task });
+        newPending.updatedTasks = newUpdatedTasks;
+
+        set({
+            [listKey]: updatedList,
+            pendingChanges: newPending,
+            hasPendingChanges: true,
+        } as any);
+    },
+
+    deleteTaskLocal: (id: string) => {
+        const state = get();
+
+        // Remove from all task lists
+        const updates: any = {};
+        for (const key of ['tasks', 'herreriaTasks', 'corporeasTasks', 'lonasTasks', 'pinturaTasks'] as const) {
+            const filtered = state[key].filter((t: any) => t.id !== id);
+            if (filtered.length !== state[key].length) {
+                updates[key] = filtered;
+            }
+        }
+
+        // Track in pending changes
+        const newPending = { ...state.pendingChanges };
+        const newDeletedIds = new Set(newPending.deletedTaskIds);
+        newDeletedIds.add(id);
+        newPending.deletedTaskIds = newDeletedIds;
+
+        // If this task was also in updatedTasks, remove it (no point updating a deleted task)
+        const newUpdatedTasks = new Map(newPending.updatedTasks);
+        newUpdatedTasks.delete(id);
+        newPending.updatedTasks = newUpdatedTasks;
+
+        set({
+            ...updates,
+            pendingChanges: newPending,
+            hasPendingChanges: true,
+        });
+    },
+
+    // ============================================================
+    // Flush all pending changes to Supabase
+    // ============================================================
+
+    saveAllChanges: async () => {
+        const state = get();
+        if (!state.hasPendingChanges) return;
+
+        set({ isSaving: true, error: null });
+
+        try {
+            const { updatedTasks, deletedTaskIds } = state.pendingChanges;
+
+            // 1. Process deletions first
+            for (const id of deletedTaskIds) {
+                const { error } = await supabase.from('tasks').delete().eq('id', id);
+                if (error) throw error;
+            }
+
+            // 2. Process updates
+            for (const [, task] of updatedTasks) {
+                const { vehicles = [], members = [], additionalJobs = [], task_members, task_vehicles, ...taskData } = task;
+
+                // Sanitize teamId
+                if (taskData.teamId === '') {
+                    taskData.teamId = null;
+                }
+
+                const { error: taskError } = await supabase.from('tasks').update({
+                    ...taskData,
+                    additionalJobs: JSON.stringify(additionalJobs)
+                }).eq('id', task.id);
+
+                if (taskError) throw taskError;
+
+                // Update members
+                await supabase.from('task_members').delete().eq('taskId', task.id);
+                if (members.length > 0) {
+                    const { error: mError } = await supabase.from('task_members').insert(
+                        members.map((m: any) => ({ taskId: task.id, memberId: m.id, hours: m.hours }))
+                    );
+                    if (mError) throw mError;
+                }
+
+                // Update vehicles
+                await supabase.from('task_vehicles').delete().eq('taskId', task.id);
+                if (vehicles.length > 0) {
+                    const { error: vError } = await supabase.from('task_vehicles').insert(
+                        vehicles.map((vId: string) => ({ taskId: task.id, vehicleId: vId }))
+                    );
+                    if (vError) throw vError;
+                }
+            }
+
+            // 3. Clear pending changes and re-fetch from DB to ensure consistency
+            set({
+                pendingChanges: {
+                    updatedTasks: new Map(),
+                    deletedTaskIds: new Set(),
+                },
+                hasPendingChanges: false,
+                isSaving: false,
+            });
+
+            await get().fetchData();
+        } catch (err: any) {
+            set({ error: err.message, isSaving: false });
+            throw err;
+        }
+    },
+
+    discardChanges: async () => {
+        set({
+            pendingChanges: {
+                updatedTasks: new Map(),
+                deletedTaskIds: new Set(),
+            },
+            hasPendingChanges: false,
+        });
+        await get().fetchData();
+    },
 }));
