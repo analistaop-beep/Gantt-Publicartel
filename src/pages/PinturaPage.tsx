@@ -557,36 +557,55 @@ export const PinturaPage: React.FC = () => {
                         </p>
                     </div>
 
-                    <div className="flex gap-2 ml-4">
+                    <div className="flex items-center gap-2 flex-nowrap overflow-x-auto pb-2 md:pb-0 no-scrollbar ml-4">
                         <button
                             onClick={() => setQuickAddType('member')}
-                            className="bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 px-4 py-2 rounded-xl border border-blue-500/30 text-sm font-medium transition-all flex items-center gap-2"
+                            className="bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 px-4 py-2 rounded-xl border border-blue-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
                         >
                             <Users size={16} /> + Integrante
                         </button>
                         <button
                             onClick={() => setQuickAddType('vehicle')}
-                            className="bg-orange-600/10 hover:bg-orange-600/20 text-orange-400 px-4 py-2 rounded-xl border border-orange-500/30 text-sm font-medium transition-all flex items-center gap-2"
+                            className="bg-orange-600/10 hover:bg-orange-600/20 text-orange-400 px-4 py-2 rounded-xl border border-orange-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
                         >
                             <Truck size={16} /> + Vehículo
                         </button>
                         <button
                             onClick={handleClearWeek}
-                            className="bg-red-600/10 hover:bg-red-600/20 text-red-400 px-4 py-2 rounded-xl border border-red-500/30 text-sm font-medium transition-all flex items-center gap-2 ml-2"
+                            className="bg-red-600/10 hover:bg-red-600/20 text-red-400 px-4 py-2 rounded-xl border border-red-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
                         >
                             <Trash2 size={16} /> Limpiar
                         </button>
                         <button
                             onClick={() => setIsRemindersListOpen(true)}
-                            className="bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 px-4 py-2 rounded-xl border border-purple-500/30 text-sm font-medium transition-all flex items-center gap-2 ml-2"
+                            className="bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 px-4 py-2 rounded-xl border border-purple-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
                         >
                             <Bell size={16} /> Recordatorios
                         </button>
                         <button
                             onClick={handleGenerateReport}
-                            className="bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 px-4 py-2 rounded-xl border border-emerald-500/30 text-sm font-medium transition-all flex items-center gap-2 ml-2"
+                            className="bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 px-4 py-2 rounded-xl border border-emerald-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
                         >
                             <FileDown size={16} /> Reporte
+                        </button>
+                        <button
+                            onClick={async () => {
+                                try {
+                                    await saveAllChanges();
+                                    sileo.success({ title: 'Cambios guardados con éxito' });
+                                } catch (err) {
+                                    sileo.error({ title: 'Error al guardar los cambios' });
+                                }
+                            }}
+                            disabled={isSaving}
+                            className={`px-4 py-2 rounded-xl border text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+                                hasPendingChanges 
+                                    ? 'bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/20 animate-pulse' 
+                                    : 'bg-slate-700/50 text-slate-400 border-white/5 cursor-not-allowed opacity-50'
+                            }`}
+                        >
+                            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                            {isSaving ? 'Guardando...' : 'Guardar'}
                         </button>
                     </div>
                 </div>
@@ -1872,33 +1891,7 @@ export const PinturaPage: React.FC = () => {
                     )
                 }
 
-            {/* Floating Save Button */}
-            {hasPendingChanges && (
-                <div className="fixed bottom-8 right-8 z-[100] flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="bg-amber-500/10 border border-amber-500/30 text-amber-400 px-4 py-2.5 rounded-2xl text-sm font-bold backdrop-blur-xl shadow-2xl">
-                        Hay cambios sin guardar
-                    </div>
-                    <button
-                        onClick={async () => {
-                            try {
-                                await saveAllChanges();
-                                sileo.success({ title: 'Cambios guardados con éxito' });
-                            } catch (err) {
-                                sileo.error({ title: 'Error al guardar los cambios' });
-                            }
-                        }}
-                        disabled={isSaving}
-                        className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-800 disabled:cursor-not-allowed text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-2xl shadow-emerald-500/30 active:scale-95 flex items-center gap-2.5 text-sm border border-emerald-400/20"
-                    >
-                        {isSaving ? (
-                            <Loader2 size={18} className="animate-spin" />
-                        ) : (
-                            <Save size={18} />
-                        )}
-                        {isSaving ? 'Guardando...' : 'Guardar'}
-                    </button>
-                </div>
-            )}
+
 
             </div >
             );
