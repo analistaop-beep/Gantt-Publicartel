@@ -550,18 +550,6 @@ export const GanttPage: React.FC = () => {
 
                     <div className="flex items-center gap-2 flex-nowrap overflow-x-auto pb-2 md:pb-0 no-scrollbar">
                         <button
-                            onClick={() => setQuickAddType('member')}
-                            className="bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 px-4 py-2 rounded-xl border border-blue-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
-                        >
-                            <Users size={16} /> + Integrante
-                        </button>
-                        <button
-                            onClick={() => setQuickAddType('vehicle')}
-                            className="bg-orange-600/10 hover:bg-orange-600/20 text-orange-400 px-4 py-2 rounded-xl border border-orange-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
-                        >
-                            <Truck size={16} /> + Vehículo
-                        </button>
-                        <button
                             onClick={handleClearWeek}
                             className="bg-red-600/10 hover:bg-red-600/20 text-red-400 px-4 py-2 rounded-xl border border-red-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
                         >
