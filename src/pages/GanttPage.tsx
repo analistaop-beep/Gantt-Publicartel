@@ -384,28 +384,17 @@ export const GanttPage: React.FC = () => {
             const dividedHours = parseFloat((originalTotalHours / fragmentDays).toFixed(2));
             const remainderHours = parseFloat((originalTotalHours - (dividedHours * (fragmentDays - 1))).toFixed(2));
 
-            const dividedMembers = (fragmentTargetTask.members || []).map((m: any) => ({
-                ...m,
-                hours: parseFloat((m.hours / fragmentDays).toFixed(2))
-            }));
-
-            const getRemainderMembers = () => {
-                return (fragmentTargetTask.members || []).map((m: any) => {
-                    const div = parseFloat((m.hours / fragmentDays).toFixed(2));
-                    const rem = parseFloat((m.hours - (div * (fragmentDays - 1))).toFixed(2));
-                    return { ...m, hours: rem };
-                });
-            };
-
+            // Actualizar la tarea original con las horas divididas pero MANTENER todos los integrantes originales
             updateTaskLocal({
                 ...fragmentTargetTask,
                 totalHours: dividedHours,
                 duration: dividedHours,
-                members: dividedMembers
+                members: fragmentTargetTask.members || [] // Mantener integrantes originales sin dividir
             });
 
             let currentDay = fragmentTargetTask.date;
 
+            // Crear tareas adicionales para los días siguientes (sin integrantes)
             for (let i = 1; i < fragmentDays; i++) {
                 currentDay = getNextWorkingDay(currentDay);
                 const isLast = i === fragmentDays - 1;
@@ -417,7 +406,7 @@ export const GanttPage: React.FC = () => {
                     totalHours: isLast ? remainderHours : dividedHours,
                     duration: isLast ? remainderHours : dividedHours,
                     type: 'instalacion',
-                    members: isLast ? getRemainderMembers() : dividedMembers,
+                    members: [], // Sin integrantes en los fragmentos nuevos
                     groupId: fragmentTargetTask.groupId || fragmentTargetTask.id,
                     section: fragmentTargetTask.section || 'Instalaciones'
                 });
