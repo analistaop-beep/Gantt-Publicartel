@@ -382,16 +382,26 @@ export const PinturaPage: React.FC = () => {
     };
 
     const confirmFragment = async () => {
-        if (!fragmentTargetTask || fragmentDays <= 0) return;
+        if (!fragmentTargetTask || fragmentDays <= 1) return;
 
         try {
-            const dividedHours = fragmentTargetTask.totalHours / fragmentDays;
+            const originalTotalHours = fragmentTargetTask.totalHours || 0;
+            const dividedHours = parseFloat((originalTotalHours / fragmentDays).toFixed(2));
+            const remainderHours = parseFloat((originalTotalHours - (dividedHours * (fragmentDays - 1))).toFixed(2));
+
             const dividedMembers = (fragmentTargetTask.members || []).map((m: any) => ({
                 ...m,
                 hours: parseFloat((m.hours / fragmentDays).toFixed(2))
             }));
 
-            // Actualizar la tarea original con las horas divididas
+            const getRemainderMembers = () => {
+                return (fragmentTargetTask.members || []).map((m: any) => {
+                    const div = parseFloat((m.hours / fragmentDays).toFixed(2));
+                    const rem = parseFloat((m.hours - (div * (fragmentDays - 1))).toFixed(2));
+                    return { ...m, hours: rem };
+                });
+            };
+
             updateTaskLocal({
                 ...fragmentTargetTask,
                 totalHours: dividedHours,
@@ -399,22 +409,21 @@ export const PinturaPage: React.FC = () => {
                 members: dividedMembers
             });
 
-            const startDate = new Date(fragmentTargetTask.date + 'T00:00:00');
+            let currentDay = fragmentTargetTask.date;
 
-            // Crear tareas adicionales para los días siguientes (fragmentDays ya incluye el día actual)
             for (let i = 1; i < fragmentDays; i++) {
-                const nextDay = addDays(startDate, i);
-                const nextDayStr = format(nextDay, 'yyyy-MM-dd');
+                currentDay = getNextWorkingDay(currentDay);
+                const isLast = i === fragmentDays - 1;
 
                 addTaskLocal({
                     ...fragmentTargetTask,
-                    id: undefined, // Nueva ID para la copia
-                    date: nextDayStr,
-                    totalHours: dividedHours,
-                    duration: dividedHours,
+                    id: undefined,
+                    date: currentDay,
+                    totalHours: isLast ? remainderHours : dividedHours,
+                    duration: isLast ? remainderHours : dividedHours,
                     type: 'pintura',
-                    members: dividedMembers,
-                    groupId: fragmentTargetTask.groupId || fragmentTargetTask.id, // Mantener vínculo de grupo
+                    members: isLast ? getRemainderMembers() : dividedMembers,
+                    groupId: fragmentTargetTask.groupId || fragmentTargetTask.id,
                     section: fragmentTargetTask.section || 'Herrería'
                 });
             }
@@ -1883,7 +1892,7 @@ export const PinturaPage: React.FC = () => {
 
                                 <div className="space-y-4">
                                     <p className="text-slate-400 text-sm">
-                                        Indica cuántos días adicionales quieres duplicar esta tarea. La tarea se copiará con los mismos integrantes y detalles.
+                                        Indica en cuántos días totales deseas dividir esta tarea. Las horas se distribuirán proporcionalmente.
                                     </p>
 
                                     <div>
