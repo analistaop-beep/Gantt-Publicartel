@@ -283,8 +283,7 @@ export const GanttPage: React.FC = () => {
         const matches = 
             sourceTask.opNumber === targetTask.opNumber &&
             sourceTask.name === targetTask.name &&
-            sourceTask.client === targetTask.client &&
-            sourceTask.totalHours === targetTask.totalHours;
+            sourceTask.client === targetTask.client;
             
         if (!matches) {
             // If it doesn't match, perform a normal reschedule to the target task's date/team
@@ -315,6 +314,7 @@ export const GanttPage: React.FC = () => {
         updateTaskLocal({
             ...targetTask,
             totalHours: (targetTask.totalHours || 0) + (sourceTask.totalHours || 0),
+            duration: (targetTask.duration || 0) + (sourceTask.duration || 0),
             members: combinedMembers,
             additionalJobs: combinedJobs
         });
