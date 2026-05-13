@@ -13,8 +13,8 @@ import {
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getCompactName } from '../utils/stringUtils';
-import { exportToExcel } from '../utils/reportUtils';
-import { FileDown } from 'lucide-react';
+import { exportToExcel, exportTaskToPDF } from '../utils/reportUtils';
+import { FileDown, FileText } from 'lucide-react';
 
 export const LonasVinilosPage: React.FC = () => {
     const {
@@ -1640,6 +1640,7 @@ export const LonasVinilosPage: React.FC = () => {
                                     draggable={true}
                                     onDragStart={(e) => handleDragStart(e, task.id)}
                                     onDragEnd={handleDragEnd}
+                                    onContextMenu={(e) => handleContextMenu(e, task)}
                                     onClick={() => handleEditTask(task)}
                                     className="bg-slate-800/40 hover:bg-slate-800/60 border border-white/10 rounded-2xl p-4 transition-all hover:scale-[1.02] cursor-pointer group/item relative shadow-lg"
                                 >

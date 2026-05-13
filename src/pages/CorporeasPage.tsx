@@ -13,8 +13,8 @@ import {
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getCompactName } from '../utils/stringUtils';
-import { exportToExcel } from '../utils/reportUtils';
-import { FileDown } from 'lucide-react';
+import { exportToExcel, exportTaskToPDF } from '../utils/reportUtils';
+import { FileDown, FileText } from 'lucide-react';
 
 export const CorporeasPage: React.FC = () => {
     const {

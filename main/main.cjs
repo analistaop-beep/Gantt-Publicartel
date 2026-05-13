@@ -45,6 +45,33 @@ ipcMain.handle('clear-tasks-range', (_, { startDate, endDate, type }) => Service
 ipcMain.handle('reset-database', () => Services.resetDatabase());
 ipcMain.handle('get-daily-hours', (_, { teamId, date }) => Services.calculateDailyHours(teamId, date));
 
+ipcMain.handle('save-file', async (_, { content, fileName, extension }) => {
+    const { dialog } = require('electron');
+    const fs = require('fs');
+    const { filePath } = await dialog.showSaveDialog({
+        defaultPath: fileName,
+        filters: [{ name: extension, extensions: [extension] }]
+    });
+
+    if (filePath) {
+        // Content might be a Uint8Array from the renderer
+        fs.writeFileSync(filePath, Buffer.from(content));
+        return true;
+    }
+    return false;
+});
+
+ipcMain.handle('get-logo', async () => {
+    const fs = require('fs');
+    const path = require('path');
+    const logoPath = path.join(__dirname, '../public/logo-publicartel.png');
+    if (fs.existsSync(logoPath)) {
+        const logo = fs.readFileSync(logoPath);
+        return `data:image/png;base64,${logo.toString('base64')}`;
+    }
+    return null;
+});
+
 ipcMain.handle('get-reminders', () => Services.getReminders());
 ipcMain.handle('add-reminder', (_, r) => Services.addReminder(r));
 ipcMain.handle('update-reminder', (_, r) => Services.updateReminder(r));
