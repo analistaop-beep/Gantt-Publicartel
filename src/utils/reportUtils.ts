@@ -49,7 +49,7 @@ export const exportToExcel = (headers: string[], rows: any[][], filename: string
 /**
  * Generates an elegant PDF report for a single task.
  */
-export const exportTaskToPDF = async (task: any, members: any[], vehicles: any[]) => {
+export const exportTaskToPDF = async (task: any, members: any[], vehicles: any[], isPrintOrder: boolean = false) => {
     try {
         const doc = new jsPDF();
         let logoData: any = null;
@@ -90,7 +90,7 @@ export const exportTaskToPDF = async (task: any, members: any[], vehicles: any[]
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(22);
         doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-        doc.text('ORDEN DE TRABAJO', 195, 20, { align: 'right' });
+        doc.text(isPrintOrder ? 'ORDEN DE TRABAJO' : 'REPORTE DE TAREA', 195, 20, { align: 'right' });
         
         doc.setFontSize(14);
         doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
@@ -145,27 +145,29 @@ export const exportTaskToPDF = async (task: any, members: any[], vehicles: any[]
         doc.setTextColor(0);
         doc.text(task.section || 'Instalaciones', 158, detailsY);
 
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(100);
-        doc.text('HORAS PREVISTAS:', 130, detailsY + 8);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0);
-        doc.text(`${task.totalHours}h`, 158, detailsY + 8);
+        if (!isPrintOrder) {
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(100);
+            doc.text('HORAS PREVISTAS:', 130, detailsY + 8);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(0);
+            doc.text(`${task.totalHours}h`, 158, detailsY + 8);
 
-        const totalAssignedHours = (task.members || []).reduce((acc: number, m: any) => acc + (typeof m === 'object' ? (m.hours || 0) : 8), 0);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(100);
-        doc.text('HORAS TOTALES:', 130, detailsY + 16);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0);
-        doc.text(`${totalAssignedHours}h`, 158, detailsY + 16);
+            const totalAssignedHours = (task.members || []).reduce((acc: number, m: any) => acc + (typeof m === 'object' ? (m.hours || 0) : 8), 0);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(100);
+            doc.text('HORAS TOTALES:', 130, detailsY + 16);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(0);
+            doc.text(`${totalAssignedHours}h`, 158, detailsY + 16);
+        }
         
         const taskMembers = (task.members || []).map((m: any) => {
             const memberInfo = members.find(mem => mem.id === (typeof m === 'string' ? m : m.id));
             return [
                 memberInfo?.name || 'Desconocido',
                 memberInfo?.role || 'Operario',
-                `${typeof m === 'object' ? m.hours : 8}h`
+                isPrintOrder ? '' : `${typeof m === 'object' ? m.hours : 8}h`
             ];
         });
         
@@ -208,8 +210,35 @@ export const exportTaskToPDF = async (task: any, members: any[], vehicles: any[]
                 margin: { left: 15, right: 15 }
             });
         }
+
+        // Space for comments if it's a Print Order
+        if (isPrintOrder) {
+            const lastY = (doc as any).lastAutoTable?.finalY || detailsY + 35;
+            const commentsY = lastY + 10;
+            
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+            doc.text('COMENTARIOS / OBSERVACIONES:', 15, commentsY);
+            
+            doc.setDrawColor(200);
+            doc.setLineWidth(0.2);
+            
+            const boxTop = commentsY + 5;
+            const boxBottom = 270;
+            const boxHeight = boxBottom - boxTop;
+            
+            // Draw the outer box
+            doc.rect(15, boxTop, 180, boxHeight);
+            
+            // Draw ruled lines inside the box
+            doc.setDrawColor(230);
+            for (let lineY = boxTop + 10; lineY < boxBottom; lineY += 8) {
+                doc.line(15, lineY, 195, lineY);
+            }
+        }
         
-        const finalY = (doc as any).lastAutoTable.finalY + 30;
+        const finalY = isPrintOrder ? 275 : ((doc as any).lastAutoTable?.finalY || 150) + 30;
         doc.setDrawColor(200);
         doc.line(15, finalY, 80, finalY);
         doc.line(115, finalY, 180, finalY);
@@ -220,11 +249,12 @@ export const exportTaskToPDF = async (task: any, members: any[], vehicles: any[]
         doc.text('Firma Cliente / Recepción', 147.5, finalY + 5, { align: 'center' });
         
         doc.setFontSize(7);
-        doc.text(`Reporte generado el ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 105, 285, { align: 'center' });
+        doc.text(`${isPrintOrder ? 'Orden' : 'Reporte'} generado el ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 105, 285, { align: 'center' });
 
         const pdfOutput = doc.output('arraybuffer');
         const sanitizedClient = (task.client || 'Sin_Cliente').replace(/[/\\?%*:|"<>]/g, '-').replace(/\s+/g, '_');
-        const fileName = `Reporte_OP_${task.opNumber || 'S-OP'}_${sanitizedClient}.pdf`;
+        const taskDateStr = task.date ? format(new Date(task.date + 'T12:00:00'), 'dd-MM-yyyy') : format(new Date(), 'dd-MM-yyyy');
+        const fileName = `${isPrintOrder ? 'Orden' : 'Reporte'}_OP_${task.opNumber || 'S-OP'}_${taskDateStr}_${sanitizedClient}.pdf`;
         
         if (isElectron) {
             await (window as any).electronAPI.invoke('save-file', {
@@ -242,7 +272,7 @@ export const exportTaskToPDF = async (task: any, members: any[], vehicles: any[]
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            sileo.success({ title: 'Reporte descargado' });
+            sileo.success({ title: `${isPrintOrder ? 'Orden' : 'Reporte'} descargado` });
         }
     } catch (error) {
         console.error('Error in exportTaskToPDF:', error);

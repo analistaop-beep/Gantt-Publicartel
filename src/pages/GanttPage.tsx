@@ -14,7 +14,7 @@ import {
 import { es } from 'date-fns/locale';
 import { getCompactName } from '../utils/stringUtils';
 import { exportToExcel, exportTaskToPDF } from '../utils/reportUtils';
-import { FileDown, FileText } from 'lucide-react';
+import { FileDown, FileText, Printer } from 'lucide-react';
 
 export const GanttPage: React.FC = () => {
     const {
@@ -79,7 +79,7 @@ export const GanttPage: React.FC = () => {
 
     // Pending Tasks state
     const [isPendingTasksOpen, setIsPendingTasksOpen] = useState(false);
-    const [isCapacityOpen, setIsCapacityOpen] = useState(true);
+    const [isCapacityOpen, setIsCapacityOpen] = useState(false);
     const [memberSearch, setMemberSearch] = useState('');
 
     // Filter pending tasks (tasks with no date)
@@ -1869,6 +1869,21 @@ export const GanttPage: React.FC = () => {
                         className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors border-t border-white/5"
                     >
                         <FileText size={14} className="text-orange-400" /> Generar Reporte
+                    </button>
+                    <button
+                        onClick={async () => {
+                            const task = contextMenu.task;
+                            setContextMenu(null);
+                            try {
+                                await exportTaskToPDF(task, members, vehicles, true);
+                                sileo.success({ title: 'Orden de Trabajo generada' });
+                            } catch (err) {
+                                sileo.error({ title: 'Error al generar el PDF' });
+                            }
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors border-t border-white/5"
+                    >
+                        <Printer size={14} className="text-blue-400" /> Imprimir Orden
                     </button>
                 </div>
             )}
