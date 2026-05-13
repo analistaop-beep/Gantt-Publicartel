@@ -792,14 +792,16 @@ export const CorporeasPage: React.FC = () => {
                                                         }}
                                                         onContextMenu={(e) => handleContextMenu(e, task)}
                                                         onClick={() => handleEditTask(task)}
-                                                        className="bg-slate-800/40 hover:bg-slate-800/60 border border-white/10 rounded-xl p-3 text-[10px] relative group/task cursor-move transition-all hover:scale-[1.02] hover:z-30 shadow-lg overflow-hidden"
+                                                        className={`bg-slate-800/40 hover:bg-slate-800/60 border rounded-xl p-3 text-[10px] relative group/task cursor-move transition-all hover:scale-[1.02] hover:z-30 shadow-lg overflow-hidden ${
+                                                            totalAssignedHours > task.totalHours 
+                                                                ? 'animate-blink border-red-500/50 shadow-red-500/10' 
+                                                                : 'border-white/10'
+                                                        }`}
                                                     >
                                                         {/* Hero Hours Background Watermark */}
-                                                        <div className={`absolute inset-0 flex items-center justify-center pointer-events-none select-none transition-all duration-700 opacity-20 ${totalAssignedHours >= task.totalHours
-                                                                ? 'text-emerald-500'
-                                                                : totalAssignedHours > 0
-                                                                    ? 'text-amber-500'
-                                                                    : 'text-red-500'
+                                                        <div className={`absolute inset-0 flex items-center justify-center pointer-events-none select-none transition-all duration-700 opacity-20 ${totalAssignedHours > task.totalHours
+                                                                ? 'text-red-500'
+                                                                : 'text-emerald-500'
                                                             }`}>
                                                             <span className={`font-black whitespace-nowrap transition-all duration-700 ${isZoomed ? 'text-6xl' : 'text-4xl'}`}>
                                                                 {totalAssignedHours.toFixed(0)}/{task.totalHours.toFixed(0)}
@@ -824,13 +826,13 @@ export const CorporeasPage: React.FC = () => {
                                                             <div className="space-y-1 mb-2">
                                                                 <div className={`flex justify-between items-center px-0.5 transition-all ${isZoomed ? 'text-[10px]' : 'text-[8px]'}`}>
                                                                     <span className="text-slate-500 font-bold uppercase tracking-wider">Asignación</span>
-                                                                    <span className="text-blue-400 font-mono font-bold">
+                                                                    <span className={`font-mono font-bold ${totalAssignedHours > task.totalHours ? 'text-red-400' : 'text-emerald-400'}`}>
                                                                         {totalAssignedHours.toFixed(1)} / {task.totalHours.toFixed(1)}h
                                                                     </span>
                                                                 </div>
                                                                 <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
                                                                     <div
-                                                                        className={`h-full transition-all duration-500 ${totalAssignedHours >= task.totalHours ? 'bg-emerald-500' : 'bg-blue-500'
+                                                                        className={`h-full transition-all duration-500 ${totalAssignedHours > task.totalHours ? 'bg-red-500' : 'bg-emerald-500'
                                                                             }`}
                                                                         style={{ width: `${Math.min((totalAssignedHours / (task.totalHours || 1)) * 100, 100)}%` }}
                                                                     />
@@ -1172,32 +1174,18 @@ export const CorporeasPage: React.FC = () => {
                                 <div className="p-4 bg-white/5 rounded-[2rem] border border-white/5 space-y-4">
                                     <h4 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-1">Carga de Horas</h4>
                                     <div className="grid grid-cols-2 gap-6">
-                                        <div className="space-y-1">
+                                        <div className="space-y-1 col-span-2">
                                             <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Horas Previstas</label>
                                             <input
                                                 type="number" step="0.1" className="input w-full font-mono font-bold text-blue-400 text-xl"
                                                 value={formData.totalHours}
                                                 onChange={(e) => {
                                                     const total = parseFloat(e.target.value) || 0;
-                                                    setFormData({ ...formData, totalHours: total });
+                                                    setFormData({ ...formData, totalHours: total, duration: total });
                                                 }}
                                                 required
                                             />
                                         </div>
-                                        {formData.date !== '' && (
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Horas Reloj</label>
-                                                <input
-                                                    type="number" step="0.1" className="input w-full font-mono font-bold text-slate-400 text-xl"
-                                                    value={formData.duration}
-                                                    onChange={(e) => {
-                                                        const clock = parseFloat(e.target.value) || 0;
-                                                        setFormData({ ...formData, duration: clock });
-                                                    }}
-                                                    required
-                                                />
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             </div>
