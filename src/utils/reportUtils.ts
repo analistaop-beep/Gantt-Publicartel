@@ -54,8 +54,8 @@ export const exportTaskToPDF = async (task: any, members: any[], vehicles: any[]
     const logoData = await (window as any).electronAPI.invoke('get-logo');
     
     // Institutional Colors
-    const primaryColor = [15, 23, 42]; // #0f172a (Dark Blue)
-    const accentColor = [37, 99, 235];  // #2563eb (Blue)
+    const primaryColor: [number, number, number] = [15, 23, 42]; // #0f172a (Dark Blue)
+    const accentColor: [number, number, number] = [37, 99, 235];  // #2563eb (Blue)
     
     // Header with Logo
     if (logoData) {
@@ -155,7 +155,7 @@ export const exportTaskToPDF = async (task: any, members: any[], vehicles: any[]
             head: [['Vehículo', 'Patente']],
             body: taskVehicles,
             theme: 'grid',
-            headStyles: { fillColor: [100, 116, 139], textColor: 255 },
+            headStyles: { fillColor: [100, 116, 139] as [number, number, number], textColor: 255 },
             styles: { fontSize: 9, cellPadding: 3 },
             margin: { left: 15, right: 15 }
         });
@@ -169,7 +169,7 @@ export const exportTaskToPDF = async (task: any, members: any[], vehicles: any[]
             head: [['Tareas Adicionales', 'Referencia']],
             body: additionalJobs,
             theme: 'grid',
-            headStyles: { fillColor: [16, 185, 129], textColor: 255 },
+            headStyles: { fillColor: [16, 185, 129] as [number, number, number], textColor: 255 },
             styles: { fontSize: 9, cellPadding: 3 },
             margin: { left: 15, right: 15 }
         });
