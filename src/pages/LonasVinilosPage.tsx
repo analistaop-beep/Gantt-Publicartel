@@ -1865,6 +1865,21 @@ export const LonasVinilosPage: React.FC = () => {
                         >
                             <Calendar size={14} /> Editar
                         </button>
+                        <button
+                            onClick={async () => {
+                                const task = contextMenu.task;
+                                setContextMenu(null);
+                                try {
+                                    await exportTaskToPDF(task, members, vehicles);
+                                    sileo.success({ title: 'Reporte PDF generado' });
+                                } catch (err) {
+                                    sileo.error({ title: 'Error al generar el PDF' });
+                                }
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors border-t border-white/5"
+                        >
+                            <FileText size={14} className="text-orange-400" /> Generar Reporte
+                        </button>
                     </div>
                 )
             }

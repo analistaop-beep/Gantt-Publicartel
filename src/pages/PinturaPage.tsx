@@ -736,6 +736,8 @@ export const PinturaPage: React.FC = () => {
                                                         draggable
                                                         onDragStart={(e) => handleDragStart(e, task.id)}
                                                         onDragEnd={handleDragEnd}
+                                                        onContextMenu={(e) => handleContextMenu(e, task)}
+                                                        onClick={() => handleEditTask(task)}
                                                         onDragOver={(e) => {
                                                             const isMemberDrag = Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'memberid');
                                                             const isTaskDrag = Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'taskid');
@@ -790,8 +792,6 @@ export const PinturaPage: React.FC = () => {
                                                                 handleTaskDropOnTask(e, task);
                                                             }
                                                         }}
-                                                        onContextMenu={(e) => handleContextMenu(e, task)}
-                                                        onClick={() => handleEditTask(task)}
                                                         className="bg-slate-800/40 hover:bg-slate-800/60 border border-white/10 rounded-xl p-3 text-[10px] relative group/task cursor-move transition-all hover:scale-[1.02] hover:z-30 shadow-lg overflow-hidden"
                                                     >
                                                         {/* Hero Hours Background Watermark */}
@@ -1640,6 +1640,7 @@ export const PinturaPage: React.FC = () => {
                                         draggable={true}
                                         onDragStart={(e) => handleDragStart(e, task.id)}
                                         onDragEnd={handleDragEnd}
+                                        onContextMenu={(e) => handleContextMenu(e, task)}
                                         onClick={() => handleEditTask(task)}
                                         className="bg-slate-800/40 hover:bg-slate-800/60 border border-white/10 rounded-2xl p-4 transition-all hover:scale-[1.02] cursor-pointer group/item relative shadow-lg"
                                     >
@@ -1863,6 +1864,21 @@ export const PinturaPage: React.FC = () => {
                                 className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors"
                             >
                                 <Calendar size={14} /> Editar
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    const task = contextMenu.task;
+                                    setContextMenu(null);
+                                    try {
+                                        await exportTaskToPDF(task, members, vehicles);
+                                        sileo.success({ title: 'Reporte PDF generado' });
+                                    } catch (err) {
+                                        sileo.error({ title: 'Error al generar el PDF' });
+                                    }
+                                }}
+                                className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors border-t border-white/5"
+                            >
+                                <FileText size={14} className="text-orange-400" /> Generar Reporte
                             </button>
                         </div>
                     )

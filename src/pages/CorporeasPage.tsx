@@ -1640,6 +1640,7 @@ export const CorporeasPage: React.FC = () => {
                         draggable={true}
                         onDragStart={(e) => handleDragStart(e, task.id)}
                         onDragEnd={handleDragEnd}
+                        onContextMenu={(e) => handleContextMenu(e, task)}
                         onClick={() => handleEditTask(task)}
                         className="bg-slate-800/40 hover:bg-slate-800/60 border border-white/10 rounded-2xl p-4 transition-all hover:scale-[1.02] cursor-pointer group/item relative shadow-lg"
                     >
@@ -1840,33 +1841,48 @@ export const CorporeasPage: React.FC = () => {
             >
                 <Copy size={14} className="text-emerald-400" /> Duplicar
             </button>
-            <button
-                onClick={() => {
-                    setEditingTask(contextMenu.task);
-                    setFormData({
-                        opNumber: contextMenu.task.opNumber || '',
-                        name: contextMenu.task.name || '',
-                        client: contextMenu.task.client || '',
-                        address: contextMenu.task.address || 'Montevideo',
-                        totalHours: contextMenu.task.totalHours || 0,
-                        duration: contextMenu.task.duration || 0,
-                        vehicles: contextMenu.task.vehicles || [],
-                        members: contextMenu.task.members || [],
-                        additionalJobs: contextMenu.task.additionalJobs || [],
-                        date: contextMenu.task.date || '',
-                        teamId: contextMenu.task.teamId || '',
-                        section: contextMenu.task.section || 'Herrería'
-                    });
-                    setIsTaskModalOpen(true);
-                    setContextMenu(null);
-                }}
-                className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors"
-            >
-                <Calendar size={14} /> Editar
-            </button>
-        </div>
-    )
-}
+                <button
+                    onClick={() => {
+                        setEditingTask(contextMenu.task);
+                        setFormData({
+                            opNumber: contextMenu.task.opNumber || '',
+                            name: contextMenu.task.name || '',
+                            client: contextMenu.task.client || '',
+                            address: contextMenu.task.address || 'Montevideo',
+                            totalHours: contextMenu.task.totalHours || 0,
+                            duration: contextMenu.task.duration || 0,
+                            vehicles: contextMenu.task.vehicles || [],
+                            members: contextMenu.task.members || [],
+                            additionalJobs: contextMenu.task.additionalJobs || [],
+                            date: contextMenu.task.date || '',
+                            teamId: contextMenu.task.teamId || '',
+                            section: contextMenu.task.section || 'Herrería'
+                        });
+                        setIsTaskModalOpen(true);
+                        setContextMenu(null);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors"
+                >
+                    <Calendar size={14} /> Editar
+                </button>
+                <button
+                    onClick={async () => {
+                        const task = contextMenu.task;
+                        setContextMenu(null);
+                        try {
+                            await exportTaskToPDF(task, members, vehicles);
+                            sileo.success({ title: 'Reporte PDF generado' });
+                        } catch (err) {
+                            sileo.error({ title: 'Error al generar el PDF' });
+                        }
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors border-t border-white/5"
+                >
+                    <FileText size={14} className="text-orange-400" /> Generar Reporte
+                </button>
+            </div>
+        )
+    }
 
 {/* Fragment Modal */ }
 {
