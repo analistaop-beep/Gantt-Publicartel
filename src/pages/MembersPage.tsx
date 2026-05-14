@@ -201,12 +201,12 @@ export const MembersPage: React.FC = () => {
         </div>
 
             {isEditing && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="glass p-8 rounded-3xl w-full max-w-md space-y-4">
-                        <h3 className="text-xl font-bold">Editar Integrante</h3>
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-md shadow-2xl border border-white/10">
+                        <h3 className="text-xl font-bold mb-6">EDITAR INTEGRANTE</h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-sm text-slate-400">Nombre</label>
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nombre</label>
                                 <input
                                     className="input w-full"
                                     value={formData.name}
@@ -214,8 +214,8 @@ export const MembersPage: React.FC = () => {
                                     required
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm text-slate-400">Rol</label>
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Rol</label>
                                 <input
                                     className="input w-full"
                                     value={formData.role}
@@ -223,8 +223,8 @@ export const MembersPage: React.FC = () => {
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-slate-400">N° C.I. (Opcional)</label>
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">N° C.I. (Opcional)</label>
                                 <input
                                     className="input w-full font-mono"
                                     value={formData.ci}
@@ -232,8 +232,8 @@ export const MembersPage: React.FC = () => {
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-slate-400">Código</label>
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Código</label>
                                 <input
                                     className="input w-full uppercase font-bold"
                                     value={formData.code}
@@ -244,8 +244,8 @@ export const MembersPage: React.FC = () => {
                             </div>
 
 
-                            <div className="space-y-2">
-                                <label className="text-sm text-slate-400">Sector</label>
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Sector</label>
                                 <select
                                     className="input w-full"
                                     value={formData.sector}
@@ -263,16 +263,16 @@ export const MembersPage: React.FC = () => {
                                     <option value="Corpóreas">Corpóreas</option>
                                 </select>
                             </div>
-                            <div className="flex gap-3 pt-2">
+                            <div className="flex gap-3 pt-6">
                                 <button
                                     type="button"
                                     onClick={() => setIsEditing(null)}
-                                    className="btn btn-secondary flex-1"
+                                    className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-bold transition-all border border-white/10 flex-1"
                                 >
-                                    Cancelar
+                                    CANCELAR
                                 </button>
-                                <button type="submit" className="btn btn-primary flex-1">
-                                    Guardar
+                                <button type="submit" className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all flex-1">
+                                    GUARDAR
                                 </button>
                             </div>
                         </form>

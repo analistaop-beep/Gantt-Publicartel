@@ -61,7 +61,7 @@ body {
   }
 
   .btn {
-    @apply px-6 py-3 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2 active:scale-95;
+    @apply px-6 py-3 rounded-none font-bold transition-all duration-300 flex items-center justify-center gap-2 active:scale-95;
   }
 
   .btn-primary {
@@ -73,11 +73,11 @@ body {
   }
 
   .input {
-    @apply bg-white/5 border border-white/10 rounded-2xl px-5 py-3 outline-none focus:border-blue-500/50 transition-all text-white placeholder:text-slate-500;
+    @apply bg-white/5 border border-white/10 rounded-none px-5 py-3 outline-none focus:border-blue-500/50 transition-all text-white placeholder:text-slate-500;
   }
 
   .input-sm {
-    @apply bg-white/5 border border-white/10 rounded-xl px-4 py-2 outline-none focus:border-blue-500/50 transition-all text-white placeholder:text-slate-500 text-sm;
+    @apply bg-white/5 border border-white/10 rounded-none px-4 py-2 outline-none focus:border-blue-500/50 transition-all text-white placeholder:text-slate-500 text-sm;
   }
 
   select option {

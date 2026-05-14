@@ -1076,296 +1076,157 @@ export const GanttPage: React.FC = () => {
             </div>
 
             {/* Modals */}
-            {
-                isTaskModalOpen && (
-                    <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-                        <div className="glass p-6 rounded-[2.5rem] w-full max-w-[1000px] max-h-[95vh] flex flex-col shadow-2xl border-white/20 animate-in fade-in zoom-in-95 duration-300">
-                            <div className="mb-4 flex justify-between items-start">
-                                <div>
-                                    <h3 className="text-2xl font-bold">{editingTask ? 'Editar Tarea' : 'Asignar Tarea'}</h3>
-                                    <p className="text-slate-400 text-sm mt-1">
-                                        {editingTask
-                                            ? `Editando tarea existente`
-                                            : (selectedContext
-                                                ? `Asignando a ${teams.find(t => t.id === selectedContext.teamId)?.name} el ${format(selectedContext.date, 'dd/MM/yyyy')}`
-                                                : `Configura los detalles de la asignación`)
-                                        }
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        setIsTaskModalOpen(false);
-                                        setSelectedContext(null);
-                                        setEditingTask(null);
-                                        setMemberSearch('');
-                                    }}
-                                    className="p-2 hover:bg-white/10 rounded-full text-slate-400 transition-all"
-                                >
-                                    <Plus className="rotate-45" size={24} />
-                                </button>
+            {isTaskModalOpen && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+                    <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl border border-white/10">
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 className="text-xl font-bold flex items-center gap-2">
+                                    <Calendar className="text-blue-400" size={20} />
+                                    {editingTask ? 'EDITAR TAREA' : 'ASIGNAR TAREA'}
+                                </h3>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">
+                                    {editingTask
+                                        ? `MODIFICANDO REGISTRO EXISTENTE`
+                                        : (selectedContext
+                                            ? `ASIGNANDO A ${teams.find(t => t.id === selectedContext.teamId)?.name} EL ${format(selectedContext.date, 'dd/MM/yyyy')}`
+                                            : `CONFIGURACIÓN DE NUEVA ASIGNACIÓN`)
+                                    }
+                                </p>
                             </div>
+                            <button
+                                onClick={() => {
+                                    setIsTaskModalOpen(false);
+                                    setSelectedContext(null);
+                                    setEditingTask(null);
+                                    setMemberSearch('');
+                                }}
+                                className="p-2 hover:bg-white/5 transition-colors text-slate-400 hover:text-white"
+                            >
+                                <Plus className="rotate-45" size={24} />
+                            </button>
+                        </div>
 
-                            <form onSubmit={handleTaskSubmit} className="flex flex-col gap-4 overflow-hidden">
-                                <div className="flex-1 pr-2 overflow-y-auto custom-scrollbar pb-1 space-y-4">
-                                    {/* Top Section: Conditional Columns */}
-                                    <div className={`grid grid-cols-1 ${formData.date !== '' ? 'lg:grid-cols-2' : ''} gap-4`}>
-                                        <div className="space-y-4">
-                                            {/* Column 1: Core Data */}
-                                            <div className="p-4 bg-white/5 rounded-[2rem] border border-white/5 space-y-4">
-                                                <h4 className="text-xs font-black uppercase tracking-widest text-blue-400 mb-1">Datos de Obra</h4>
-
-                                                {formData.date !== '' && !selectedContext && !editingTask && (
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <div className="space-y-1">
-                                                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Fecha</label>
-                                                            <input
-                                                                type="date"
-                                                                className="input-sm w-full"
-                                                                value={formData.date}
-                                                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                                                required
-                                                            />
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Equipo</label>
-                                                            <select
-                                                                className="input-sm w-full"
-                                                                value={formData.teamId || ''}
-                                                                onChange={(e) => setFormData({ ...formData, teamId: e.target.value || null })}
-                                                                required
-                                                            >
-                                                                <option value="" disabled>Equipo...</option>
-                                                                {teams.map(t => (
-                                                                    <option key={t.id} value={t.id}>{t.name}</option>
-                                                                ))}
-                                                            </select>
-                                                        </div>
+                        <form onSubmit={handleTaskSubmit} className="flex flex-col gap-6 overflow-hidden">
+                            <div className="flex-1 pr-2 overflow-y-auto custom-scrollbar pb-1 space-y-6">
+                                {/* Top Section: Grid of 2 or 3 columns depending on context */}
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    
+                                    {/* Column 1: Core Data */}
+                                    <div className="lg:col-span-2 space-y-6">
+                                        <div className="bg-white/5 p-6 border border-white/5 space-y-4">
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400">DATOS DE OBRA</h4>
+                                            
+                                            {formData.date !== '' && !selectedContext && !editingTask && (
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">FECHA</label>
+                                                        <input
+                                                            type="date"
+                                                            className="input w-full"
+                                                            value={formData.date}
+                                                            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                                            required
+                                                        />
                                                     </div>
-                                                )}
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">EQUIPO</label>
+                                                        <select
+                                                            className="input w-full"
+                                                            value={formData.teamId || ''}
+                                                            onChange={(e) => setFormData({ ...formData, teamId: e.target.value || null })}
+                                                            required
+                                                        >
+                                                            <option value="" disabled>SELECCIONAR...</option>
+                                                            {teams.map(t => (
+                                                                <option key={t.id} value={t.id}>{t.name}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            )}
 
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="space-y-1">
-                                                    <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Sección</label>
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">SECCIÓN</label>
                                                     <select
-                                                        className="input-sm w-full"
+                                                        className="input w-full"
                                                         value={formData.section}
                                                         onChange={(e) => setFormData({ ...formData, section: e.target.value })}
                                                         required
                                                     >
-                                                        <option value="Instalaciones">Instalaciones</option>
-                                                        <option value="Herrería">Herrería</option>
-                                                        <option value="Vinilos">Vinilos</option>
-                                                        <option value="Pintura">Pintura</option>
-                                                        <option value="Impresión">Impresión</option>
-                                                        <option value="Lonas">Lonas</option>
-                                                        <option value="Carpintería">Carpintería</option>
-                                                        <option value="Corpóreas">Corpóreas</option>
+                                                        <option value="Instalaciones">INSTALACIONES</option>
+                                                        <option value="Herrería">HERRERÍA</option>
+                                                        <option value="Vinilos">VINILOS</option>
+                                                        <option value="Pintura">PINTURA</option>
+                                                        <option value="Impresión">IMPRESIÓN</option>
+                                                        <option value="Lonas">LONAS</option>
+                                                        <option value="Carpintería">CARPINTERÍA</option>
+                                                        <option value="Corpóreas">CORPÓREAS</option>
                                                     </select>
                                                 </div>
-
-                                                <div className="grid grid-cols-3 gap-3">
-                                                    <div className="col-span-1 space-y-1">
-                                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">OP</label>
-                                                        <input
-                                                            className="input-sm w-full font-bold text-blue-400"
-                                                            placeholder="0000"
-                                                            value={formData.opNumber}
-                                                            onChange={(e) => setFormData({ ...formData, opNumber: e.target.value })}
-                                                            required
-                                                        />
-                                                    </div>
-                                                    <div className="col-span-2 space-y-1">
-                                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Descripción</label>
-                                                        <input
-                                                            className="input-sm w-full"
-                                                            placeholder="Instalación..."
-                                                            value={formData.name}
-                                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                            required
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Cliente</label>
-                                                        <input
-                                                            className="input-sm w-full"
-                                                            placeholder="Nombre del cliente"
-                                                            value={formData.client}
-                                                            onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-                                                            required
-                                                        />
-                                                    </div>
-                                                    {formData.date !== '' && (
-                                                        <div className="space-y-1">
-                                                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Ubicación</label>
-                                                            <input
-                                                                className="input-sm w-full"
-                                                                placeholder="Calle, Ciudad..."
-                                                                value={formData.address}
-                                                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                                                required
-                                                            />
-                                                        </div>
-                                                    )}
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">N° OP</label>
+                                                    <input
+                                                        className="input w-full font-bold text-blue-400"
+                                                        placeholder="Ej: 12345"
+                                                        value={formData.opNumber}
+                                                        onChange={(e) => setFormData({ ...formData, opNumber: e.target.value })}
+                                                        required
+                                                    />
                                                 </div>
                                             </div>
 
-                                            {/* Hours Selection (Moved here) */}
-                                            <div className="p-4 bg-white/5 rounded-[2rem] border border-white/5 space-y-4">
-                                                <h4 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-1">Carga de Horas</h4>
-                                                <div className="grid grid-cols-2 gap-6">
-                                                    <div className="space-y-1 col-span-2">
-                                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Horas Previstas</label>
-                                                        <input
-                                                            type="number" step="0.1" className="input w-full font-mono font-bold text-blue-400 text-xl"
-                                                            value={formData.totalHours}
-                                                            onChange={(e) => {
-                                                                const total = parseFloat(e.target.value) || 0;
-                                                                setFormData({ ...formData, totalHours: total, duration: total });
-                                                            }}
-                                                            required
-                                                        />
-                                                    </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">DESCRIPCIÓN / TAREA</label>
+                                                <input
+                                                    className="input w-full"
+                                                    placeholder="Nombre de la tarea..."
+                                                    value={formData.name}
+                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">CLIENTE</label>
+                                                    <input
+                                                        className="input w-full"
+                                                        placeholder="Nombre del cliente"
+                                                        value={formData.client}
+                                                        onChange={(e) => setFormData({ ...formData, client: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">DIRECCIÓN / UBICACIÓN</label>
+                                                    <input
+                                                        className="input w-full"
+                                                        placeholder="Ubicación de la obra"
+                                                        value={formData.address}
+                                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                                        required
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Right Column: Assignments */}
-                                        {formData.date !== '' && (
-                                            <div className="p-4 bg-white/5 rounded-[2rem] border border-white/5 space-y-4 flex flex-col h-full">
-                                                <h4 className="text-xs font-black uppercase tracking-widest text-orange-400 mb-1">Asignaciones</h4>
-
-                                                <div className="space-y-2 flex-1">
-                                                    <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Vehículos</label>
-                                                    <div className="glass rounded-xl p-3 h-28 overflow-y-auto custom-scrollbar space-y-1">
-                                                        {vehicles.map(v => {
-                                                            const isBusy = busyVehiclesOnDate.has(v.id);
-                                                            return (
-                                                                <label key={v.id} className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isBusy ? 'opacity-40 cursor-not-allowed bg-red-500/5' : 'hover:bg-white/10 cursor-pointer'}`}>
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500"
-                                                                        checked={formData.vehicles.includes(v.id)}
-                                                                        disabled={isBusy}
-                                                                        onChange={(e) => {
-                                                                            const newVehicles = e.target.checked
-                                                                                ? [...formData.vehicles, v.id]
-                                                                                : formData.vehicles.filter(id => id !== v.id);
-                                                                            setFormData({ ...formData, vehicles: newVehicles });
-                                                                        }}
-                                                                    />
-                                                                    <span className="text-xs text-slate-300 font-medium truncate">{v.name}</span>
-                                                                </label>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-2 flex-1 pt-1">
-                                                    <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Personal</label>
-                                                    
-                                                    <div className="relative mb-2">
-                                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={12} />
-                                                        <input 
-                                                            type="text"
-                                                            placeholder="Buscar empleado..."
-                                                            className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-[10px] focus:border-blue-500/50 outline-none transition-colors"
-                                                            value={memberSearch}
-                                                            onChange={(e) => setMemberSearch(e.target.value)}
-                                                        />
-                                                    </div>
-
-                                                    <div className="glass rounded-xl p-3 h-32 overflow-y-auto custom-scrollbar space-y-1">
-                                                        {members
-                                                            .filter(m => m.sector === formData.section && m.name.toLowerCase().includes(memberSearch.toLowerCase()))
-                                                            .filter(m => {
-                                                                const isAlreadyInTask = formData.members.some(am => am.id === m.id);
-                                                                const originalTaskMember = editingTask?.members?.find((am: any) => am.id === m.id);
-                                                                const originalHoursInThisTask = originalTaskMember ? (originalTaskMember.hours || 8) : 0;
-                                                                const otherHours = (dailyMemberHours[formData.date]?.[m.id] || 0) - originalHoursInThisTask;
-                                                                
-                                                                return isAlreadyInTask || otherHours < 8;
-                                                            })
-                                                            .sort((a, b) => {
-                                                                const aChecked = formData.members.some(am => am.id === a.id);
-                                                                const bChecked = formData.members.some(am => am.id === b.id);
-                                                                if (aChecked && !bChecked) return -1;
-                                                                if (!aChecked && bChecked) return 1;
-                                                                return a.name.localeCompare(b.name);
-                                                            })
-                                                            .map(m => {
-                                                            const assignedMember = formData.members.find(am => am.id === m.id);
-                                                            const isChecked = !!assignedMember;
-                                                            return (
-                                                                <div key={m.id} className="flex items-center justify-between gap-3 px-3 py-2 hover:bg-white/10 rounded-lg transition-colors group/member">
-                                                                    <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500"
-                                                                            checked={isChecked}
-                                                                            onChange={(e) => {
-                                                                                const newMembers = e.target.checked
-                                                                                    ? [...formData.members, { id: m.id, hours: 8 }]
-                                                                                    : formData.members.filter(am => am.id !== m.id);
-                                                                                setFormData({
-                                                                                    ...formData,
-                                                                                    members: newMembers
-                                                                                });
-                                                                            }}
-                                                                        />
-                                                                        <span className="text-xs text-slate-300 font-medium truncate">{m.name}</span>
-                                                                    </label>
-                                                                    {isChecked && (
-                                                                        <div className="flex items-center gap-1 animate-in slide-in-from-right-2 duration-200">
-                                                                            <input
-                                                                                type="number"
-                                                                                step="0.5"
-                                                                                min="0"
-                                                                                className="w-12 h-6 bg-blue-500/10 border border-blue-500/30 rounded text-[10px] text-center font-bold text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                                                                                value={assignedMember.hours}
-                                                                                onChange={(e) => {
-                                                                                    const hours = parseFloat(e.target.value) || 0;
-                                                                                    const newMembers = formData.members.map(am =>
-                                                                                        am.id === m.id ? { ...am, hours } : am
-                                                                                    );
-                                                                                    setFormData({ ...formData, members: newMembers });
-                                                                                }}
-                                                                            />
-                                                                            <span className="text-[8px] font-bold text-slate-500 uppercase">h</span>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Bottom Section: Full Width Sub-tasks */}
-                                    {formData.date !== '' && (
-                                        <div className="p-4 bg-white/5 rounded-[2rem] border border-white/5 space-y-4">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/20">
-                                                        <Plus size={16} className="text-emerald-400" />
-                                                    </div>
-                                                    <h4 className="text-xs font-black uppercase tracking-widest text-emerald-400">Trabajos Adicionales / Sub-tareas</h4>
-                                                </div>
+                                        <div className="bg-white/5 p-6 border border-white/5 space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-400">TRABAJOS ADICIONALES</h4>
                                                 <button
                                                     type="button"
                                                     onClick={() => setFormData({ ...formData, additionalJobs: [...formData.additionalJobs, { description: '', client: '' }] })}
-                                                    className="px-4 py-2 bg-emerald-600/20 text-emerald-400 rounded-xl hover:bg-emerald-600/30 transition-all border border-emerald-500/30 font-bold text-xs flex items-center gap-2"
+                                                    className="text-[10px] font-black text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-widest flex items-center gap-1"
                                                 >
-                                                    <Plus size={14} /> Añadir Sub-tarea
+                                                    <Plus size={14} /> AÑADIR SUB-TAREA
                                                 </button>
                                             </div>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
                                                 {formData.additionalJobs.map((job, index) => (
-                                                    <div key={index} className="glass p-3 rounded-2xl relative border-white/5 animate-in zoom-in-95 duration-200">
+                                                    <div key={index} className="p-4 bg-white/5 border border-white/5 relative">
                                                         <button
                                                             type="button"
                                                             onClick={() => {
@@ -1373,14 +1234,14 @@ export const GanttPage: React.FC = () => {
                                                                 newJobs.splice(index, 1);
                                                                 setFormData({ ...formData, additionalJobs: newJobs });
                                                             }}
-                                                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                                                            className="absolute top-2 right-2 text-red-500 hover:text-red-400 transition-colors"
                                                         >
                                                             <Minus size={14} />
                                                         </button>
-                                                        <div className="space-y-3">
+                                                        <div className="space-y-2">
                                                             <input
-                                                                className="input-sm w-full bg-white/5 border-white/5"
-                                                                placeholder="Descripción del trabajo..."
+                                                                className="input w-full bg-white/5 text-xs"
+                                                                placeholder="Descripción..."
                                                                 value={job.description}
                                                                 onChange={(e) => {
                                                                     const newJobs = [...formData.additionalJobs];
@@ -1389,8 +1250,8 @@ export const GanttPage: React.FC = () => {
                                                                 }}
                                                             />
                                                             <input
-                                                                className="input-sm w-full bg-white/5 border-white/5"
-                                                                placeholder="Cliente de la sub-tarea..."
+                                                                className="input w-full bg-white/5 text-xs"
+                                                                placeholder="Cliente..."
                                                                 value={job.client}
                                                                 onChange={(e) => {
                                                                     const newJobs = [...formData.additionalJobs];
@@ -1402,47 +1263,166 @@ export const GanttPage: React.FC = () => {
                                                     </div>
                                                 ))}
                                                 {formData.additionalJobs.length === 0 && (
-                                                    <div className="col-span-full py-4 text-center text-slate-500 italic text-sm">
-                                                        No hay trabajos adicionales agregados a esta tarea.
-                                                    </div>
+                                                    <p className="col-span-full text-center py-4 text-slate-500 italic text-[10px] uppercase tracking-widest font-bold">Sin trabajos adicionales</p>
                                                 )}
                                             </div>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
 
-                                <div className="flex gap-4 pt-4 border-t border-white/5">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setIsTaskModalOpen(false);
-                                            setSelectedContext(null);
-                                            setEditingTask(null);
-                                        }}
-                                        className="btn btn-secondary flex-1 rounded-2xl"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button type="submit" className="btn btn-primary flex-[2] rounded-2xl shadow-blue-500/30 text-lg py-2">
-                                        {editingTask ? 'Guardar Cambios' : 'Asignar Tarea'}
-                                    </button>
+                                    {/* Column 2: Assignments & Hours */}
+                                    <div className="space-y-6">
+                                        <div className="bg-white/5 p-6 border border-white/5 space-y-4">
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-purple-400">CARGA DE HORAS</h4>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">TOTAL HORAS PREVISTAS</label>
+                                                <input
+                                                    type="number" step="0.1" 
+                                                    className="input w-full font-mono font-bold text-blue-400 text-xl"
+                                                    value={formData.totalHours}
+                                                    onChange={(e) => {
+                                                        const total = parseFloat(e.target.value) || 0;
+                                                        setFormData({ ...formData, totalHours: total, duration: total });
+                                                    }}
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-white/5 p-6 border border-white/5 space-y-4">
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-orange-400">ASIGNACIONES</h4>
+                                            
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">VEHÍCULOS</label>
+                                                <div className="bg-white/5 border border-white/5 p-2 h-32 overflow-y-auto custom-scrollbar space-y-1">
+                                                    {vehicles.map(v => {
+                                                        const isBusy = busyVehiclesOnDate.has(v.id);
+                                                        return (
+                                                            <label key={v.id} className={`flex items-center gap-3 px-3 py-2 border border-transparent transition-all ${isBusy ? 'opacity-30 cursor-not-allowed' : 'hover:border-white/10 hover:bg-white/5 cursor-pointer'}`}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="w-4 h-4 rounded-none border-white/20 bg-white/5 text-blue-500"
+                                                                    checked={formData.vehicles.includes(v.id)}
+                                                                    disabled={isBusy}
+                                                                    onChange={(e) => {
+                                                                        const newVehicles = e.target.checked
+                                                                            ? [...formData.vehicles, v.id]
+                                                                            : formData.vehicles.filter(id => id !== v.id);
+                                                                        setFormData({ ...formData, vehicles: newVehicles });
+                                                                    }}
+                                                                />
+                                                                <span className="text-[10px] font-bold text-slate-300 uppercase truncate">{v.name}</span>
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">PERSONAL</label>
+                                                <div className="relative mb-2">
+                                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                                                    <input 
+                                                        type="text"
+                                                        placeholder="BUSCAR EMPLEADO..."
+                                                        className="w-full bg-white/5 border border-white/10 px-9 py-2 text-[10px] font-bold outline-none transition-all"
+                                                        value={memberSearch}
+                                                        onChange={(e) => setMemberSearch(e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="bg-white/5 border border-white/5 p-2 h-48 overflow-y-auto custom-scrollbar space-y-1">
+                                                    {members
+                                                        .filter(m => m.sector === formData.section && m.name.toLowerCase().includes(memberSearch.toLowerCase()))
+                                                        .filter(m => {
+                                                            const isAlreadyInTask = formData.members.some(am => am.id === m.id);
+                                                            const originalTaskMember = editingTask?.members?.find((am: any) => am.id === m.id);
+                                                            const originalHoursInThisTask = originalTaskMember ? (originalTaskMember.hours || 8) : 0;
+                                                            const otherHours = (dailyMemberHours[formData.date]?.[m.id] || 0) - originalHoursInThisTask;
+                                                            return isAlreadyInTask || otherHours < 8;
+                                                        })
+                                                        .sort((a, b) => {
+                                                            const aChecked = formData.members.some(am => am.id === a.id);
+                                                            const bChecked = formData.members.some(am => am.id === b.id);
+                                                            if (aChecked && !bChecked) return -1;
+                                                            if (!aChecked && bChecked) return 1;
+                                                            return a.name.localeCompare(b.name);
+                                                        })
+                                                        .map(m => {
+                                                            const assignedMember = formData.members.find(am => am.id === m.id);
+                                                            const isChecked = !!assignedMember;
+                                                            return (
+                                                                <div key={m.id} className="flex items-center justify-between gap-3 px-3 py-2 border border-transparent hover:border-white/10 hover:bg-white/5 transition-all group/member">
+                                                                    <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            className="w-4 h-4 rounded-none border-white/20 bg-white/5 text-blue-500"
+                                                                            checked={isChecked}
+                                                                            onChange={(e) => {
+                                                                                const newMembers = e.target.checked
+                                                                                    ? [...formData.members, { id: m.id, hours: 8 }]
+                                                                                    : formData.members.filter(am => am.id !== m.id);
+                                                                                setFormData({ ...formData, members: newMembers });
+                                                                            }}
+                                                                        />
+                                                                        <span className="text-[10px] font-bold text-slate-300 uppercase truncate">{m.name}</span>
+                                                                    </label>
+                                                                    {isChecked && (
+                                                                        <div className="flex items-center gap-1">
+                                                                            <input
+                                                                                type="number" step="0.5" min="0"
+                                                                                className="w-12 h-6 bg-blue-500/10 border border-blue-500/30 rounded-none text-[10px] text-center font-bold text-blue-400 focus:outline-none"
+                                                                                value={assignedMember.hours}
+                                                                                onChange={(e) => {
+                                                                                    const hours = parseFloat(e.target.value) || 0;
+                                                                                    const newMembers = formData.members.map(am =>
+                                                                                        am.id === m.id ? { ...am, hours } : am
+                                                                                    );
+                                                                                    setFormData({ ...formData, members: newMembers });
+                                                                                }}
+                                                                            />
+                                                                            <span className="text-[8px] font-black text-slate-500 uppercase">H</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </form>
-                        </div>
+                            </div>
+
+                            <div className="flex gap-4 pt-6 border-t border-white/10">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsTaskModalOpen(false);
+                                        setSelectedContext(null);
+                                        setEditingTask(null);
+                                    }}
+                                    className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-bold transition-all border border-white/10 flex-1 uppercase tracking-widest text-xs"
+                                >
+                                    CANCELAR
+                                </button>
+                                <button type="submit" className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg shadow-blue-600/20 flex-[2] uppercase tracking-widest text-xs">
+                                    {editingTask ? 'GUARDAR CAMBIOS' : 'ASIGNAR TAREA'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                )
-            }
+                </div>
+            )}
 
             {
                 quickAddType === 'member' && (
-                    <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-                        <div className="glass p-8 rounded-[2.5rem] w-full max-w-sm space-y-6 shadow-2xl border-white/20">
-                            <h3 className="text-2xl font-bold flex items-center gap-2">
-                                <Users size={24} className="text-blue-500" /> Nuevo Integrante
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+                        <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-sm space-y-6 shadow-2xl border border-white/10">
+                            <h3 className="text-xl font-bold flex items-center gap-2">
+                                <Users size={20} className="text-blue-500" /> NUEVO INTEGRANTE
                             </h3>
                             <form onSubmit={handleQuickAddMember} className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-400 ml-1">Nombre</label>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nombre</label>
                                     <input
                                         className="input w-full"
                                         value={quickMemberData.name}
@@ -1450,8 +1430,8 @@ export const GanttPage: React.FC = () => {
                                         required
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-400 ml-1">Sector</label>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Sector</label>
                                     <select
                                         className="input w-full"
                                         value={quickMemberData.sector}
@@ -1468,8 +1448,8 @@ export const GanttPage: React.FC = () => {
                                         <option value="Corpóreas">Corpóreas</option>
                                     </select>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-400 ml-1">Rol</label>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Rol</label>
                                     <input
                                         className="input w-full"
                                         value={quickMemberData.role}
@@ -1478,8 +1458,8 @@ export const GanttPage: React.FC = () => {
                                     />
                                 </div>
                                 <div className="flex gap-4 pt-4">
-                                    <button type="button" onClick={() => setQuickAddType(null)} className="btn btn-secondary flex-1">Cancelar</button>
-                                    <button type="submit" className="btn btn-primary flex-1">Guardar</button>
+                                    <button type="button" onClick={() => setQuickAddType(null)} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-bold border border-white/10 transition-all flex-1">CANCELAR</button>
+                                    <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all flex-1">GUARDAR</button>
                                 </div>
                             </form>
                         </div>
@@ -1489,14 +1469,14 @@ export const GanttPage: React.FC = () => {
 
             {
                 quickAddType === 'vehicle' && (
-                    <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-                        <div className="glass p-8 rounded-[2.5rem] w-full max-w-sm space-y-6 shadow-2xl border-white/20">
-                            <h3 className="text-2xl font-bold flex items-center gap-2">
-                                <Truck size={24} className="text-orange-500" /> Nuevo Vehículo
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+                        <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-sm space-y-6 shadow-2xl border border-white/10">
+                            <h3 className="text-xl font-bold flex items-center gap-2">
+                                <Truck size={20} className="text-orange-500" /> NUEVO VEHÍCULO
                             </h3>
                             <form onSubmit={handleQuickAddVehicle} className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-400 ml-1">Modelo / Nombre</label>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Modelo / Nombre</label>
                                     <input
                                         className="input w-full"
                                         value={quickVehicleData.name}
@@ -1504,8 +1484,8 @@ export const GanttPage: React.FC = () => {
                                         required
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-400 ml-1">Patente</label>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Patente</label>
                                     <input
                                         className="input w-full"
                                         value={quickVehicleData.plate}
@@ -1514,8 +1494,8 @@ export const GanttPage: React.FC = () => {
                                     />
                                 </div>
                                 <div className="flex gap-4 pt-4">
-                                    <button type="button" onClick={() => setQuickAddType(null)} className="btn btn-secondary flex-1">Cancelar</button>
-                                    <button type="submit" className="btn btn-primary flex-1">Guardar</button>
+                                    <button type="button" onClick={() => setQuickAddType(null)} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-bold border border-white/10 transition-all flex-1">CANCELAR</button>
+                                    <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all flex-1">GUARDAR</button>
                                 </div>
                             </form>
                         </div>
@@ -1524,19 +1504,19 @@ export const GanttPage: React.FC = () => {
             }
             {
                 isErrorModalOpen && error && (
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-[100] p-4 animate-in fade-in zoom-in duration-300">
-                        <div className="glass p-10 rounded-[3rem] w-full max-w-md space-y-8 shadow-2xl border-white/20 text-center relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]"></div>
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+                        <div className="bg-[#0f172a] p-10 rounded-sm w-full max-w-md space-y-8 shadow-2xl border border-white/10 text-center relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
 
-                            <div className="mx-auto w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center border border-red-500/20">
-                                <Plus size={48} className="text-red-500 rotate-45" />
+                            <div className="mx-auto w-20 h-20 bg-red-500/10 rounded-none flex items-center justify-center border border-red-500/20">
+                                <Plus size={32} className="text-red-500 rotate-45" />
                             </div>
 
                             <div className="space-y-4">
-                                <h3 className="text-3xl font-black tracking-tight text-white uppercase italic">
-                                    Límite de horas <span className="text-red-500">Excedido</span>
+                                <h3 className="text-2xl font-black tracking-tight text-white uppercase italic">
+                                    LÍMITE DE HORAS <span className="text-red-500">EXCEDIDO</span>
                                 </h3>
-                                <p className="text-slate-300 text-lg leading-relaxed px-4">
+                                <p className="text-slate-400 text-sm leading-relaxed">
                                     {error}
                                 </p>
                             </div>
@@ -1546,9 +1526,9 @@ export const GanttPage: React.FC = () => {
                                     setIsErrorModalOpen(false);
                                     clearError();
                                 }}
-                                className="w-full btn bg-red-500 hover:bg-red-600 text-white rounded-[1.5rem] py-5 text-xl font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all"
+                                className="w-full px-6 py-4 bg-red-500 hover:bg-red-600 text-white font-bold transition-all"
                             >
-                                Entendido
+                                ENTENDIDO
                             </button>
                         </div>
                     </div>
@@ -1558,7 +1538,7 @@ export const GanttPage: React.FC = () => {
 
             {/* Bottom Drawer: Tareas Pendientes */}
             <div
-                className={`relative mx-10 mb-6 z-[60] glass rounded-[2.5rem] border border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 ease-in-out ${isResizing ? 'duration-0' : ''}`}
+                className={`relative mx-10 mb-6 z-[60] bg-[#1e293b]/90 backdrop-blur-sm rounded-sm border border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 ease-in-out ${isResizing ? 'duration-0' : ''}`}
                 style={{ height: isPendingTasksOpen ? `${pendingTasksHeight}px` : '64px' }}
                 onDragOver={(e) => {
                     const isTaskDrag = Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'taskid');
@@ -1633,11 +1613,11 @@ export const GanttPage: React.FC = () => {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/search:text-blue-400 transition-colors" size={14} />
                             <input
                                 type="text"
-                                placeholder="Buscar OP o Cliente..."
+                                placeholder="BUSCAR OP O CLIENTE..."
                                 value={pendingSearch}
                                 onChange={(e) => setPendingSearch(e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all w-40 lg:w-60"
+                                className="bg-white/5 border border-white/10 rounded-none pl-9 pr-4 py-2 text-[10px] font-bold text-white focus:outline-none transition-all w-40 lg:w-60"
                             />
                         </div>
                         <button
@@ -1661,11 +1641,11 @@ export const GanttPage: React.FC = () => {
                                 });
                                 setIsTaskModalOpen(true);
                             }}
-                            className="bg-blue-600/20 text-blue-400 px-4 py-2 rounded-xl border border-blue-500/30 text-sm font-bold hover:bg-blue-600/30 transition-all flex items-center gap-2"
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 text-[10px] font-black transition-all flex items-center gap-2"
                         >
-                            <Plus size={16} /> Nuevo Pendiente
+                            <Plus size={14} /> NUEVO PENDIENTE
                         </button>
-                        <div className="p-2 hover:bg-white/10 rounded-full transition-all text-slate-400">
+                        <div className="p-2 hover:bg-white/10 transition-all text-slate-400">
                             {isPendingTasksOpen ? <Plus className="rotate-45" size={24} /> : <Plus className="rotate-180" size={24} />}
                         </div>
                     </div>
@@ -1697,10 +1677,10 @@ export const GanttPage: React.FC = () => {
                                     onDragEnd={handleDragEnd}
                                     onContextMenu={(e) => handleContextMenu(e, task)}
                                     onClick={() => handleEditTask(task)}
-                                    className={`group/item relative shadow-lg rounded-2xl p-4 transition-all hover:scale-[1.02] cursor-pointer border ${
+                                    className={`group/item relative shadow-lg rounded-none p-4 transition-all cursor-pointer border ${
                                         isMatch 
-                                            ? 'bg-emerald-500/20 border-emerald-500/50 shadow-emerald-500/10' 
-                                            : 'bg-slate-800/40 border-white/10 hover:bg-slate-800/60'
+                                            ? 'bg-emerald-500/10 border-emerald-500/40' 
+                                            : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
                                     }`}
                                 >
                                     <div className="flex justify-between items-start mb-2">
@@ -1745,11 +1725,11 @@ export const GanttPage: React.FC = () => {
             {/* Reminders List Modal */}
             {
                 isRemindersListOpen && (
-                    <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-                        <div className="glass p-8 rounded-[2.5rem] w-full max-w-2xl space-y-6 shadow-2xl border-white/20">
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+                        <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-2xl space-y-6 shadow-2xl border border-white/10">
                             <div className="flex justify-between items-center">
-                                <h3 className="text-2xl font-bold flex items-center gap-2">
-                                    <Bell size={24} className="text-purple-500" /> Recordatorios / Plantillas
+                                <h3 className="text-xl font-bold flex items-center gap-2">
+                                    <Bell size={20} className="text-purple-500" /> RECORDATORIOS / PLANTILLAS
                                 </h3>
                                 <div className="flex gap-2">
                                     <button
@@ -1823,10 +1803,10 @@ export const GanttPage: React.FC = () => {
             {/* Add/Edit Reminder Modal */}
             {
                 quickAddType === 'reminder' && (
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[80] p-4">
-                        <div className="glass p-8 rounded-[2.5rem] w-full max-w-md space-y-6 shadow-2xl border-white/20">
-                            <h3 className="text-2xl font-bold flex items-center gap-2">
-                                <Bell size={24} className="text-purple-500" /> {editingReminder ? 'Editar Recordatorio' : 'Nuevo Recordatorio'}
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[80] p-4">
+                        <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-md space-y-6 shadow-2xl border border-white/10">
+                            <h3 className="text-xl font-bold flex items-center gap-2">
+                                <Bell size={20} className="text-purple-500" /> {editingReminder ? 'EDITAR RECORDATORIO' : 'NUEVO RECORDATORIO'}
                             </h3>
                             <form onSubmit={handleReminderSubmit} className="space-y-4">
                                 <div className="grid grid-cols-3 gap-4">
@@ -1880,8 +1860,8 @@ export const GanttPage: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="flex gap-4 pt-4">
-                                    <button type="button" onClick={() => setQuickAddType(null)} className="btn btn-secondary flex-1">Cancelar</button>
-                                    <button type="submit" className="btn bg-purple-600 hover:bg-purple-700 text-white flex-1">Guardar</button>
+                                    <button type="button" onClick={() => setQuickAddType(null)} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white font-bold border border-white/10 transition-all flex-1">CANCELAR</button>
+                                    <button type="submit" className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold transition-all flex-1">GUARDAR</button>
                                 </div>
                             </form>
                         </div>
@@ -1892,7 +1872,7 @@ export const GanttPage: React.FC = () => {
             {/* Context Menu */}
             {contextMenu && (
                 <div
-                    className="fixed z-[200] bg-slate-800/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl py-1 w-48 animate-in fade-in zoom-in duration-200"
+                    className="fixed z-[200] bg-[#1e293b] border border-white/10 rounded-sm shadow-2xl py-1 w-48 animate-in fade-in duration-200"
                     style={{ left: contextMenu.x, top: contextMenu.y }}
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -1967,11 +1947,11 @@ export const GanttPage: React.FC = () => {
 
             {/* Fragment Modal */}
             {isFragmentModalOpen && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[150] p-4">
-                    <div className="glass p-8 rounded-[2.5rem] w-full max-w-md space-y-6 shadow-2xl border-white/20 animate-in slide-in-from-bottom duration-300">
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[150] p-4">
+                    <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-md space-y-6 shadow-2xl border border-white/10 animate-in slide-in-from-bottom duration-300">
                         <div className="flex justify-between items-center">
-                            <h3 className="text-2xl font-bold flex items-center gap-2">
-                                <LayoutGrid size={24} className="text-blue-500" /> Fragmentar Tarea
+                            <h3 className="text-xl font-bold flex items-center gap-2">
+                                <LayoutGrid size={20} className="text-blue-500" /> FRAGMENTAR TAREA
                             </h3>
                         </div>
 
@@ -1993,21 +1973,21 @@ export const GanttPage: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="flex gap-3 pt-4">
+                        <div className="flex gap-3 pt-6">
                             <button
                                 onClick={() => {
                                     setIsFragmentModalOpen(false);
                                     setFragmentTargetTask(null);
                                 }}
-                                className="flex-1 px-6 py-4 rounded-2xl font-bold text-slate-400 hover:bg-white/5 transition-all text-sm border border-white/10"
+                                className="flex-1 px-4 py-3 bg-white/5 hover:bg-white/10 text-white font-bold transition-all text-xs border border-white/10"
                             >
-                                Cancelar
+                                CANCELAR
                             </button>
                             <button
                                 onClick={confirmFragment}
-                                className="flex-[2] bg-blue-600 hover:bg-blue-500 text-white px-6 py-4 rounded-2xl font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95 text-sm flex items-center justify-center gap-2"
+                                className="flex-[2] bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 font-bold transition-all shadow-lg shadow-blue-500/20 text-xs flex items-center justify-center gap-2"
                             >
-                                Confirmar Fragmentación
+                                CONFIRMAR FRAGMENTACIÓN
                             </button>
                         </div>
                     </div>

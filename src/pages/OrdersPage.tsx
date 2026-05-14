@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer } from 'lucide-react';
 import { sileo } from 'sileo';
 import { convertToWebP } from '../utils/fileUtils';
+import { printOrderSummaryPDF } from '../utils/reportUtils';
 
 export const OrdersPage: React.FC = () => {
     const { productionOrders, addProductionOrder, updateProductionOrder, deleteProductionOrder, uploadFile } = useStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState<string | null>(null);
+    const [viewingOrder, setViewingOrder] = useState<any | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [isPrinting, setIsPrinting] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [formData, setFormData] = useState({
         opNumber: '',
@@ -159,6 +162,17 @@ export const OrdersPage: React.FC = () => {
         }
     };
 
+    const handlePrintSummary = async (order: any) => {
+        setIsPrinting(true);
+        try {
+            await printOrderSummaryPDF(order);
+        } catch (err: any) {
+            sileo.error({ title: 'Error al generar PDF', description: err.message });
+        } finally {
+            setIsPrinting(false);
+        }
+    };
+
     return (
         <div className="h-full flex flex-col bg-gray-900">
             <div className="sticky top-0 z-30 bg-gray-900/80 backdrop-blur-md px-10 py-6 border-b border-white/5">
@@ -220,10 +234,13 @@ export const OrdersPage: React.FC = () => {
                                                 <span className="font-mono font-bold text-blue-400">{order.opNumber}</span>
                                             </td>
                                             <td className="px-8 py-4">
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-white text-sm">{order.client}</span>
+                                                <button 
+                                                    onClick={() => setViewingOrder(order)}
+                                                    className="flex flex-col text-left group/client hover:opacity-80 transition-all"
+                                                >
+                                                    <span className="font-bold text-white text-sm group-hover/client:text-blue-400 transition-colors underline decoration-blue-500/30 underline-offset-4">{order.client}</span>
                                                     <span className="text-[10px] text-slate-500 truncate max-w-[200px]">{order.address || 'Sin dirección'}</span>
-                                                </div>
+                                                </button>
                                             </td>
                                             <td className="px-8 py-4">
                                                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/5 text-slate-400 border border-white/10">
@@ -316,15 +333,15 @@ export const OrdersPage: React.FC = () => {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-                    <div className="glass p-8 rounded-[2.5rem] w-full max-w-2xl shadow-2xl border border-white/10 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-2xl shadow-2xl border border-white/10 max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <div className="flex justify-between items-center mb-8">
-                            <h3 className="text-2xl font-bold flex items-center gap-3">
-                                {isEditing ? <Edit2 className="text-blue-400" /> : <Plus className="text-blue-400" />}
-                                {isEditing ? 'Editar Orden de Producción' : 'Nueva Orden de Producción'}
+                            <h3 className="text-xl font-bold flex items-center gap-3">
+                                {isEditing ? <Edit2 className="text-blue-400" size={20} /> : <Plus className="text-blue-400" size={20} />}
+                                {isEditing ? 'EDITAR ORDEN DE PRODUCCIÓN' : 'NUEVA ORDEN DE PRODUCCIÓN'}
                             </h3>
-                            <button onClick={closeModal} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white">
-                                <X size={24} />
+                            <button onClick={closeModal} className="p-2 hover:bg-white/5 transition-colors text-slate-400 hover:text-white">
+                                <X size={20} />
                             </button>
                         </div>
 
@@ -526,15 +543,135 @@ export const OrdersPage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={closeModal}
-                                    className="btn btn-secondary flex-1"
+                                    className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white font-bold transition-all border border-white/10"
                                 >
-                                    Cancelar
+                                    CANCELAR
                                 </button>
-                                <button type="submit" className="btn btn-primary flex-1">
-                                    {isEditing ? 'Guardar Cambios' : 'Crear Orden'}
+                                <button
+                                    type="submit"
+                                    className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg shadow-blue-600/20"
+                                >
+                                    {isEditing ? 'GUARDAR CAMBIOS' : 'CREAR ORDEN'}
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* View Details Modal */}
+            {viewingOrder && (
+                <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#0f172a] p-10 rounded-sm w-full max-w-3xl shadow-2xl border border-white/10 max-h-[90vh] overflow-y-auto custom-scrollbar relative">
+                        <button 
+                            onClick={() => setViewingOrder(null)} 
+                            className="absolute top-8 right-8 p-3 hover:bg-white/5 transition-colors text-slate-400 hover:text-white"
+                        >
+                            <X size={24} />
+                        </button>
+
+                        <div className="mb-10">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-2 inline-block">
+                                DETALLES DE ORDEN DE PRODUCCIÓN
+                            </span>
+                            <h3 className="text-3xl font-black tracking-tight text-white flex items-center gap-4">
+                                OP <span className="text-blue-400">#{viewingOrder.opNumber}</span>
+                            </h3>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-10">
+                            <div className="space-y-8">
+                                <div>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">CLIENTE</label>
+                                    <p className="text-xl font-bold text-white">{viewingOrder.client}</p>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">VENDEDOR</label>
+                                    <p className="text-lg text-slate-300 font-medium">{viewingOrder.seller}</p>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">PRECIO VENTA</label>
+                                    <p className="text-3xl font-black text-emerald-400">
+                                        {viewingOrder.currency === 'USD' ? 'U$D' : '$U'} {viewingOrder.price?.toLocaleString('es-UY')}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-8">
+                                <div>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">DIRECCIÓN</label>
+                                    <p className="text-lg text-slate-300">{viewingOrder.address || 'No especificada'}</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">CATEGORÍA</label>
+                                        <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">
+                                            {viewingOrder.category}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">ESTADO</label>
+                                        <span className="text-blue-400 text-xs font-bold uppercase tracking-wider">
+                                            {viewingOrder.status}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-12 pt-10 border-t border-white/5 space-y-6">
+                            <div>
+                                <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">DESCRIPCIÓN DEL PROYECTO</label>
+                                <div className="p-6 bg-white/[0.02] border border-white/5 text-slate-300 whitespace-pre-wrap leading-relaxed">
+                                    {viewingOrder.description || 'Sin descripción detallada.'}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">ARCHIVOS ADJUNTOS</label>
+                                {viewingOrder.files?.length > 0 ? (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {viewingOrder.files.map((file: string, i: number) => (
+                                            <a 
+                                                key={i} 
+                                                href={file} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 hover:bg-blue-600/10 hover:border-blue-500/30 transition-all"
+                                            >
+                                                <FileText size={20} className="text-blue-400" />
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-sm font-bold text-white truncate">Archivo {i + 1}</span>
+                                                    <span className="text-[10px] text-slate-500 uppercase tracking-tighter">DESCARGAR</span>
+                                                </div>
+                                            </a>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-slate-500 italic">No hay archivos adjuntos.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="mt-12 flex justify-end gap-3">
+                            <button 
+                                onClick={() => handlePrintSummary(viewingOrder)}
+                                disabled={isPrinting}
+                                className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all border border-blue-500/30 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {isPrinting ? (
+                                    <><Loader2 size={16} className="animate-spin" /> GENERANDO PDF...</>
+                                ) : (
+                                    <><Printer size={16} /> IMPRIMIR RESUMEN</>
+                                )}
+                            </button>
+                            <button 
+                                onClick={() => setViewingOrder(null)}
+                                className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white font-bold transition-all border border-white/10"
+                            >
+                                CERRAR
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
