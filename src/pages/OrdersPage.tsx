@@ -181,8 +181,8 @@ export const OrdersPage: React.FC = () => {
     };
 
     return (
-        <div className="h-full flex flex-col bg-gray-900">
-            <div className="sticky top-0 z-30 bg-gray-900/80 backdrop-blur-md px-10 py-6 border-b border-white/5">
+        <div className="h-full flex flex-col bg-slate-50 dark:bg-gray-900">
+            <div className="sticky top-0 z-30 bg-white/95 dark:bg-gray-900/80 backdrop-blur-md px-10 py-6 border-b border-slate-200 dark:border-white/5">
                 <div className="flex justify-between items-center gap-6">
                     <div className="flex items-center gap-8 flex-1">
                         <h2 className="text-2xl font-bold whitespace-nowrap flex items-center gap-3">
@@ -341,7 +341,7 @@ export const OrdersPage: React.FC = () => {
             {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-2xl shadow-2xl border border-white/10 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                    <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-[80vw] shadow-2xl border border-white/10 max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <div className="flex justify-between items-center mb-8">
                             <h3 className="text-xl font-bold flex items-center gap-3">
                                 {isEditing ? <Edit2 className="text-blue-400" size={20} /> : <Plus className="text-blue-400" size={20} />}
@@ -648,7 +648,7 @@ export const OrdersPage: React.FC = () => {
             {/* View Details Modal */}
             {viewingOrder && (
                 <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4">
-                    <div className="bg-[#0f172a] p-10 rounded-sm w-full max-w-3xl shadow-2xl border border-white/10 max-h-[90vh] overflow-y-auto custom-scrollbar relative">
+                    <div className="bg-[#0f172a] p-10 rounded-none w-full max-w-full shadow-2xl border-x border-white/10 h-full max-h-screen overflow-y-auto custom-scrollbar relative">
                         <button 
                             onClick={() => setViewingOrder(null)} 
                             className="absolute top-8 right-8 p-3 hover:bg-white/5 transition-colors text-slate-400 hover:text-white"
@@ -665,7 +665,7 @@ export const OrdersPage: React.FC = () => {
                             </h3>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-10">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                             <div className="space-y-8">
                                 <div>
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">CLIENTE</label>
@@ -674,6 +674,13 @@ export const OrdersPage: React.FC = () => {
                                 <div>
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">VENDEDOR</label>
                                     <p className="text-lg text-slate-300 font-medium">{viewingOrder.seller}</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-8">
+                                <div>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">DIRECCIÓN</label>
+                                    <p className="text-lg text-slate-300">{viewingOrder.address || 'No especificada'}</p>
                                 </div>
                                 <div>
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">PRECIO VENTA</label>
@@ -685,80 +692,85 @@ export const OrdersPage: React.FC = () => {
 
                             <div className="space-y-8">
                                 <div>
-                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">DIRECCIÓN</label>
-                                    <p className="text-lg text-slate-300">{viewingOrder.address || 'No especificada'}</p>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">CATEGORÍA</label>
+                                    <span className="text-slate-400 text-xs font-bold uppercase tracking-wider block bg-white/5 px-3 py-1 rounded-sm border border-white/5 w-fit">
+                                        {viewingOrder.category}
+                                    </span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">CATEGORÍA</label>
-                                        <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">
-                                            {viewingOrder.category}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">ESTADO</label>
-                                        <span className="text-blue-400 text-xs font-bold uppercase tracking-wider">
-                                            {viewingOrder.status}
-                                        </span>
-                                    </div>
+                                <div>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">ESTADO</label>
+                                    <span className="text-blue-400 text-xs font-bold uppercase tracking-wider block bg-blue-400/10 px-3 py-1 rounded-sm border border-blue-400/20 w-fit">
+                                        {viewingOrder.status}
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="mt-12 pt-10 border-t border-white/5 space-y-6">
-                            <div>
-                                <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">DESCRIPCIÓN DEL PROYECTO</label>
-                                <div className="p-6 bg-white/[0.02] border border-white/5 text-slate-300 whitespace-pre-wrap leading-relaxed">
-                                    {viewingOrder.description || 'Sin descripción detallada.'}
+                        <div className="mt-12 pt-10 border-t border-white/5 grid grid-cols-1 lg:grid-cols-2 gap-10">
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">DESCRIPCIÓN DEL PROYECTO</label>
+                                    <div className="p-6 bg-white/[0.02] border border-white/5 text-slate-300 whitespace-pre-wrap leading-relaxed min-h-[150px]">
+                                        {viewingOrder.description || 'Sin descripción detallada.'}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">ARCHIVOS ADJUNTOS</label>
+                                    {viewingOrder.files?.length > 0 ? (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {viewingOrder.files.map((file: string, i: number) => (
+                                                <a 
+                                                    key={i} 
+                                                    href={file} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 hover:bg-blue-600/10 hover:border-blue-500/30 transition-all rounded-sm group"
+                                                >
+                                                    <FileText size={16} className="text-blue-400 group-hover:scale-110 transition-transform" />
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="text-xs font-bold text-white truncate">Adjunto {i + 1}</span>
+                                                        <span className="text-[9px] text-slate-500 uppercase tracking-tighter">VER ARCHIVO</span>
+                                                    </div>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-slate-500 italic">No hay archivos adjuntos.</p>
+                                    )}
                                 </div>
                             </div>
 
-                            {viewingOrder.comments?.length > 0 && (
-                                <div>
-                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">COMENTARIOS DEL USUARIO</label>
-                                    <div className="space-y-3">
-                                        {[...viewingOrder.comments].reverse().map((c: any, i: number) => (
-                                            <div key={i} className="p-4 bg-white/[0.02] border border-white/5 space-y-2">
-                                                <p className="text-sm text-slate-200">{c.text}</p>
-                                                <span className="text-[9px] font-bold text-slate-500 uppercase block">
-                                                    {new Date(c.date).toLocaleString('es-UY', { 
-                                                        day: '2-digit', month: '2-digit', year: 'numeric', 
-                                                        hour: '2-digit', minute: '2-digit' 
-                                                    })}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div>
-                                <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">ARCHIVOS ADJUNTOS</label>
-                                {viewingOrder.files?.length > 0 ? (
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {viewingOrder.files.map((file: string, i: number) => (
-                                            <a 
-                                                key={i} 
-                                                href={file} 
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 hover:bg-blue-600/10 hover:border-blue-500/30 transition-all"
-                                            >
-                                                <FileText size={20} className="text-blue-400" />
-                                                <div className="flex flex-col min-w-0">
-                                                    <span className="text-sm font-bold text-white truncate">Archivo {i + 1}</span>
-                                                    <span className="text-[10px] text-slate-500 uppercase tracking-tighter">DESCARGAR</span>
+                            <div className="space-y-6">
+                                {viewingOrder.comments?.length > 0 ? (
+                                    <div>
+                                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">COMENTARIOS DEL USUARIO</label>
+                                        <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                                            {[...viewingOrder.comments].reverse().map((c: any, i: number) => (
+                                                <div key={i} className="p-4 bg-white/[0.02] border border-white/5 space-y-2 rounded-sm">
+                                                    <p className="text-sm text-slate-200 leading-relaxed">{c.text}</p>
+                                                    <span className="text-[9px] font-bold text-slate-500 uppercase block">
+                                                        {new Date(c.date).toLocaleString('es-UY', { 
+                                                            day: '2-digit', month: '2-digit', year: 'numeric', 
+                                                            hour: '2-digit', minute: '2-digit' 
+                                                        })}
+                                                    </span>
                                                 </div>
-                                            </a>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-slate-500 italic">No hay archivos adjuntos.</p>
+                                    <div>
+                                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">COMENTARIOS DEL USUARIO</label>
+                                        <div className="p-6 bg-white/[0.01] border border-dashed border-white/5 text-slate-500 italic text-sm text-center rounded-sm">
+                                            No hay comentarios registrados.
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         </div>
 
-                        <div className="mt-12 flex justify-end gap-3">
+                        <div className="mt-12 pt-8 border-t border-white/5 flex justify-end gap-3">
                             <button 
                                 onClick={() => handlePrintSummary(viewingOrder)}
                                 disabled={isPrinting}

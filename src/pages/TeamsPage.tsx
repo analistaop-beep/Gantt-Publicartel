@@ -79,7 +79,7 @@ export const TeamsPage: React.FC = () => {
 
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="glass p-8 rounded-[1rem] w-full max-w-2xl max-h-[90vh] overflow-auto space-y-6">
+                    <div className="glass p-8 rounded-[1rem] w-full max-w-[80vw] max-h-[90vh] overflow-auto space-y-6">
                         <h3 className="text-2xl font-bold">{editingId ? 'Editar' : 'Nuevo'} Equipo</h3>
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">

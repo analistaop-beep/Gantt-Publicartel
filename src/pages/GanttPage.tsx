@@ -1078,7 +1078,7 @@ export const GanttPage: React.FC = () => {
             {/* Modals */}
             {isTaskModalOpen && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-                    <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl border border-white/10">
+                    <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-[80vw] max-h-[90vh] flex flex-col shadow-2xl border border-white/10">
                         <div className="flex justify-between items-center mb-6">
                             <div>
                                 <h3 className="text-xl font-bold flex items-center gap-2">
@@ -1107,7 +1107,7 @@ export const GanttPage: React.FC = () => {
                             </button>
                         </div>
 
-                        <form onSubmit={handleTaskSubmit} className="flex flex-col gap-6 overflow-hidden">
+                        <form onSubmit={handleTaskSubmit} className="flex flex-col h-full overflow-hidden">
                             <div className="flex-1 pr-2 overflow-y-auto custom-scrollbar pb-1 space-y-6">
                                 {/* Top Section: Grid of 2 or 3 columns depending on context */}
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1212,113 +1212,84 @@ export const GanttPage: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="bg-white/5 p-6 border border-white/5 space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-400">TRABAJOS ADICIONALES</h4>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setFormData({ ...formData, additionalJobs: [...formData.additionalJobs, { description: '', client: '' }] })}
-                                                    className="text-[10px] font-black text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-widest flex items-center gap-1"
-                                                >
-                                                    <Plus size={14} /> AÑADIR SUB-TAREA
-                                                </button>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-                                                {formData.additionalJobs.map((job, index) => (
-                                                    <div key={index} className="p-4 bg-white/5 border border-white/5 relative">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const newJobs = [...formData.additionalJobs];
-                                                                newJobs.splice(index, 1);
-                                                                setFormData({ ...formData, additionalJobs: newJobs });
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="bg-blue-500/5 p-6 border border-blue-500/10 space-y-4">
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400">CARGA DE HORAS</h4>
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">TOTAL HORAS PREVISTAS</label>
+                                                    <input
+                                                            type="number" step="0.1" 
+                                                            className="input w-full font-mono font-bold text-emerald-400 text-xl"
+                                                            value={formData.totalHours}
+                                                            onChange={(e) => {
+                                                                const total = parseFloat(e.target.value) || 0;
+                                                                setFormData({ ...formData, totalHours: total, duration: total });
                                                             }}
-                                                            className="absolute top-2 right-2 text-red-500 hover:text-red-400 transition-colors"
-                                                        >
-                                                            <Minus size={14} />
-                                                        </button>
-                                                        <div className="space-y-2">
-                                                            <input
-                                                                className="input w-full bg-white/5 text-xs"
-                                                                placeholder="Descripción..."
-                                                                value={job.description}
-                                                                onChange={(e) => {
-                                                                    const newJobs = [...formData.additionalJobs];
-                                                                    newJobs[index].description = e.target.value;
-                                                                    setFormData({ ...formData, additionalJobs: newJobs });
-                                                                }}
-                                                            />
-                                                            <input
-                                                                className="input w-full bg-white/5 text-xs"
-                                                                placeholder="Cliente..."
-                                                                value={job.client}
-                                                                onChange={(e) => {
-                                                                    const newJobs = [...formData.additionalJobs];
-                                                                    newJobs[index].client = e.target.value;
-                                                                    setFormData({ ...formData, additionalJobs: newJobs });
-                                                                }}
-                                                            />
-                                                        </div>
+                                                            required
+                                                        />
                                                     </div>
-                                                ))}
-                                                {formData.additionalJobs.length === 0 && (
-                                                    <p className="col-span-full text-center py-4 text-slate-500 italic text-[10px] uppercase tracking-widest font-bold">Sin trabajos adicionales</p>
-                                                )}
+                                                </div>
+
+                                                <div className="bg-orange-500/5 p-6 border border-orange-500/10 space-y-4">
+                                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-orange-400">VEHÍCULOS ASIGNADOS</h4>
+                                                    <div className="space-y-2">
+                                                        <select 
+                                                            className="input w-full"
+                                                            value=""
+                                                            onChange={(e) => {
+                                                                const vehicleId = e.target.value;
+                                                                if (vehicleId && !formData.vehicles.includes(vehicleId)) {
+                                                                    setFormData({ ...formData, vehicles: [...formData.vehicles, vehicleId] });
+                                                                }
+                                                            }}
+                                                        >
+                                                            <option value="">AÑADIR VEHÍCULO...</option>
+                                                            {vehicles.map(v => {
+                                                                const isBusy = busyVehiclesOnDate.has(v.id);
+                                                                const isSelected = formData.vehicles.includes(v.id);
+                                                                return (
+                                                                    <option 
+                                                                        key={v.id} 
+                                                                        value={v.id} 
+                                                                        disabled={isBusy || isSelected}
+                                                                    >
+                                                                        {v.name} {isBusy ? '(OCUPADO)' : ''}
+                                                                    </option>
+                                                                );
+                                                            })}
+                                                        </select>
+                                                        
+                                                        <div className="flex flex-wrap gap-2 min-h-[40px]">
+                                                            {formData.vehicles.map(vId => {
+                                                                const vehicle = vehicles.find(v => v.id === vId);
+                                                                if (!vehicle) return null;
+                                                                return (
+                                                                    <div key={vId} className="flex items-center gap-2 px-2 py-1 bg-white/5 border border-white/10 text-[10px] font-bold text-slate-300 uppercase">
+                                                                        {vehicle.name}
+                                                                        <button 
+                                                                            type="button"
+                                                                            onClick={() => setFormData({ ...formData, vehicles: formData.vehicles.filter(id => id !== vId) })}
+                                                                            className="text-red-500 hover:text-red-400"
+                                                                        >
+                                                                            <Plus size={12} className="rotate-45" />
+                                                                        </button>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        {formData.vehicles.length === 0 && (
+                                                            <span className="text-[9px] text-slate-500 italic mt-2">Sin vehículos seleccionados</span>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Column 2: Assignments & Hours */}
+                                    {/* Column 2: Personnel */}
                                     <div className="space-y-6">
                                         <div className="bg-white/5 p-6 border border-white/5 space-y-4">
-                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-purple-400">CARGA DE HORAS</h4>
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">TOTAL HORAS PREVISTAS</label>
-                                                <input
-                                                    type="number" step="0.1" 
-                                                    className="input w-full font-mono font-bold text-blue-400 text-xl"
-                                                    value={formData.totalHours}
-                                                    onChange={(e) => {
-                                                        const total = parseFloat(e.target.value) || 0;
-                                                        setFormData({ ...formData, totalHours: total, duration: total });
-                                                    }}
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-white/5 p-6 border border-white/5 space-y-4">
-                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-orange-400">ASIGNACIONES</h4>
-                                            
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-purple-400">PERSONAL ASIGNADO</h4>
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">VEHÍCULOS</label>
-                                                <div className="bg-white/5 border border-white/5 p-2 h-32 overflow-y-auto custom-scrollbar space-y-1">
-                                                    {vehicles.map(v => {
-                                                        const isBusy = busyVehiclesOnDate.has(v.id);
-                                                        return (
-                                                            <label key={v.id} className={`flex items-center gap-3 px-3 py-2 border border-transparent transition-all ${isBusy ? 'opacity-30 cursor-not-allowed' : 'hover:border-white/10 hover:bg-white/5 cursor-pointer'}`}>
-                                                                <input
-                                                                    type="checkbox"
-                                                                    className="w-4 h-4 rounded-none border-white/20 bg-white/5 text-blue-500"
-                                                                    checked={formData.vehicles.includes(v.id)}
-                                                                    disabled={isBusy}
-                                                                    onChange={(e) => {
-                                                                        const newVehicles = e.target.checked
-                                                                            ? [...formData.vehicles, v.id]
-                                                                            : formData.vehicles.filter(id => id !== v.id);
-                                                                        setFormData({ ...formData, vehicles: newVehicles });
-                                                                    }}
-                                                                />
-                                                                <span className="text-[10px] font-bold text-slate-300 uppercase truncate">{v.name}</span>
-                                                            </label>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">PERSONAL</label>
                                                 <div className="relative mb-2">
                                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
                                                     <input 
@@ -1329,7 +1300,7 @@ export const GanttPage: React.FC = () => {
                                                         onChange={(e) => setMemberSearch(e.target.value)}
                                                     />
                                                 </div>
-                                                <div className="bg-white/5 border border-white/5 p-2 h-48 overflow-y-auto custom-scrollbar space-y-1">
+                                                <div className="bg-white/5 border border-white/5 p-2 h-[600px] overflow-y-auto custom-scrollbar space-y-1">
                                                     {members
                                                         .filter(m => m.sector === formData.section && m.name.toLowerCase().includes(memberSearch.toLowerCase()))
                                                         .filter(m => {
@@ -1363,13 +1334,13 @@ export const GanttPage: React.FC = () => {
                                                                                 setFormData({ ...formData, members: newMembers });
                                                                             }}
                                                                         />
-                                                                        <span className="text-[10px] font-bold text-slate-300 uppercase truncate">{m.name}</span>
+                                                                        <span className="text-[12px] font-black text-slate-200 uppercase truncate">{m.name}</span>
                                                                     </label>
                                                                     {isChecked && (
                                                                         <div className="flex items-center gap-1">
                                                                             <input
                                                                                 type="number" step="0.5" min="0"
-                                                                                className="w-12 h-6 bg-blue-500/10 border border-blue-500/30 rounded-none text-[10px] text-center font-bold text-blue-400 focus:outline-none"
+                                                                                className="w-16 h-8 bg-blue-500/10 border border-blue-500/30 rounded-none text-sm text-center font-bold text-blue-400 focus:outline-none"
                                                                                 value={assignedMember.hours}
                                                                                 onChange={(e) => {
                                                                                     const hours = parseFloat(e.target.value) || 0;
@@ -1379,7 +1350,7 @@ export const GanttPage: React.FC = () => {
                                                                                     setFormData({ ...formData, members: newMembers });
                                                                                 }}
                                                                             />
-                                                                            <span className="text-[8px] font-black text-slate-500 uppercase">H</span>
+                                                                            <span className="text-[10px] font-black text-slate-500 uppercase">H</span>
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -1416,7 +1387,7 @@ export const GanttPage: React.FC = () => {
             {
                 quickAddType === 'member' && (
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
-                        <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-sm space-y-6 shadow-2xl border border-white/10">
+                        <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-[80vw] space-y-6 shadow-2xl border border-white/10">
                             <h3 className="text-xl font-bold flex items-center gap-2">
                                 <Users size={20} className="text-blue-500" /> NUEVO INTEGRANTE
                             </h3>
@@ -1470,7 +1441,7 @@ export const GanttPage: React.FC = () => {
             {
                 quickAddType === 'vehicle' && (
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
-                        <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-sm space-y-6 shadow-2xl border border-white/10">
+                        <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-[80vw] space-y-6 shadow-2xl border border-white/10">
                             <h3 className="text-xl font-bold flex items-center gap-2">
                                 <Truck size={20} className="text-orange-500" /> NUEVO VEHÍCULO
                             </h3>
@@ -1505,7 +1476,7 @@ export const GanttPage: React.FC = () => {
             {
                 isErrorModalOpen && error && (
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-                        <div className="bg-[#0f172a] p-10 rounded-sm w-full max-w-md space-y-8 shadow-2xl border border-white/10 text-center relative overflow-hidden">
+                        <div className="bg-[#0f172a] p-10 rounded-sm w-full max-w-[80vw] space-y-8 shadow-2xl border border-white/10 text-center relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
 
                             <div className="mx-auto w-20 h-20 bg-red-500/10 rounded-none flex items-center justify-center border border-red-500/20">
@@ -1641,7 +1612,7 @@ export const GanttPage: React.FC = () => {
                                 });
                                 setIsTaskModalOpen(true);
                             }}
-                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 text-[10px] font-black transition-all flex items-center gap-2"
+                            className="bg-blue-600/20 text-blue-400 px-4 py-2 rounded-md border border-blue-500/30 text-sm font-bold hover:bg-blue-600/30 transition-all flex items-center gap-2"
                         >
                             <Plus size={14} /> NUEVO PENDIENTE
                         </button>
@@ -1726,7 +1697,7 @@ export const GanttPage: React.FC = () => {
             {
                 isRemindersListOpen && (
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
-                        <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-2xl space-y-6 shadow-2xl border border-white/10">
+                        <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-[80vw] space-y-6 shadow-2xl border border-white/10">
                             <div className="flex justify-between items-center">
                                 <h3 className="text-xl font-bold flex items-center gap-2">
                                     <Bell size={20} className="text-purple-500" /> RECORDATORIOS / PLANTILLAS
@@ -1804,7 +1775,7 @@ export const GanttPage: React.FC = () => {
             {
                 quickAddType === 'reminder' && (
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[80] p-4">
-                        <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-md space-y-6 shadow-2xl border border-white/10">
+                        <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-[80vw] space-y-6 shadow-2xl border border-white/10">
                             <h3 className="text-xl font-bold flex items-center gap-2">
                                 <Bell size={20} className="text-purple-500" /> {editingReminder ? 'EDITAR RECORDATORIO' : 'NUEVO RECORDATORIO'}
                             </h3>
@@ -1948,7 +1919,7 @@ export const GanttPage: React.FC = () => {
             {/* Fragment Modal */}
             {isFragmentModalOpen && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[150] p-4">
-                    <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-md space-y-6 shadow-2xl border border-white/10 animate-in slide-in-from-bottom duration-300">
+                    <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-[80vw] space-y-6 shadow-2xl border border-white/10 animate-in slide-in-from-bottom duration-300">
                         <div className="flex justify-between items-center">
                             <h3 className="text-xl font-bold flex items-center gap-2">
                                 <LayoutGrid size={20} className="text-blue-500" /> FRAGMENTAR TAREA

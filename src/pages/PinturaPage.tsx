@@ -1085,7 +1085,7 @@ export const PinturaPage: React.FC = () => {
                 {
                     isTaskModalOpen && (
                         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-                            <div className="glass p-6 rounded-[1.25rem] w-full max-w-[1000px] max-h-[95vh] flex flex-col shadow-2xl border-white/20 animate-in fade-in zoom-in-95 duration-300">
+                            <div className="glass p-6 rounded-[1.25rem] w-full max-w-[80vw] max-h-[95vh] flex flex-col shadow-2xl border-white/20 animate-in fade-in zoom-in-95 duration-300">
                                 <div className="mb-4 flex justify-between items-start">
                                     <div>
                                         <h3 className="text-2xl font-bold">{editingTask ? 'Editar Tarea' : 'Asignar Tarea'}</h3>
@@ -1217,58 +1217,85 @@ export const PinturaPage: React.FC = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* Hours Selection (Moved here) */}
-                                                <div className="p-4 bg-white/5 rounded-[1rem] border border-white/5 space-y-4">
-                                                    <h4 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-1">Carga de Horas</h4>
-                                                    <div className="grid grid-cols-2 gap-6">
-                                                        <div className="space-y-1 col-span-2">
-                                                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Horas Previstas</label>
-                                                            <input
-                                                                type="number" step="0.1" className="input w-full font-mono font-bold text-blue-400 text-xl"
-                                                                value={formData.totalHours}
-                                                                onChange={(e) => {
-                                                                    const total = parseFloat(e.target.value) || 0;
-                                                                    setFormData({ ...formData, totalHours: total, duration: total });
-                                                                }}
-                                                                required
-                                                            />
+                                            {/* Hours & Vehicles Selection */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="p-4 bg-blue-500/5 rounded-[1rem] border border-blue-500/10 space-y-4">
+                                                    <h4 className="text-xs font-black uppercase tracking-widest text-blue-400 mb-1">Carga de Horas</h4>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Horas Previstas</label>
+                                                        <input
+                                                            type="number" step="0.1" className="input w-full font-mono font-bold text-emerald-400 text-xl"
+                                                            value={formData.totalHours}
+                                                            onChange={(e) => {
+                                                                const total = parseFloat(e.target.value) || 0;
+                                                                setFormData({ ...formData, totalHours: total, duration: total });
+                                                            }}
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-4 bg-orange-500/5 rounded-[1rem] border border-orange-500/10 space-y-4">
+                                                    <h4 className="text-xs font-black uppercase tracking-widest text-orange-400 mb-1">Vehículos Asignados</h4>
+                                                    <div className="space-y-2">
+                                                        <select 
+                                                            className="input-sm w-full"
+                                                            value=""
+                                                            onChange={(e) => {
+                                                                const vehicleId = e.target.value;
+                                                                if (vehicleId && !formData.vehicles.includes(vehicleId)) {
+                                                                    setFormData({ ...formData, vehicles: [...formData.vehicles, vehicleId] });
+                                                                }
+                                                            }}
+                                                        >
+                                                            <option value="">Añadir vehículo...</option>
+                                                            {vehicles.map(v => {
+                                                                const isBusy = busyVehiclesOnDate.has(v.id);
+                                                                const isSelected = formData.vehicles.includes(v.id);
+                                                                return (
+                                                                    <option 
+                                                                        key={v.id} 
+                                                                        value={v.id} 
+                                                                        disabled={isBusy || isSelected}
+                                                                    >
+                                                                        {v.name} {isBusy ? '(OCUPADO)' : ''}
+                                                                    </option>
+                                                                );
+                                                            })}
+                                                        </select>
+                                                        
+                                                        <div className="flex flex-wrap gap-2 min-h-[30px]">
+                                                            {formData.vehicles.map(vId => {
+                                                                const vehicle = vehicles.find(v => v.id === vId);
+                                                                if (!vehicle) return null;
+                                                                return (
+                                                                    <div key={vId} className="flex items-center gap-2 px-2 py-1 bg-white/5 border border-white/10 rounded-md text-[10px] font-bold text-slate-300 uppercase">
+                                                                        {vehicle.name}
+                                                                        <button 
+                                                                            type="button"
+                                                                            onClick={() => setFormData({ ...formData, vehicles: formData.vehicles.filter(id => id !== vId) })}
+                                                                            className="text-red-500 hover:text-red-400"
+                                                                        >
+                                                                            <Plus size={12} className="rotate-45" />
+                                                                        </button>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                            {formData.vehicles.length === 0 && (
+                                                                <span className="text-[9px] text-slate-500 italic mt-2">Sin vehículos</span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
+                                        </div>
 
-                                            {/* Right Column: Assignments */}
-                                            {formData.date !== '' && (
-                                                <div className="p-4 bg-white/5 rounded-[1rem] border border-white/5 space-y-4 flex flex-col h-full">
-                                                    <h4 className="text-xs font-black uppercase tracking-widest text-orange-400 mb-1">Asignaciones</h4>
+                                        {/* Right Column: Personnel */}
+                                        {formData.date !== '' && (
+                                            <div className="p-4 bg-white/5 rounded-[1rem] border border-white/5 space-y-4 flex flex-col h-full">
+                                                <h4 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-1">Personal Asignado</h4>
 
-                                                    <div className="space-y-2 flex-1">
-                                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Vehículos</label>
-                                                        <div className="glass rounded-md p-3 h-28 overflow-y-auto custom-scrollbar space-y-1">
-                                                            {vehicles.map(v => {
-                                                                const isBusy = busyVehiclesOnDate.has(v.id);
-                                                                return (
-                                                                    <label key={v.id} className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isBusy ? 'opacity-40 cursor-not-allowed bg-red-500/5' : 'hover:bg-white/10 cursor-pointer'}`}>
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500"
-                                                                            checked={formData.vehicles.includes(v.id)}
-                                                                            disabled={isBusy}
-                                                                            onChange={(e) => {
-                                                                                const newVehicles = e.target.checked
-                                                                                    ? [...formData.vehicles, v.id]
-                                                                                    : formData.vehicles.filter(id => id !== v.id);
-                                                                                setFormData({ ...formData, vehicles: newVehicles });
-                                                                            }}
-                                                                        />
-                                                                        <span className="text-xs text-slate-300 font-medium truncate">{v.name}</span>
-                                                                    </label>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="space-y-2 flex-1 pt-1">
+                                                <div className="space-y-2 flex-1 pt-1">
                                                         <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Personal</label>
 
                                                         <div className="relative mb-2">
@@ -1282,7 +1309,7 @@ export const PinturaPage: React.FC = () => {
                                                             />
                                                         </div>
 
-                                                        <div className="glass rounded-md p-3 h-32 overflow-y-auto custom-scrollbar space-y-1">
+                                                        <div className="glass rounded-md p-3 h-[500px] overflow-y-auto custom-scrollbar space-y-1">
                                                             {members
                                                                 .filter(m => m.sector === formData.section && m.name.toLowerCase().includes(memberSearch.toLowerCase()))
                                                                 .filter(m => {
@@ -1320,7 +1347,7 @@ export const PinturaPage: React.FC = () => {
                                                                                         });
                                                                                     }}
                                                                                 />
-                                                                                <span className="text-xs text-slate-300 font-medium truncate">{m.name}</span>
+                                                                                <span className="text-sm text-slate-200 font-bold uppercase truncate">{m.name}</span>
                                                                             </label>
                                                                             {isChecked && (
                                                                                 <div className="flex items-center gap-1 animate-in slide-in-from-right-2 duration-200">
@@ -1328,7 +1355,7 @@ export const PinturaPage: React.FC = () => {
                                                                                         type="number"
                                                                                         step="0.5"
                                                                                         min="0"
-                                                                                        className="w-12 h-6 bg-blue-500/10 border border-blue-500/30 rounded text-[10px] text-center font-bold text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                                                                        className="w-16 h-8 bg-blue-500/10 border border-blue-500/30 rounded text-sm text-center font-bold text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                                                                                         value={assignedMember.hours}
                                                                                         onChange={(e) => {
                                                                                             const hours = parseFloat(e.target.value) || 0;
@@ -1338,7 +1365,7 @@ export const PinturaPage: React.FC = () => {
                                                                                             setFormData({ ...formData, members: newMembers });
                                                                                         }}
                                                                                     />
-                                                                                    <span className="text-[8px] font-bold text-slate-500 uppercase">h</span>
+                                                                                    <span className="text-[10px] font-bold text-slate-500 uppercase">h</span>
                                                                                 </div>
                                                                             )}
                                                                         </div>
@@ -1350,74 +1377,6 @@ export const PinturaPage: React.FC = () => {
                                             )}
                                         </div>
 
-                                        {/* Bottom Section: Full Width Sub-tasks */}
-                                        {formData.date !== '' && (
-                                            <div className="p-4 bg-white/5 rounded-[1rem] border border-white/5 space-y-4">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/20">
-                                                            <Plus size={16} className="text-emerald-400" />
-                                                        </div>
-                                                        <h4 className="text-xs font-black uppercase tracking-widest text-emerald-400">Trabajos Adicionales / Sub-tareas</h4>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setFormData({
-                                                            ...formData,
-                                                            additionalJobs: [...formData.additionalJobs, { description: '', client: '' }]
-                                                        })}
-                                                        className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-md text-[10px] font-bold transition-all border border-emerald-500/10 flex items-center gap-2"
-                                                    >
-                                                        <Plus size={12} /> Añadir Sub-tarea
-                                                    </button>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                    {formData.additionalJobs.map((job, index) => (
-                                                        <div key={index} className="flex gap-2 p-3 bg-white/5 rounded-lg border border-white/5 items-start group relative">
-                                                            <div className="flex-1 space-y-1">
-                                                                <input
-                                                                    className="input-sm w-full bg-white/5 text-[10px]"
-                                                                    placeholder="Descripción del trabajo..."
-                                                                    value={job.description}
-                                                                    onChange={(e) => {
-                                                                        const newJobs = [...formData.additionalJobs];
-                                                                        newJobs[index].description = e.target.value;
-                                                                        setFormData({ ...formData, additionalJobs: newJobs });
-                                                                    }}
-                                                                />
-                                                                <input
-                                                                    className="input-sm w-full bg-white/5 text-[10px]"
-                                                                    placeholder="Cliente (opcional)..."
-                                                                    value={job.client}
-                                                                    onChange={(e) => {
-                                                                        const newJobs = [...formData.additionalJobs];
-                                                                        newJobs[index].client = e.target.value;
-                                                                        setFormData({ ...formData, additionalJobs: newJobs });
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    const newJobs = formData.additionalJobs.filter((_, i) => i !== index);
-                                                                    setFormData({ ...formData, additionalJobs: newJobs });
-                                                                }}
-                                                                className="p-1.5 hover:bg-red-500/20 text-slate-500 hover:text-red-400 rounded-lg transition-all"
-                                                            >
-                                                                <Plus className="rotate-45" size={14} />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                    {formData.additionalJobs.length === 0 && (
-                                                        <div className="col-span-full py-6 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[1rem] opacity-40">
-                                                            <LayoutGrid size={24} className="text-slate-500 mb-2" />
-                                                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Sin sub-tareas asignadas</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
 
                                     <div className="flex gap-4 pt-4 border-t border-white/5">
@@ -1445,7 +1404,7 @@ export const PinturaPage: React.FC = () => {
                 {
                     quickAddType === 'member' && (
                         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-                            <div className="glass p-8 rounded-[1.25rem] w-full max-w-sm space-y-6 shadow-2xl border-white/20">
+                            <div className="glass p-8 rounded-[1.25rem] w-full max-w-[80vw] space-y-6 shadow-2xl border-white/20">
                                 <h3 className="text-2xl font-bold flex items-center gap-2">
                                     <Users size={24} className="text-blue-500" /> Nuevo Integrante
                                 </h3>
@@ -1499,7 +1458,7 @@ export const PinturaPage: React.FC = () => {
                 {
                     quickAddType === 'vehicle' && (
                         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-                            <div className="glass p-8 rounded-[1.25rem] w-full max-w-sm space-y-6 shadow-2xl border-white/20">
+                            <div className="glass p-8 rounded-[1.25rem] w-full max-w-[80vw] space-y-6 shadow-2xl border-white/20">
                                 <h3 className="text-2xl font-bold flex items-center gap-2">
                                     <Truck size={24} className="text-orange-500" /> Nuevo Vehículo
                                 </h3>
@@ -1534,7 +1493,7 @@ export const PinturaPage: React.FC = () => {
                 {
                     isErrorModalOpen && error && (
                         <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-[100] p-4 animate-in fade-in zoom-in duration-300">
-                            <div className="glass p-10 rounded-[3rem] w-full max-w-md space-y-8 shadow-2xl border-white/20 text-center relative overflow-hidden">
+                            <div className="glass p-10 rounded-[3rem] w-full max-w-[80vw] space-y-8 shadow-2xl border-white/20 text-center relative overflow-hidden">
                                 <div className="absolute top-0 left-0 w-full h-1 bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]"></div>
 
                                 <div className="mx-auto w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center border border-red-500/20">
@@ -1746,7 +1705,7 @@ export const PinturaPage: React.FC = () => {
                 {
                     isRemindersListOpen && (
                         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-                            <div className="glass p-8 rounded-[1.25rem] w-full max-w-2xl space-y-6 shadow-2xl border-white/20">
+                            <div className="glass p-8 rounded-[1.25rem] w-full max-w-[80vw] space-y-6 shadow-2xl border-white/20">
                                 <div className="flex justify-between items-center">
                                     <h3 className="text-2xl font-bold flex items-center gap-2">
                                         <Bell size={24} className="text-purple-500" /> Recordatorios / Plantillas
@@ -1824,7 +1783,7 @@ export const PinturaPage: React.FC = () => {
                 {
                     quickAddType === 'reminder' && (
                         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[80] p-4">
-                            <div className="glass p-8 rounded-[1.25rem] w-full max-w-md space-y-6 shadow-2xl border-white/20">
+                            <div className="glass p-8 rounded-[1.25rem] w-full max-w-[80vw] space-y-6 shadow-2xl border-white/20">
                                 <h3 className="text-2xl font-bold flex items-center gap-2">
                                     <Bell size={24} className="text-purple-500" /> {editingReminder ? 'Editar Recordatorio' : 'Nuevo Recordatorio'}
                                 </h3>
@@ -1971,7 +1930,7 @@ export const PinturaPage: React.FC = () => {
                 {
                     isFragmentModalOpen && (
                         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[150] p-4">
-                            <div className="glass p-8 rounded-[1.25rem] w-full max-w-md space-y-6 shadow-2xl border-white/20 animate-in slide-in-from-bottom duration-300">
+                            <div className="glass p-8 rounded-[1.25rem] w-full max-w-[80vw] space-y-6 shadow-2xl border-white/20 animate-in slide-in-from-bottom duration-300">
                                 <div className="flex justify-between items-center">
                                     <h3 className="text-2xl font-bold flex items-center gap-2">
                                         <LayoutGrid size={24} className="text-blue-500" /> Fragmentar Tarea

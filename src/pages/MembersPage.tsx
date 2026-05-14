@@ -43,8 +43,8 @@ export const MembersPage: React.FC = () => {
     };
 
     return (
-        <div className="h-full flex flex-col bg-gray-900">
-            <div className="sticky top-0 z-30 bg-gray-900/80 backdrop-blur-md px-10 py-6 border-b border-white/5">
+        <div className="h-full flex flex-col bg-slate-50 dark:bg-gray-900">
+            <div className="sticky top-0 z-30 bg-white/95 dark:bg-gray-900/80 backdrop-blur-md px-10 py-6 border-b border-slate-200 dark:border-white/5">
                 <div className="flex justify-between items-center gap-6">
                     <div className="flex items-center gap-8 flex-1">
                         <h2 className="text-2xl font-bold whitespace-nowrap">Integrantes</h2>
@@ -202,7 +202,7 @@ export const MembersPage: React.FC = () => {
 
             {isEditing && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-md shadow-2xl border border-white/10">
+                    <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-[80vw] shadow-2xl border border-white/10">
                         <h3 className="text-xl font-bold mb-6">EDITAR INTEGRANTE</h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-1">
