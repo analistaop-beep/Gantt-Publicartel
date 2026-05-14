@@ -23,8 +23,10 @@ export const OrdersPage: React.FC = () => {
         address: '',
         category: 'Proyectos',
         status: 'Gestión de Acopio',
-        files: [] as string[]
+        files: [] as string[],
+        comments: [] as Array<{ text: string, date: string }>
     });
+    const [newComment, setNewComment] = useState('');
     const categories = ['Proyectos', 'Outdoor', 'Digital', 'Mantenimiento', 'Otros'];
     const statuses = ['Gestión de Acopio', 'En Proceso', 'Para Facturar', 'Terminada'];
     const sellers = ["W. Maciel", "P. Goicoechea", "N. Mannise", "F. Cruz", "P. Lizuain", "V. Castellucci", "Otro"];
@@ -69,7 +71,8 @@ export const OrdersPage: React.FC = () => {
                 address: order.address || '',
                 category: order.category || 'Proyectos',
                 status: order.status || 'Gestión de Acopio',
-                files: order.files || []
+                files: order.files || [],
+                comments: order.comments || []
             });
         } else {
             setIsEditing(null);
@@ -83,9 +86,11 @@ export const OrdersPage: React.FC = () => {
                 address: '',
                 category: 'Proyectos',
                 status: 'Gestión de Acopio',
-                files: []
+                files: [],
+                comments: []
             });
         }
+        setNewComment('');
         setIsModalOpen(true);
     };
 
@@ -102,8 +107,10 @@ export const OrdersPage: React.FC = () => {
             address: '',
             category: 'Proyectos',
             status: 'Gestión de Acopio',
-            files: []
+            files: [],
+            comments: []
         });
+        setNewComment('');
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -487,6 +494,85 @@ export const OrdersPage: React.FC = () => {
                             </div>
 
                             <div className="space-y-4">
+                                <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Comentarios del Usuario</label>
+                                <div className="space-y-3">
+                                    <div className="flex gap-2">
+                                        <input 
+                                            className="input flex-1 text-sm"
+                                            placeholder="Escribir un comentario..."
+                                            value={newComment}
+                                            onChange={(e) => setNewComment(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    if (newComment.trim()) {
+                                                        const comment = {
+                                                            text: newComment.trim(),
+                                                            date: new Date().toISOString()
+                                                        };
+                                                        setFormData({
+                                                            ...formData,
+                                                            comments: [...formData.comments, comment]
+                                                        });
+                                                        setNewComment('');
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                        <button 
+                                            type="button"
+                                            onClick={() => {
+                                                if (newComment.trim()) {
+                                                    const comment = {
+                                                        text: newComment.trim(),
+                                                        date: new Date().toISOString()
+                                                    };
+                                                    setFormData({
+                                                        ...formData,
+                                                        comments: [...formData.comments, comment]
+                                                    });
+                                                    setNewComment('');
+                                                }
+                                            }}
+                                            className="btn btn-primary px-4"
+                                        >
+                                            <Plus size={18} />
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
+                                        {formData.comments.length === 0 ? (
+                                            <p className="text-[10px] text-slate-500 italic ml-1">No hay comentarios registrados.</p>
+                                        ) : (
+                                            [...formData.comments].reverse().map((c, i) => (
+                                                <div key={i} className="glass p-3 rounded-lg border-white/5 space-y-1">
+                                                    <p className="text-sm text-slate-200">{c.text}</p>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-[9px] font-bold text-slate-500 uppercase">
+                                                            {new Date(c.date).toLocaleString('es-UY', { 
+                                                                day: '2-digit', month: '2-digit', year: 'numeric', 
+                                                                hour: '2-digit', minute: '2-digit' 
+                                                            })}
+                                                        </span>
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newComments = formData.comments.filter((_, idx) => (formData.comments.length - 1 - idx) !== i);
+                                                                setFormData({ ...formData, comments: newComments });
+                                                            }}
+                                                            className="text-slate-500 hover:text-red-400 transition-colors"
+                                                        >
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
                                 <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Archivos / Adjuntos (Fotos o PDF)</label>
                                 <div className="flex flex-col gap-4">
                                     <input
@@ -626,6 +712,25 @@ export const OrdersPage: React.FC = () => {
                                     {viewingOrder.description || 'Sin descripción detallada.'}
                                 </div>
                             </div>
+
+                            {viewingOrder.comments?.length > 0 && (
+                                <div>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">COMENTARIOS DEL USUARIO</label>
+                                    <div className="space-y-3">
+                                        {[...viewingOrder.comments].reverse().map((c: any, i: number) => (
+                                            <div key={i} className="p-4 bg-white/[0.02] border border-white/5 space-y-2">
+                                                <p className="text-sm text-slate-200">{c.text}</p>
+                                                <span className="text-[9px] font-bold text-slate-500 uppercase block">
+                                                    {new Date(c.date).toLocaleString('es-UY', { 
+                                                        day: '2-digit', month: '2-digit', year: 'numeric', 
+                                                        hour: '2-digit', minute: '2-digit' 
+                                                    })}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">ARCHIVOS ADJUNTOS</label>

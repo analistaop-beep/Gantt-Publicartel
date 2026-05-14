@@ -107,11 +107,14 @@ body {
 html.light {
   color-scheme: light;
   color: #1e293b;
-  background-color: #dbe4ff;
+}
+
+html.light .bg-gray-900 {
+  background-color: #f8fafc !important;
 }
 
 html.light body {
-  background-color: #f1f5f9;
+  background-color: #f8fafc !important;
 }
 
 html.light .glass {
@@ -121,7 +124,11 @@ html.light .glass {
 }
 
 html.light .bg-gray-900 {
-  background-color: #f1f5f9 !important;
+  background-color: #f8fafc !important;
+}
+
+html.light .bg-gray-900\/80 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
 }
 
 html.light .text-white {
@@ -204,14 +211,6 @@ html.light .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: rgba(148, 163, 184, 0.5) !important;
 }
 
-/* Root app container in light mode */
-html.light .bg-gray-900 {
-  background-color: #dbe4ff !important;
-}
-
-html.light body {
-  background-color: #dbe4ff !important;
-}
 
 /* Calendar backgrounds in light mode */
 html.light .bg-\[\#0f172a\] {

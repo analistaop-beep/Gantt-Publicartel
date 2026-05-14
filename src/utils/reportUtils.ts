@@ -436,6 +436,45 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
     doc.text(descLines, margin + 4, y + 5);
     y += descBlockH + 10;
 
+    // ─── Comments ───────────────────────────────────────────────────
+    const comments = order.comments || [];
+    if (comments.length > 0) {
+        checkPage(20);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...muted);
+        doc.text('COMENTARIOS DEL USUARIO', margin, y);
+        y += 5;
+
+        comments.forEach((c: any) => {
+            const dateStr = format(new Date(c.date), "dd/MM/yyyy HH:mm", { locale: es });
+            const commentText = `${c.text}`;
+            const commentLines = doc.splitTextToSize(commentText, contentW - 35);
+            const blockH = Math.max(commentLines.length * 4 + 4, 10);
+            
+            checkPage(blockH + 2);
+            
+            // Date column
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7);
+            doc.setTextColor(...blue);
+            doc.text(dateStr, margin, y + 5);
+            
+            // Text column
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(...navy);
+            doc.text(commentLines, margin + 30, y + 5);
+            
+            doc.setDrawColor(...light);
+            doc.setLineWidth(0.1);
+            doc.line(margin, y + blockH, pageW - margin, y + blockH);
+            
+            y += blockH;
+        });
+        y += 5;
+    }
+
     // ─── Attachments ─────────────────────────────────────────────────
     const files: string[] = order.files || [];
     if (files.length > 0) {

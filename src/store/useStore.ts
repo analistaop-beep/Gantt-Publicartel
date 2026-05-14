@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../utils/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
+import type { ProductionOrder } from '../types';
 
 // Track which tasks have been locally modified but not yet saved to the database
 interface PendingChanges {
@@ -46,7 +47,7 @@ interface AppState {
     deleteReminder: (id: string) => Promise<void>;
     
     // Production Orders
-    addProductionOrder: (order: { opNumber: string; client: string; seller: string; price: number; currency: 'UYU' | 'USD'; description: string; address: string; category: string; status: string; files: string[] }) => Promise<void>;
+    addProductionOrder: (order: Omit<ProductionOrder, 'id'>) => Promise<void>;
     updateProductionOrder: (order: any) => Promise<void>;
     deleteProductionOrder: (id: string) => Promise<void>;
     
@@ -160,7 +161,8 @@ export const useStore = create<AppState>((set, get) => ({
                 reminders: reminders || [],
                 productionOrders: (productionOrders || []).map(o => ({
                     ...o,
-                    files: typeof o.files === 'string' ? JSON.parse(o.files) : (o.files || [])
+                    files: typeof o.files === 'string' ? JSON.parse(o.files) : (o.files || []),
+                    comments: typeof o.comments === 'string' ? JSON.parse(o.comments) : (o.comments || [])
                 })),
                 isLoading: false
             });
@@ -265,7 +267,8 @@ export const useStore = create<AppState>((set, get) => ({
         const { error } = await supabase.from('production_orders').insert([{ 
             id: uuidv4(), 
             ...order,
-            files: JSON.stringify(order.files)
+            files: JSON.stringify(order.files || []),
+            comments: JSON.stringify(order.comments || [])
         }]);
         if (error) throw error;
         await get().fetchData();
@@ -284,7 +287,8 @@ export const useStore = create<AppState>((set, get) => ({
                 address: order.address,
                 category: order.category,
                 status: order.status,
-                files: JSON.stringify(order.files ?? [])
+                files: JSON.stringify(order.files ?? []),
+                comments: JSON.stringify(order.comments ?? [])
             };
             console.log('[updateProductionOrder] payload:', payload);
             const { error } = await supabase.from('production_orders').update(payload).eq('id', id);
