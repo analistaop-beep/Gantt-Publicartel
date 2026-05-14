@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers } from 'lucide-react';
+import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown } from 'lucide-react';
 import { sileo } from 'sileo';
 import { convertToWebP } from '../utils/fileUtils';
 
@@ -240,15 +240,18 @@ export const OrdersPage: React.FC = () => {
                                                     if (s === 'Terminada') color = 'text-slate-500 bg-white/5 border-white/10';
                                                     
                                                     return (
-                                                        <select
-                                                            value={s}
-                                                            onChange={(e) => handleStatusChange(order, e.target.value)}
-                                                            className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border cursor-pointer outline-none transition-all hover:scale-105 appearance-none text-center ${color}`}
-                                                        >
-                                                            {statuses.map(status => (
-                                                                <option key={status} value={status} className="bg-gray-900 text-white capitalize">{status}</option>
-                                                            ))}
-                                                        </select>
+                                                        <div className="relative inline-block group/select">
+                                                            <select
+                                                                value={s}
+                                                                onChange={(e) => handleStatusChange(order, e.target.value)}
+                                                                className={`px-6 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border cursor-pointer outline-none transition-all hover:scale-105 appearance-none text-center pr-8 ${color}`}
+                                                            >
+                                                                {statuses.map(status => (
+                                                                    <option key={status} value={status} className="bg-gray-900 text-white capitalize">{status}</option>
+                                                                ))}
+                                                            </select>
+                                                            <ChevronDown size={12} className={`absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60 group-hover/select:opacity-100 transition-opacity ${color.split(' ')[0]}`} />
+                                                        </div>
                                                     );
                                                 })()}
                                             </td>
@@ -354,14 +357,17 @@ export const OrdersPage: React.FC = () => {
                                                 required
                                             />
                                         </div>
-                                        <select 
-                                            className="input w-24 text-center appearance-none"
-                                            value={formData.currency}
-                                            onChange={(e) => setFormData({ ...formData, currency: e.target.value as 'UYU' | 'USD' })}
-                                        >
-                                            <option value="UYU">UYU</option>
-                                            <option value="USD">USD</option>
-                                        </select>
+                                        <div className="relative group">
+                                            <select 
+                                                className="input w-24 text-center appearance-none pr-8"
+                                                value={formData.currency}
+                                                onChange={(e) => setFormData({ ...formData, currency: e.target.value as 'UYU' | 'USD' })}
+                                            >
+                                                <option value="UYU">UYU</option>
+                                                <option value="USD">USD</option>
+                                            </select>
+                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -385,7 +391,7 @@ export const OrdersPage: React.FC = () => {
                                     <div className="relative group">
                                         <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                                         <select
-                                            className="input w-full pl-12 appearance-none"
+                                            className="input w-full pl-12 appearance-none pr-10"
                                             value={formData.seller}
                                             onChange={(e) => setFormData({ ...formData, seller: e.target.value })}
                                             required
@@ -395,6 +401,7 @@ export const OrdersPage: React.FC = () => {
                                                 <option key={s} value={s}>{s}</option>
                                             ))}
                                         </select>
+                                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                                     </div>
                                 </div>
                             </div>
@@ -417,7 +424,7 @@ export const OrdersPage: React.FC = () => {
                                     <div className="relative group">
                                         <Layers size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                                         <select
-                                            className="input w-full pl-12 appearance-none"
+                                            className="input w-full pl-12 appearance-none pr-10"
                                             value={formData.category}
                                             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                             required
@@ -426,6 +433,7 @@ export const OrdersPage: React.FC = () => {
                                                 <option key={cat} value={cat}>{cat}</option>
                                             ))}
                                         </select>
+                                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                                     </div>
                                 </div>
                             </div>
@@ -435,7 +443,7 @@ export const OrdersPage: React.FC = () => {
                                 <div className="relative group">
                                     <ClipboardList size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                                     <select
-                                        className="input w-full pl-12 appearance-none"
+                                        className="input w-full pl-12 appearance-none pr-10"
                                         value={formData.status}
                                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                                         required
@@ -444,6 +452,7 @@ export const OrdersPage: React.FC = () => {
                                             <option key={s} value={s}>{s}</option>
                                         ))}
                                     </select>
+                                    <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                                 </div>
                             </div>
 
