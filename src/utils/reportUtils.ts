@@ -467,7 +467,7 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
                     doc.setFont('helvetica', 'bold');
                     doc.setFontSize(8);
                     doc.setTextColor(...muted);
-                    doc.text(`IMAGEN ${i + 1} — ${fileName}`, margin, y);
+                    doc.text(`IMAGEN ${i + 1}`, margin, y);
                     y += 4;
 
                     // Fit image to width, max height 100mm
@@ -494,7 +494,7 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
                     doc.setFont('helvetica', 'normal');
                     doc.setFontSize(9);
                     doc.setTextColor(59, 130, 246);
-                    doc.text(`[Imagen ${i + 1}] ${fileName} (no se pudo incrustar)`, margin, y);
+                    doc.text(`[Imagen ${i + 1}] (no se pudo incrustar)`, margin, y);
                     y += 7;
                 }
             } else {

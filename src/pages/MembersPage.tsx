@@ -113,7 +113,7 @@ export const MembersPage: React.FC = () => {
             </div>
         </div>
         <div className="flex-1 min-h-0 overflow-auto custom-scrollbar p-10">
-            <div className="glass rounded-[2.5rem] overflow-hidden shadow-2xl border-white/10">
+            <div className="glass rounded-[1.25rem] overflow-hidden shadow-2xl border-white/10">
                 <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left border-collapse">
                         <thead>

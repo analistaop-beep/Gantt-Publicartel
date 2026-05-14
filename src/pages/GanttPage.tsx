@@ -596,19 +596,19 @@ export const GanttPage: React.FC = () => {
                     <div className="flex items-center gap-2 flex-nowrap overflow-x-auto pb-2 md:pb-0 no-scrollbar">
                         <button
                             onClick={handleClearWeek}
-                            className="bg-red-600/10 hover:bg-red-600/20 text-red-400 px-4 py-2 rounded-xl border border-red-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
+                            className="bg-red-600/10 hover:bg-red-600/20 text-red-400 px-4 py-2 rounded-md border border-red-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
                         >
                             <Trash2 size={16} /> Limpiar Semana
                         </button>
                         <button
                             onClick={() => setIsRemindersListOpen(true)}
-                            className="bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 px-4 py-2 rounded-xl border border-purple-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
+                            className="bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 px-4 py-2 rounded-md border border-purple-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
                         >
                             <Bell size={16} /> Recordatorios
                         </button>
                         <button
                             onClick={handleGenerateReport}
-                            className="bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 px-4 py-2 rounded-xl border border-emerald-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
+                            className="bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 px-4 py-2 rounded-md border border-emerald-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
                         >
                             <FileDown size={16} /> Reporte
                         </button>
@@ -622,7 +622,7 @@ export const GanttPage: React.FC = () => {
                                 }
                             }}
                             disabled={isSaving}
-                            className={`px-4 py-2 rounded-xl border text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+                            className={`px-4 py-2 rounded-md border text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
                                 hasPendingChanges 
                                     ? 'bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/20 animate-pulse' 
                                     : 'bg-slate-700/50 text-slate-400 border-white/5 cursor-not-allowed opacity-50'
@@ -637,11 +637,11 @@ export const GanttPage: React.FC = () => {
                 <div className="flex items-center gap-4">
                     {/* Inner Week Navigation (Only when Zoomed) */}
                     {isZoomed && (
-                        <div className="flex items-center gap-1 glass p-1.5 rounded-2xl animate-in fade-in slide-in-from-right-4 duration-300">
+                        <div className="flex items-center gap-1 glass p-1.5 rounded-lg animate-in fade-in slide-in-from-right-4 duration-300">
                             <button
                                 onClick={() => setZoomOffset(0)}
                                 disabled={zoomOffset === 0}
-                                className={`p-1.5 rounded-xl transition-all flex items-center justify-center ${zoomOffset === 0 ? 'opacity-30 cursor-not-allowed text-slate-500' : 'text-blue-400 hover:bg-blue-500/20'}`}
+                                className={`p-1.5 rounded-md transition-all flex items-center justify-center ${zoomOffset === 0 ? 'opacity-30 cursor-not-allowed text-slate-500' : 'text-blue-400 hover:bg-blue-500/20'}`}
                                 title="Primeros 3 días (Lun-Mié)"
                             >
                                 <ChevronLeft size={20} />
@@ -649,7 +649,7 @@ export const GanttPage: React.FC = () => {
                             <button
                                 onClick={() => setZoomOffset(3)}
                                 disabled={zoomOffset === 3}
-                                className={`p-1.5 rounded-xl transition-all flex items-center justify-center ${zoomOffset === 3 ? 'opacity-30 cursor-not-allowed text-slate-500' : 'text-blue-400 hover:bg-blue-500/20'}`}
+                                className={`p-1.5 rounded-md transition-all flex items-center justify-center ${zoomOffset === 3 ? 'opacity-30 cursor-not-allowed text-slate-500' : 'text-blue-400 hover:bg-blue-500/20'}`}
                                 title="Siguientes 3 días (Jue-Sáb)"
                             >
                                 <ChevronRight size={20} />
@@ -658,7 +658,7 @@ export const GanttPage: React.FC = () => {
                     )}
 
                     {/* Zoom Controls */}
-                    <div className="flex items-center gap-1 glass p-1.5 rounded-2xl">
+                    <div className="flex items-center gap-1 glass p-1.5 rounded-lg">
                         <button
                             onClick={() => {
                                 if (isZoomed) {
@@ -667,7 +667,7 @@ export const GanttPage: React.FC = () => {
                                 }
                             }}
                             disabled={!isZoomed}
-                            className={`p-1.5 rounded-xl transition-all flex items-center justify-center ${!isZoomed ? 'opacity-50 cursor-not-allowed text-slate-500' : 'text-red-400 hover:bg-red-500/20'}`}
+                            className={`p-1.5 rounded-md transition-all flex items-center justify-center ${!isZoomed ? 'opacity-50 cursor-not-allowed text-slate-500' : 'text-red-400 hover:bg-red-500/20'}`}
                             title="Zoom Out (-)"
                         >
                             <Minus size={20} strokeWidth={3} />
@@ -681,7 +681,7 @@ export const GanttPage: React.FC = () => {
                                 }
                             }}
                             disabled={isZoomed}
-                            className={`p-1.5 rounded-xl transition-all flex items-center justify-center ${isZoomed ? 'opacity-50 cursor-not-allowed text-slate-500' : 'text-blue-400 hover:bg-blue-500/20'}`}
+                            className={`p-1.5 rounded-md transition-all flex items-center justify-center ${isZoomed ? 'opacity-50 cursor-not-allowed text-slate-500' : 'text-blue-400 hover:bg-blue-500/20'}`}
                             title="Zoom In (+)"
                         >
                             <Plus size={20} strokeWidth={3} />
@@ -689,22 +689,22 @@ export const GanttPage: React.FC = () => {
                     </div>
 
                     {/* Navigation Controls */}
-                    <div className="flex items-center gap-4 glass p-2 rounded-2xl">
+                    <div className="flex items-center gap-4 glass p-2 rounded-lg">
                         <button
                             onClick={() => setCurrentWeekStart(subDays(currentWeekStart, 7))}
-                            className="p-2 hover:bg-white/10 rounded-xl transition-all"
+                            className="p-2 hover:bg-white/10 rounded-md transition-all"
                         >
                             <ChevronLeft size={24} />
                         </button>
                         <button
                             onClick={() => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
-                            className={`px-4 py-1.5 bg-blue-600/20 text-blue-400 font-bold rounded-xl hover:bg-blue-600/30 transition-all border border-blue-500/20 ${isTodayInWeek ? 'opacity-30 blur-[0.5px]' : ''}`}
+                            className={`px-4 py-1.5 bg-blue-600/20 text-blue-400 font-bold rounded-md hover:bg-blue-600/30 transition-all border border-blue-500/20 ${isTodayInWeek ? 'opacity-30 blur-[0.5px]' : ''}`}
                         >
                             Hoy
                         </button>
                         <button
                             onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))}
-                            className="p-2 hover:bg-white/10 rounded-xl transition-all"
+                            className="p-2 hover:bg-white/10 rounded-md transition-all"
                         >
                             <ChevronRight size={24} />
                         </button>
@@ -713,7 +713,7 @@ export const GanttPage: React.FC = () => {
             </div>
 
             {/* Gantt Timeline */}
-            <div className="flex-1 min-h-0 bg-[#0f172a] flex flex-col overflow-hidden border border-white/5 mx-10 mb-2 rounded-[2rem] relative shadow-2xl">
+            <div className="flex-1 min-h-0 bg-[#0f172a] flex flex-col overflow-hidden border border-white/5 mx-10 mb-2 rounded-[1rem] relative shadow-2xl">
                 <div className="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar flex flex-col" ref={timelineRef}>
                     <div className="w-full flex-1 flex flex-col">
                         {/* Timeline Days Header */}
@@ -830,7 +830,7 @@ export const GanttPage: React.FC = () => {
                                                                     }}
                                                                     onContextMenu={(e) => handleContextMenu(e, task)}
                                                                     onClick={() => handleEditTask(task)}
-                                                                    className={`bg-slate-800/40 hover:bg-slate-800/60 border rounded-xl p-3 text-[10px] relative group/task cursor-move transition-all hover:scale-[1.02] hover:z-30 shadow-lg overflow-hidden ${
+                                                                    className={`bg-slate-800/40 hover:bg-slate-800/60 border rounded-md p-3 text-[10px] relative group/task cursor-move transition-all hover:scale-[1.02] hover:z-30 shadow-lg overflow-hidden ${
                                                                         totalAssignedHours > task.totalHours 
                                                                             ? 'animate-blink border-red-500/50 shadow-red-500/10' 
                                                                             : 'border-white/10'
@@ -964,7 +964,7 @@ export const GanttPage: React.FC = () => {
                                                     setSelectedContext({ teamId: null as any, date: day });
                                                     setIsTaskModalOpen(true);
                                                 }}
-                                                className="w-full h-10 rounded-xl border-2 border-dashed border-white/10 hover:border-blue-500/40 hover:bg-blue-500/5 transition-all flex items-center justify-center text-slate-500 hover:text-blue-400 mt-2 font-bold text-xs group"
+                                                className="w-full h-10 rounded-md border-2 border-dashed border-white/10 hover:border-blue-500/40 hover:bg-blue-500/5 transition-all flex items-center justify-center text-slate-500 hover:text-blue-400 mt-2 font-bold text-xs group"
                                             >
                                                 <Plus size={16} className="mr-2 group-hover:rotate-90 transition-transform" />
                                                 Añadir Tarea
@@ -1037,7 +1037,7 @@ export const GanttPage: React.FC = () => {
 
                                                 <div className="flex flex-wrap gap-1.5 content-start">
                                                     {availableOnDay.length === 0 ? (
-                                                        <div className="w-full text-center py-4 border border-dashed border-white/5 rounded-xl">
+                                                        <div className="w-full text-center py-4 border border-dashed border-white/5 rounded-md">
                                                             <p className="text-[9px] text-slate-600 font-bold uppercase italic">Sin disponibilidad</p>
                                                         </div>
                                                     ) : (
@@ -1538,7 +1538,7 @@ export const GanttPage: React.FC = () => {
 
             {/* Bottom Drawer: Tareas Pendientes */}
             <div
-                className={`relative mx-10 mb-6 z-[60] bg-[#1e293b]/90 backdrop-blur-sm rounded-sm border border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 ease-in-out ${isResizing ? 'duration-0' : ''}`}
+                className={`relative mx-10 mb-6 z-[60] glass rounded-sm border border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 ease-in-out ${isResizing ? 'duration-0' : ''}`}
                 style={{ height: isPendingTasksOpen ? `${pendingTasksHeight}px` : '64px' }}
                 onDragOver={(e) => {
                     const isTaskDrag = Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'taskid');
@@ -1738,11 +1738,11 @@ export const GanttPage: React.FC = () => {
                                             setReminderFormData({ opNumber: '', name: '', client: '', address: '', totalHours: 1 });
                                             setQuickAddType('reminder');
                                         }}
-                                        className="bg-purple-600/20 text-purple-400 px-4 py-2 rounded-xl border border-purple-500/30 text-sm font-medium hover:bg-purple-600/30 transition-all flex items-center gap-2"
+                                        className="bg-purple-600/20 text-purple-400 px-4 py-2 rounded-md border border-purple-500/30 text-sm font-medium hover:bg-purple-600/30 transition-all flex items-center gap-2"
                                     >
                                         <Plus size={16} /> Nuevo
                                     </button>
-                                    <button onClick={() => setIsRemindersListOpen(false)} className="p-2 hover:bg-white/10 rounded-xl transition-all">
+                                    <button onClick={() => setIsRemindersListOpen(false)} className="p-2 hover:bg-white/10 rounded-md transition-all">
                                         <ChevronRight size={20} className="rotate-45" />
                                     </button>
                                 </div>
@@ -1750,12 +1750,12 @@ export const GanttPage: React.FC = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto p-1 custom-scrollbar">
                                 {reminders.length === 0 && (
-                                    <div className="col-span-full p-10 text-center text-slate-500 border border-dashed border-white/10 rounded-2xl">
+                                    <div className="col-span-full p-10 text-center text-slate-500 border border-dashed border-white/10 rounded-lg">
                                         No hay recordatorios guardados. Crea uno para empezar.
                                     </div>
                                 )}
                                 {reminders.map((r: any) => (
-                                    <div key={r.id} className="glass p-5 rounded-2xl border-white/5 hover:border-purple-500/30 group transition-all relative">
+                                    <div key={r.id} className="glass p-5 rounded-lg border-white/5 hover:border-purple-500/30 group transition-all relative">
                                         <div className="font-black text-purple-400 text-xs mb-1">OP: {r.opNumber}</div>
                                         <div className="font-bold text-white text-sm truncate">{r.client}</div>
                                         <div className="text-slate-400 text-xs truncate mb-3">{r.name}</div>
@@ -1968,7 +1968,7 @@ export const GanttPage: React.FC = () => {
                                     max="30"
                                     value={fragmentDays}
                                     onChange={(e) => setFragmentDays(parseInt(e.target.value) || 1)}
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-mono"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-mono"
                                 />
                             </div>
                         </div>

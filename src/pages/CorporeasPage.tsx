@@ -589,7 +589,7 @@ export const CorporeasPage: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col xl:flex-row justify-between items-center gap-6 p-6">
                 <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <div className="w-14 h-14 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
                         <Calendar className="text-white" size={28} />
                     </div>
                     <div>
@@ -605,19 +605,19 @@ export const CorporeasPage: React.FC = () => {
                     <div className="flex items-center gap-2 flex-nowrap overflow-x-auto pb-2 md:pb-0 no-scrollbar ml-4">
                         <button
                             onClick={handleClearWeek}
-                            className="bg-red-600/10 hover:bg-red-600/20 text-red-400 px-4 py-2 rounded-xl border border-red-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
+                            className="bg-red-600/10 hover:bg-red-600/20 text-red-400 px-4 py-2 rounded-md border border-red-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
                         >
                             <Trash2 size={16} /> Limpiar
                         </button>
                         <button
                             onClick={() => setIsRemindersListOpen(true)}
-                            className="bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 px-4 py-2 rounded-xl border border-purple-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
+                            className="bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 px-4 py-2 rounded-md border border-purple-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
                         >
                             <Bell size={16} /> Recordatorios
                         </button>
                         <button
                             onClick={handleGenerateReport}
-                            className="bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 px-4 py-2 rounded-xl border border-emerald-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
+                            className="bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 px-4 py-2 rounded-md border border-emerald-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
                         >
                             <FileDown size={16} /> Reporte
                         </button>
@@ -631,7 +631,7 @@ export const CorporeasPage: React.FC = () => {
                                 }
                             }}
                             disabled={isSaving}
-                            className={`px-4 py-2 rounded-xl border text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
+                            className={`px-4 py-2 rounded-md border text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
                                 hasPendingChanges 
                                     ? 'bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/20 animate-pulse' 
                                     : 'bg-slate-700/50 text-slate-400 border-white/5 cursor-not-allowed opacity-50'
@@ -646,11 +646,11 @@ export const CorporeasPage: React.FC = () => {
                 <div className="flex items-center gap-4">
                     {/* Inner Week Navigation (Only when Zoomed) */}
                     {isZoomed && (
-                        <div className="flex items-center gap-1 glass p-1.5 rounded-2xl animate-in fade-in slide-in-from-right-4 duration-300">
+                        <div className="flex items-center gap-1 glass p-1.5 rounded-lg animate-in fade-in slide-in-from-right-4 duration-300">
                             <button
                                 onClick={() => setZoomOffset(0)}
                                 disabled={zoomOffset === 0}
-                                className={`p-1.5 rounded-xl transition-all flex items-center justify-center ${zoomOffset === 0 ? 'opacity-30 cursor-not-allowed text-slate-500' : 'text-blue-400 hover:bg-blue-500/20'}`}
+                                className={`p-1.5 rounded-md transition-all flex items-center justify-center ${zoomOffset === 0 ? 'opacity-30 cursor-not-allowed text-slate-500' : 'text-blue-400 hover:bg-blue-500/20'}`}
                                 title="Primeros 3 días (Lun-Mié)"
                             >
                                 <ChevronLeft size={20} />
@@ -658,7 +658,7 @@ export const CorporeasPage: React.FC = () => {
                             <button
                                 onClick={() => setZoomOffset(3)}
                                 disabled={zoomOffset === 3}
-                                className={`p-1.5 rounded-xl transition-all flex items-center justify-center ${zoomOffset === 3 ? 'opacity-30 cursor-not-allowed text-slate-500' : 'text-blue-400 hover:bg-blue-500/20'}`}
+                                className={`p-1.5 rounded-md transition-all flex items-center justify-center ${zoomOffset === 3 ? 'opacity-30 cursor-not-allowed text-slate-500' : 'text-blue-400 hover:bg-blue-500/20'}`}
                                 title="Siguientes 3 días (Jue-Sáb)"
                             >
                                 <ChevronRight size={20} />
@@ -667,7 +667,7 @@ export const CorporeasPage: React.FC = () => {
                     )}
 
                     {/* Zoom Controls */}
-                    <div className="flex items-center gap-1 glass p-1.5 rounded-2xl">
+                    <div className="flex items-center gap-1 glass p-1.5 rounded-lg">
                         <button
                             onClick={() => {
                                 if (isZoomed) {
@@ -676,7 +676,7 @@ export const CorporeasPage: React.FC = () => {
                                 }
                             }}
                             disabled={!isZoomed}
-                            className={`p-1.5 rounded-xl transition-all flex items-center justify-center ${!isZoomed ? 'opacity-50 cursor-not-allowed text-slate-500' : 'text-red-400 hover:bg-red-500/20'}`}
+                            className={`p-1.5 rounded-md transition-all flex items-center justify-center ${!isZoomed ? 'opacity-50 cursor-not-allowed text-slate-500' : 'text-red-400 hover:bg-red-500/20'}`}
                             title="Zoom Out (-)"
                         >
                             <Minus size={20} strokeWidth={3} />
@@ -690,7 +690,7 @@ export const CorporeasPage: React.FC = () => {
                                 }
                             }}
                             disabled={isZoomed}
-                            className={`p-1.5 rounded-xl transition-all flex items-center justify-center ${isZoomed ? 'opacity-50 cursor-not-allowed text-slate-500' : 'text-blue-400 hover:bg-blue-500/20'}`}
+                            className={`p-1.5 rounded-md transition-all flex items-center justify-center ${isZoomed ? 'opacity-50 cursor-not-allowed text-slate-500' : 'text-blue-400 hover:bg-blue-500/20'}`}
                             title="Zoom In (+)"
                         >
                             <Plus size={20} strokeWidth={3} />
@@ -698,22 +698,22 @@ export const CorporeasPage: React.FC = () => {
                     </div>
 
                     {/* Navigation Controls */}
-                    <div className="flex items-center gap-4 glass p-2 rounded-2xl">
+                    <div className="flex items-center gap-4 glass p-2 rounded-lg">
                         <button
                             onClick={() => setCurrentWeekStart(subDays(currentWeekStart, 7))}
-                            className="p-2 hover:bg-white/10 rounded-xl transition-all"
+                            className="p-2 hover:bg-white/10 rounded-md transition-all"
                         >
                             <ChevronLeft size={24} />
                         </button>
                         <button
                             onClick={() => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
-                            className={`px-4 py-1.5 bg-blue-600/20 text-blue-400 font-bold rounded-xl hover:bg-blue-600/30 transition-all border border-blue-500/20 ${isTodayInWeek ? 'opacity-30 blur-[0.5px]' : ''}`}
+                            className={`px-4 py-1.5 bg-blue-600/20 text-blue-400 font-bold rounded-md hover:bg-blue-600/30 transition-all border border-blue-500/20 ${isTodayInWeek ? 'opacity-30 blur-[0.5px]' : ''}`}
                         >
                             Hoy
                         </button>
                         <button
                             onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))}
-                            className="p-2 hover:bg-white/10 rounded-xl transition-all"
+                            className="p-2 hover:bg-white/10 rounded-md transition-all"
                         >
                             <ChevronRight size={24} />
                         </button>
@@ -722,7 +722,7 @@ export const CorporeasPage: React.FC = () => {
             </div>
 
             {/* Gantt Timeline */}
-            <div className="flex-1 min-h-0 bg-[#0f172a] flex flex-col overflow-hidden border border-white/5 mx-10 mb-2 rounded-[2rem] relative shadow-2xl">
+            <div className="flex-1 min-h-0 bg-[#0f172a] flex flex-col overflow-hidden border border-white/5 mx-10 mb-2 rounded-[1rem] relative shadow-2xl">
                 <div className="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar flex flex-col" ref={timelineRef}>
                     <div className="w-full flex-1 flex flex-col">
                         {/* Timeline Days Header */}
@@ -839,7 +839,7 @@ export const CorporeasPage: React.FC = () => {
                                                         }}
                                                         onContextMenu={(e) => handleContextMenu(e, task)}
                                                         onClick={() => handleEditTask(task)}
-                                                        className={`bg-slate-800/40 hover:bg-slate-800/60 border rounded-xl p-3 text-[10px] relative group/task cursor-move transition-all hover:scale-[1.02] hover:z-30 shadow-lg overflow-hidden ${
+                                                        className={`bg-slate-800/40 hover:bg-slate-800/60 border rounded-md p-3 text-[10px] relative group/task cursor-move transition-all hover:scale-[1.02] hover:z-30 shadow-lg overflow-hidden ${
                                                             totalAssignedHours > task.totalHours 
                                                                 ? 'animate-blink border-red-500/50 shadow-red-500/10' 
                                                                 : 'border-white/10'
@@ -972,7 +972,7 @@ export const CorporeasPage: React.FC = () => {
                                                     setSelectedContext({ teamId: null as any, date: day });
                                                     setIsTaskModalOpen(true);
                                                 }}
-                                                className="w-full h-10 rounded-xl border-2 border-dashed border-white/10 hover:border-blue-500/40 hover:bg-blue-500/5 transition-all flex items-center justify-center text-slate-500 hover:text-blue-400 mt-2 font-bold text-xs group"
+                                                className="w-full h-10 rounded-md border-2 border-dashed border-white/10 hover:border-blue-500/40 hover:bg-blue-500/5 transition-all flex items-center justify-center text-slate-500 hover:text-blue-400 mt-2 font-bold text-xs group"
                                             >
                                                 <Plus size={16} className="mr-2 group-hover:rotate-90 transition-transform" />
                                                 Añadir Tarea
@@ -1044,7 +1044,7 @@ export const CorporeasPage: React.FC = () => {
 
                                                 <div className="flex flex-wrap gap-1.5 content-start">
                                                     {availableOnDay.length === 0 ? (
-                                                        <div className="w-full text-center py-4 border border-dashed border-white/5 rounded-xl">
+                                                        <div className="w-full text-center py-4 border border-dashed border-white/5 rounded-md">
                                                             <p className="text-[9px] text-slate-600 font-bold uppercase italic">Sin disponibilidad</p>
                                                         </div>
                                                     ) : (
@@ -1085,7 +1085,7 @@ export const CorporeasPage: React.FC = () => {
             {
     isTaskModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-            <div className="glass p-6 rounded-[2.5rem] w-full max-w-[1000px] max-h-[95vh] flex flex-col shadow-2xl border-white/20 animate-in fade-in zoom-in-95 duration-300">
+            <div className="glass p-6 rounded-[1.25rem] w-full max-w-[1000px] max-h-[95vh] flex flex-col shadow-2xl border-white/20 animate-in fade-in zoom-in-95 duration-300">
                 <div className="mb-4 flex justify-between items-start">
                     <div>
                         <h3 className="text-2xl font-bold">{editingTask ? 'Editar Tarea' : 'Asignar Tarea'}</h3>
@@ -1117,7 +1117,7 @@ export const CorporeasPage: React.FC = () => {
                         <div className={`grid grid-cols-1 ${formData.date !== '' ? 'lg:grid-cols-2' : ''} gap-4`}>
                             <div className="space-y-4">
                                 {/* Column 1: Core Data */}
-                                <div className="p-4 bg-white/5 rounded-[2rem] border border-white/5 space-y-4">
+                                <div className="p-4 bg-white/5 rounded-[1rem] border border-white/5 space-y-4">
                                     <h4 className="text-xs font-black uppercase tracking-widest text-blue-400 mb-1">Datos de Obra</h4>
 
                                     {formData.date !== '' && !selectedContext && !editingTask && (
@@ -1218,7 +1218,7 @@ export const CorporeasPage: React.FC = () => {
                                 </div>
 
                                 {/* Hours Selection (Moved here) */}
-                                <div className="p-4 bg-white/5 rounded-[2rem] border border-white/5 space-y-4">
+                                <div className="p-4 bg-white/5 rounded-[1rem] border border-white/5 space-y-4">
                                     <h4 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-1">Carga de Horas</h4>
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="space-y-1 col-span-2">
@@ -1239,12 +1239,12 @@ export const CorporeasPage: React.FC = () => {
 
                             {/* Right Column: Assignments */}
                             {formData.date !== '' && (
-                                <div className="p-4 bg-white/5 rounded-[2rem] border border-white/5 space-y-4 flex flex-col h-full">
+                                <div className="p-4 bg-white/5 rounded-[1rem] border border-white/5 space-y-4 flex flex-col h-full">
                                     <h4 className="text-xs font-black uppercase tracking-widest text-orange-400 mb-1">Asignaciones</h4>
 
                                     <div className="space-y-2 flex-1">
                                         <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Vehículos</label>
-                                        <div className="glass rounded-xl p-3 h-28 overflow-y-auto custom-scrollbar space-y-1">
+                                        <div className="glass rounded-md p-3 h-28 overflow-y-auto custom-scrollbar space-y-1">
                                             {vehicles.map(v => {
                                                 const isBusy = busyVehiclesOnDate.has(v.id);
                                                 return (
@@ -1282,7 +1282,7 @@ export const CorporeasPage: React.FC = () => {
                                             />
                                         </div>
 
-                                        <div className="glass rounded-xl p-3 h-32 overflow-y-auto custom-scrollbar space-y-1">
+                                        <div className="glass rounded-md p-3 h-32 overflow-y-auto custom-scrollbar space-y-1">
                                             {members
                                                 .filter(m => m.sector === formData.section && m.name.toLowerCase().includes(memberSearch.toLowerCase()))
                                                 .filter(m => {
@@ -1352,7 +1352,7 @@ export const CorporeasPage: React.FC = () => {
 
                         {/* Bottom Section: Full Width Sub-tasks */}
                         {formData.date !== '' && (
-                            <div className="p-4 bg-white/5 rounded-[2rem] border border-white/5 space-y-4">
+                            <div className="p-4 bg-white/5 rounded-[1rem] border border-white/5 space-y-4">
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/20">
@@ -1366,7 +1366,7 @@ export const CorporeasPage: React.FC = () => {
                                             ...formData,
                                             additionalJobs: [...formData.additionalJobs, { description: '', client: '' }]
                                         })}
-                                        className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl text-[10px] font-bold transition-all border border-emerald-500/10 flex items-center gap-2"
+                                        className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-md text-[10px] font-bold transition-all border border-emerald-500/10 flex items-center gap-2"
                                     >
                                         <Plus size={12} /> Añadir Sub-tarea
                                     </button>
@@ -1374,7 +1374,7 @@ export const CorporeasPage: React.FC = () => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {formData.additionalJobs.map((job, index) => (
-                                        <div key={index} className="flex gap-2 p-3 bg-white/5 rounded-2xl border border-white/5 items-start group relative">
+                                        <div key={index} className="flex gap-2 p-3 bg-white/5 rounded-lg border border-white/5 items-start group relative">
                                             <div className="flex-1 space-y-1">
                                                 <input
                                                     className="input-sm w-full bg-white/5 text-[10px]"
@@ -1410,7 +1410,7 @@ export const CorporeasPage: React.FC = () => {
                                         </div>
                                     ))}
                                     {formData.additionalJobs.length === 0 && (
-                                        <div className="col-span-full py-6 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[2rem] opacity-40">
+                                        <div className="col-span-full py-6 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[1rem] opacity-40">
                                             <LayoutGrid size={24} className="text-slate-500 mb-2" />
                                             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Sin sub-tareas asignadas</p>
                                         </div>
@@ -1428,11 +1428,11 @@ export const CorporeasPage: React.FC = () => {
                                 setSelectedContext(null);
                                 setEditingTask(null);
                             }}
-                            className="btn btn-secondary flex-1 rounded-2xl"
+                            className="btn btn-secondary flex-1 rounded-lg"
                         >
                             Cancelar
                         </button>
-                        <button type="submit" className="btn btn-primary flex-[2] rounded-2xl shadow-blue-500/30 text-lg py-2">
+                        <button type="submit" className="btn btn-primary flex-[2] rounded-lg shadow-blue-500/30 text-lg py-2">
                             {editingTask ? 'Guardar Cambios' : 'Asignar Tarea'}
                         </button>
                     </div>
@@ -1445,7 +1445,7 @@ export const CorporeasPage: React.FC = () => {
 {
     quickAddType === 'member' && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-            <div className="glass p-8 rounded-[2.5rem] w-full max-w-sm space-y-6 shadow-2xl border-white/20">
+            <div className="glass p-8 rounded-[1.25rem] w-full max-w-sm space-y-6 shadow-2xl border-white/20">
                 <h3 className="text-2xl font-bold flex items-center gap-2">
                     <Users size={24} className="text-blue-500" /> Nuevo Integrante
                 </h3>
@@ -1499,7 +1499,7 @@ export const CorporeasPage: React.FC = () => {
 {
     quickAddType === 'vehicle' && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-            <div className="glass p-8 rounded-[2.5rem] w-full max-w-sm space-y-6 shadow-2xl border-white/20">
+            <div className="glass p-8 rounded-[1.25rem] w-full max-w-sm space-y-6 shadow-2xl border-white/20">
                 <h3 className="text-2xl font-bold flex items-center gap-2">
                     <Truck size={24} className="text-orange-500" /> Nuevo Vehículo
                 </h3>
@@ -1567,7 +1567,7 @@ export const CorporeasPage: React.FC = () => {
 
 {/* Bottom Drawer: Tareas Pendientes */ }
 <div
-    className={`relative mx-10 mb-6 z-[60] glass rounded-[2.5rem] border border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 ease-in-out ${isResizing ? 'duration-0' : ''}`}
+    className={`relative mx-10 mb-6 z-[60] glass rounded-sm border border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 ease-in-out ${isResizing ? 'duration-0' : ''}`}
     style={{ height: isPendingTasksOpen ? `${pendingTasksHeight}px` : '64px' }}
     onDragOver={(e) => {
         const isTaskDrag = Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'taskid');
@@ -1646,7 +1646,7 @@ export const CorporeasPage: React.FC = () => {
                     value={pendingSearch}
                     onChange={(e) => setPendingSearch(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
-                    className="bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all w-40 lg:w-60"
+                    className="bg-white/5 border border-white/10 rounded-md pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all w-40 lg:w-60"
                 />
             </div>
             <button
@@ -1670,7 +1670,7 @@ export const CorporeasPage: React.FC = () => {
                     });
                     setIsTaskModalOpen(true);
                 }}
-                className="bg-blue-600/20 text-blue-400 px-4 py-2 rounded-xl border border-blue-500/30 text-sm font-bold hover:bg-blue-600/30 transition-all flex items-center gap-2"
+                className="bg-blue-600/20 text-blue-400 px-4 py-2 rounded-md border border-blue-500/30 text-sm font-bold hover:bg-blue-600/30 transition-all flex items-center gap-2"
             >
                 <Plus size={16} /> Nuevo Pendiente
             </button>
@@ -1705,7 +1705,7 @@ export const CorporeasPage: React.FC = () => {
                         onDragEnd={handleDragEnd}
                         onContextMenu={(e) => handleContextMenu(e, task)}
                         onClick={() => handleEditTask(task)}
-                        className={`group/item relative shadow-lg rounded-2xl p-4 transition-all hover:scale-[1.02] cursor-pointer border ${
+                        className={`group/item relative shadow-lg rounded-lg p-4 transition-all hover:scale-[1.02] cursor-pointer border ${
                             isMatch 
                                 ? 'bg-emerald-500/20 border-emerald-500/50 shadow-emerald-500/10' 
                                 : 'bg-slate-800/40 border-white/10 hover:bg-slate-800/60'
@@ -1746,7 +1746,7 @@ export const CorporeasPage: React.FC = () => {
 {
     isRemindersListOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-            <div className="glass p-8 rounded-[2.5rem] w-full max-w-2xl space-y-6 shadow-2xl border-white/20">
+            <div className="glass p-8 rounded-[1.25rem] w-full max-w-2xl space-y-6 shadow-2xl border-white/20">
                 <div className="flex justify-between items-center">
                     <h3 className="text-2xl font-bold flex items-center gap-2">
                         <Bell size={24} className="text-purple-500" /> Recordatorios / Plantillas
@@ -1758,11 +1758,11 @@ export const CorporeasPage: React.FC = () => {
                                 setReminderFormData({ opNumber: '', name: '', client: '', address: '', totalHours: 1 });
                                 setQuickAddType('reminder');
                             }}
-                            className="bg-purple-600/20 text-purple-400 px-4 py-2 rounded-xl border border-purple-500/30 text-sm font-medium hover:bg-purple-600/30 transition-all flex items-center gap-2"
+                            className="bg-purple-600/20 text-purple-400 px-4 py-2 rounded-md border border-purple-500/30 text-sm font-medium hover:bg-purple-600/30 transition-all flex items-center gap-2"
                         >
                             <Plus size={16} /> Nuevo
                         </button>
-                        <button onClick={() => setIsRemindersListOpen(false)} className="p-2 hover:bg-white/10 rounded-xl transition-all">
+                        <button onClick={() => setIsRemindersListOpen(false)} className="p-2 hover:bg-white/10 rounded-md transition-all">
                             <ChevronRight size={20} className="rotate-45" />
                         </button>
                     </div>
@@ -1770,12 +1770,12 @@ export const CorporeasPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto p-1 custom-scrollbar">
                     {reminders.length === 0 && (
-                        <div className="col-span-full p-10 text-center text-slate-500 border border-dashed border-white/10 rounded-2xl">
+                        <div className="col-span-full p-10 text-center text-slate-500 border border-dashed border-white/10 rounded-lg">
                             No hay recordatorios guardados. Crea uno para empezar.
                         </div>
                     )}
                     {reminders.map((r: any) => (
-                        <div key={r.id} className="glass p-5 rounded-2xl border-white/5 hover:border-purple-500/30 group transition-all relative">
+                        <div key={r.id} className="glass p-5 rounded-lg border-white/5 hover:border-purple-500/30 group transition-all relative">
                             <div className="font-black text-purple-400 text-xs mb-1">OP: {r.opNumber}</div>
                             <div className="font-bold text-white text-sm truncate">{r.client}</div>
                             <div className="text-slate-400 text-xs truncate mb-3">{r.name}</div>
@@ -1824,7 +1824,7 @@ export const CorporeasPage: React.FC = () => {
 {
     quickAddType === 'reminder' && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[80] p-4">
-            <div className="glass p-8 rounded-[2.5rem] w-full max-w-md space-y-6 shadow-2xl border-white/20">
+            <div className="glass p-8 rounded-[1.25rem] w-full max-w-md space-y-6 shadow-2xl border-white/20">
                 <h3 className="text-2xl font-bold flex items-center gap-2">
                     <Bell size={24} className="text-purple-500" /> {editingReminder ? 'Editar Recordatorio' : 'Nuevo Recordatorio'}
                 </h3>
@@ -1893,7 +1893,7 @@ export const CorporeasPage: React.FC = () => {
 {
     contextMenu && (
         <div
-            className="fixed z-[200] bg-slate-800/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl py-1 w-48 animate-in fade-in zoom-in duration-200"
+            className="fixed z-[200] bg-slate-800/90 backdrop-blur-xl border border-white/10 rounded-md shadow-2xl py-1 w-48 animate-in fade-in zoom-in duration-200"
             style={{ left: contextMenu.x, top: contextMenu.y }}
             onClick={(e) => e.stopPropagation()}
         >
@@ -1971,7 +1971,7 @@ export const CorporeasPage: React.FC = () => {
 {
     isFragmentModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[150] p-4">
-            <div className="glass p-8 rounded-[2.5rem] w-full max-w-md space-y-6 shadow-2xl border-white/20 animate-in slide-in-from-bottom duration-300">
+            <div className="glass p-8 rounded-[1.25rem] w-full max-w-md space-y-6 shadow-2xl border-white/20 animate-in slide-in-from-bottom duration-300">
                 <div className="flex justify-between items-center">
                     <h3 className="text-2xl font-bold flex items-center gap-2">
                         <LayoutGrid size={24} className="text-blue-500" /> Fragmentar Tarea
@@ -1991,7 +1991,7 @@ export const CorporeasPage: React.FC = () => {
                             max="30"
                             value={fragmentDays}
                             onChange={(e) => setFragmentDays(parseInt(e.target.value) || 1)}
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-mono"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-mono"
                         />
                     </div>
                 </div>
@@ -2002,13 +2002,13 @@ export const CorporeasPage: React.FC = () => {
                             setIsFragmentModalOpen(false);
                             setFragmentTargetTask(null);
                         }}
-                        className="flex-1 px-6 py-4 rounded-2xl font-bold text-slate-400 hover:bg-white/5 transition-all text-sm border border-white/10"
+                        className="flex-1 px-6 py-4 rounded-lg font-bold text-slate-400 hover:bg-white/5 transition-all text-sm border border-white/10"
                     >
                         Cancelar
                     </button>
                     <button
                         onClick={confirmFragment}
-                        className="flex-[2] bg-blue-600 hover:bg-blue-500 text-white px-6 py-4 rounded-2xl font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95 text-sm flex items-center justify-center gap-2"
+                        className="flex-[2] bg-blue-600 hover:bg-blue-500 text-white px-6 py-4 rounded-lg font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95 text-sm flex items-center justify-center gap-2"
                     >
                         Confirmar Fragmentación
                     </button>

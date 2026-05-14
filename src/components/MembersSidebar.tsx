@@ -71,7 +71,7 @@ export const MembersSidebar: React.FC = () => {
                     <input
                         type="text"
                         placeholder="Buscar integrante..."
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm outline-none focus:border-blue-500/50 transition-all font-medium"
+                        className="w-full bg-white/5 border border-white/10 rounded-md pl-10 pr-4 py-2 text-sm outline-none focus:border-blue-500/50 transition-all font-medium"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -80,7 +80,7 @@ export const MembersSidebar: React.FC = () => {
                 <div className="relative">
                     <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={14} />
                     <select
-                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs outline-none focus:border-blue-500/50 transition-all appearance-none cursor-pointer font-bold text-slate-400"
+                        className="w-full bg-white/5 border border-white/10 rounded-md pl-10 pr-4 py-2 text-xs outline-none focus:border-blue-500/50 transition-all appearance-none cursor-pointer font-bold text-slate-400"
                         value={selectedSector}
                         onChange={(e) => setSelectedSector(e.target.value)}
                     >

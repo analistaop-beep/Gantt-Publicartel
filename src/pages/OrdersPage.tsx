@@ -205,7 +205,7 @@ export const OrdersPage: React.FC = () => {
             </div>
 
             <div className="flex-1 min-h-0 overflow-auto custom-scrollbar p-10">
-                <div className="glass rounded-[2.5rem] overflow-hidden shadow-2xl border-white/10">
+                <div className="glass rounded-[1.25rem] overflow-hidden shadow-2xl border-white/10">
                     <div className="overflow-x-auto custom-scrollbar">
                         <table className="w-full text-left border-collapse">
                             <thead>
@@ -519,7 +519,7 @@ export const OrdersPage: React.FC = () => {
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {formData.files.map((file, index) => (
-                                        <div key={index} className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl group hover:border-blue-500/30 transition-all">
+                                        <div key={index} className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-md group hover:border-blue-500/30 transition-all">
                                             <FileText size={14} className="text-blue-400" />
                                             <a href={file} target="_blank" rel="noopener noreferrer" className="text-xs text-slate-300 hover:text-white truncate max-w-[150px]">
                                                 {file.split('/').pop()}

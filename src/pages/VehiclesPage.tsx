@@ -60,7 +60,7 @@ export const VehiclesPage: React.FC = () => {
         <div className="flex-1 min-h-0 overflow-auto custom-scrollbar p-10">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {vehicles.map((vehicle) => (
-                    <div key={vehicle.id} className="glass p-5 rounded-2xl flex items-center justify-between group">
+                    <div key={vehicle.id} className="glass p-5 rounded-md flex items-center justify-between group">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-400">
                                 <Truck size={24} />

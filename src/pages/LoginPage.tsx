@@ -35,9 +35,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/10 blur-[120px]" />
       
       <div className="w-full max-w-md p-8 animate-in relative z-10">
-        <div className="glass rounded-[2.5rem] p-10 shadow-2xl border-white/5 backdrop-blur-3xl">
+        <div className="glass rounded-[1.25rem] p-10 shadow-2xl border-white/5 backdrop-blur-3xl">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-600/40 mb-6 group transition-transform hover:scale-105 active:scale-95 duration-500">
+            <div className="w-20 h-20 bg-blue-600 rounded-lg flex items-center justify-center shadow-2xl shadow-blue-600/40 mb-6 group transition-transform hover:scale-105 active:scale-95 duration-500">
               <Lock className="text-white group-hover:rotate-12 transition-transform duration-500" size={32} />
             </div>
             <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Acceso Admin</h1>

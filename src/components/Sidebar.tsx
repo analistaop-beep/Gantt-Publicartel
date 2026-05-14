@@ -39,7 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                     <button
                         key={item.id}
                         onClick={() => setActiveTab(item.id)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
+                        className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all ${activeTab === item.id
                             ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
                             : 'hover:bg-white/5 text-slate-400'
                             }`}
@@ -55,7 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
 
                 <button
                     onClick={() => setActiveTab(orderMenuItem.id)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === orderMenuItem.id
+                    className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all ${activeTab === orderMenuItem.id
                         ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
                         : 'hover:bg-white/5 text-slate-400'
                         }`}
@@ -68,7 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                     <button
                         key={item.id}
                         onClick={() => setActiveTab(item.id)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
+                        className={`flex items-center gap-3 px-4 py-3 rounded-md transition-all ${activeTab === item.id
                             ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
                             : 'hover:bg-white/5 text-slate-400'
                             }`}
@@ -80,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
 
                 <div className={`grid transition-all duration-500 ease-in-out ${isPassModalOpen ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0'}`}>
                     <div className="overflow-hidden">
-                        <div className="glass p-3 rounded-2xl shadow-2xl border-red-500/30 z-50">
+                        <div className="glass p-3 rounded-lg shadow-2xl border-red-500/30 z-50">
                             <div className="flex flex-col gap-2">
                                 <div className="flex justify-between items-center px-1">
                                     <span className="text-[10px] uppercase font-bold text-red-400">Confirmar Reseteo</span>
@@ -135,7 +135,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
             <div className="p-4 border-t border-white/10 flex flex-col gap-4 relative">
                 <button
                     onClick={toggleTheme}
-                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl transition-all text-xs font-bold uppercase tracking-wider group border ${theme === 'dark'
+                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md transition-all text-xs font-bold uppercase tracking-wider group border ${theme === 'dark'
                             ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border-blue-500/30'
                             : 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-500 border-amber-400/30'
                         }`}
@@ -148,7 +148,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                 </button>
                 <button
                     onClick={() => setIsPassModalOpen(!isPassModalOpen)}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/30 rounded-xl transition-all text-xs font-bold uppercase tracking-wider group"
+                    className="flex items-center justify-center gap-2 px-4 py-3 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/30 rounded-md transition-all text-xs font-bold uppercase tracking-wider group"
                 >
                     <Lock size={14} className="group-hover:animate-bounce" />
                     Resetear Base de Datos

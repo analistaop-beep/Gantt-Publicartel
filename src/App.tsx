@@ -105,7 +105,7 @@ function App() {
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
         style={{ left: isSidebarOpen ? '256px' : '0px' }}
-        className="absolute top-1/2 -translate-y-1/2 z-50 w-5 h-16 glass rounded-r-2xl border-l-0 flex items-center justify-center hover:bg-white/10 transition-all duration-300 group shadow-2xl backdrop-blur-2xl border border-white/10"
+        className="absolute top-1/2 -translate-y-1/2 z-[45] w-5 h-16 glass rounded-r-lg border-l-0 flex items-center justify-center hover:bg-white/10 transition-all duration-300 group shadow-2xl backdrop-blur-2xl border border-white/10"
         title={isSidebarOpen ? "Ocultar Sidebar" : "Mostrar Sidebar"}
       >
         {isSidebarOpen ? (
@@ -130,7 +130,7 @@ function App() {
       <button
         onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
         style={{ right: isRightSidebarOpen ? '256px' : '0px' }}
-        className="absolute top-1/2 -translate-y-1/2 z-50 w-5 h-16 glass rounded-l-2xl border-r-0 flex items-center justify-center hover:bg-white/10 transition-all duration-300 group shadow-2xl backdrop-blur-2xl border border-white/10"
+        className="absolute top-1/2 -translate-y-1/2 z-[45] w-5 h-16 glass rounded-l-lg border-r-0 flex items-center justify-center hover:bg-white/10 transition-all duration-300 group shadow-2xl backdrop-blur-2xl border border-white/10"
         title={isRightSidebarOpen ? "Ocultar Integrantes" : "Mostrar Integrantes"}
       >
         {isRightSidebarOpen ? (
