@@ -274,7 +274,7 @@ export const useStore = create<AppState>((set, get) => ({
         try {
             set({ error: null });
             const { id } = order;
-            const { error } = await supabase.from('production_orders').update({
+            const payload = {
                 opNumber: order.opNumber,
                 client: order.client,
                 seller: order.seller,
@@ -285,8 +285,13 @@ export const useStore = create<AppState>((set, get) => ({
                 category: order.category,
                 status: order.status,
                 files: JSON.stringify(order.files ?? [])
-            }).eq('id', id);
-            if (error) throw error;
+            };
+            console.log('[updateProductionOrder] payload:', payload);
+            const { error } = await supabase.from('production_orders').update(payload).eq('id', id);
+            if (error) {
+                console.error('[updateProductionOrder] Supabase error:', JSON.stringify(error));
+                throw error;
+            }
             await get().fetchData();
         } catch (err: any) {
             set({ error: err.message });
