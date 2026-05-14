@@ -297,7 +297,11 @@ export const useStore = create<AppState>((set, get) => ({
         
         const { error: uploadError } = await supabase.storage
             .from('production-orders')
-            .upload(path, file);
+            .upload(path, file, {
+                contentType: file instanceof File ? file.type : 'image/webp',
+                cacheControl: '3600',
+                upsert: false
+            });
 
         if (uploadError) throw uploadError;
 
