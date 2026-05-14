@@ -75,6 +75,7 @@ db.exec(`
     address TEXT,
     category TEXT,
     status TEXT,
+    currency TEXT DEFAULT 'UYU',
     files TEXT,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -106,6 +107,7 @@ ensureColumnExists('members', 'sector', 'TEXT');
 ensureColumnExists('task_members', 'hours', 'REAL DEFAULT 8');
 ensureColumnExists('production_orders', 'category', 'TEXT');
 ensureColumnExists('production_orders', 'status', 'TEXT');
+ensureColumnExists('production_orders', 'currency', "TEXT DEFAULT 'UYU'");
 
 // Backfill: set type = 'instalacion' for any tasks that still have NULL type
 try {

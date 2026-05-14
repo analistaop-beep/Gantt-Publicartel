@@ -15,6 +15,7 @@ export const OrdersPage: React.FC = () => {
         client: '',
         seller: '',
         price: 0,
+        currency: 'UYU' as 'UYU' | 'USD',
         description: '',
         address: '',
         category: 'Proyectos',
@@ -23,6 +24,7 @@ export const OrdersPage: React.FC = () => {
     });
     const categories = ['Proyectos', 'Outdoor', 'Digital', 'Mantenimiento', 'Otros'];
     const statuses = ['Gestión de Acopio', 'En Proceso', 'Para Facturar', 'Terminada'];
+    const sellers = ["W. Maciel", "P. Goicoechea", "N. Mannise", "F. Cruz", "P. Lizuain", "V. Castellucci", "Otro"];
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     const filteredOrders = productionOrders.filter(order =>
@@ -59,6 +61,7 @@ export const OrdersPage: React.FC = () => {
                 client: order.client,
                 seller: order.seller,
                 price: order.price,
+                currency: order.currency || 'UYU',
                 description: order.description || '',
                 address: order.address || '',
                 category: order.category || 'Proyectos',
@@ -72,6 +75,7 @@ export const OrdersPage: React.FC = () => {
                 client: '',
                 seller: '',
                 price: 0,
+                currency: 'UYU',
                 description: '',
                 address: '',
                 category: 'Proyectos',
@@ -90,6 +94,7 @@ export const OrdersPage: React.FC = () => {
             client: '',
             seller: '',
             price: 0,
+            currency: 'UYU',
             description: '',
             address: '',
             category: 'Proyectos',
@@ -140,6 +145,18 @@ export const OrdersPage: React.FC = () => {
         const newFiles = [...formData.files];
         newFiles.splice(index, 1);
         setFormData({ ...formData, files: newFiles });
+    };
+
+    const handleStatusChange = async (order: any, newStatus: string) => {
+        try {
+            await updateProductionOrder({ ...order, status: newStatus });
+            sileo.success({ title: "Estado actualizado correctamente" });
+        } catch (err: any) {
+            sileo.error({
+                title: "Error al actualizar estado",
+                description: err.message
+            });
+        }
     };
 
     return (
@@ -223,9 +240,15 @@ export const OrdersPage: React.FC = () => {
                                                     if (s === 'Terminada') color = 'text-slate-500 bg-white/5 border-white/10';
                                                     
                                                     return (
-                                                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${color}`}>
-                                                            {s}
-                                                        </span>
+                                                        <select
+                                                            value={s}
+                                                            onChange={(e) => handleStatusChange(order, e.target.value)}
+                                                            className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border cursor-pointer outline-none transition-all hover:scale-105 appearance-none text-center ${color}`}
+                                                        >
+                                                            {statuses.map(status => (
+                                                                <option key={status} value={status} className="bg-gray-900 text-white capitalize">{status}</option>
+                                                            ))}
+                                                        </select>
                                                     );
                                                 })()}
                                             </td>
@@ -233,7 +256,7 @@ export const OrdersPage: React.FC = () => {
                                                 {order.seller}
                                             </td>
                                             <td className="px-8 py-4 font-mono text-emerald-400 font-bold text-center">
-                                                ${(order.price || 0).toLocaleString('es-AR')}
+                                                {order.currency === 'USD' ? 'U$D' : '$U'} {(order.price || 0).toLocaleString('es-UY')}
                                             </td>
                                             <td className="px-8 py-4">
                                                 <div className="flex -space-x-2">
@@ -319,16 +342,26 @@ export const OrdersPage: React.FC = () => {
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Precio Venta</label>
-                                    <div className="relative group">
-                                        <DollarSign size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
-                                        <input
-                                            type="number"
-                                            className="input w-full pl-12"
-                                            placeholder="0.00"
-                                            value={formData.price}
-                                            onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                                            required
-                                        />
+                                    <div className="flex gap-2">
+                                        <div className="relative group flex-1">
+                                            <DollarSign size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
+                                            <input
+                                                type="number"
+                                                className="input w-full pl-12"
+                                                placeholder="0.00"
+                                                value={formData.price}
+                                                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                                                required
+                                            />
+                                        </div>
+                                        <select 
+                                            className="input w-24 text-center appearance-none"
+                                            value={formData.currency}
+                                            onChange={(e) => setFormData({ ...formData, currency: e.target.value as 'UYU' | 'USD' })}
+                                        >
+                                            <option value="UYU">UYU</option>
+                                            <option value="USD">USD</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -351,13 +384,17 @@ export const OrdersPage: React.FC = () => {
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Vendedor</label>
                                     <div className="relative group">
                                         <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
-                                        <input
-                                            className="input w-full pl-12"
-                                            placeholder="Nombre del vendedor"
+                                        <select
+                                            className="input w-full pl-12 appearance-none"
                                             value={formData.seller}
                                             onChange={(e) => setFormData({ ...formData, seller: e.target.value })}
                                             required
-                                        />
+                                        >
+                                            <option value="">Seleccionar vendedor</option>
+                                            {sellers.map(s => (
+                                                <option key={s} value={s}>{s}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
                             </div>

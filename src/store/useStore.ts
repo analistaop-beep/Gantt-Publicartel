@@ -46,7 +46,7 @@ interface AppState {
     deleteReminder: (id: string) => Promise<void>;
     
     // Production Orders
-    addProductionOrder: (order: { opNumber: string; client: string; seller: string; price: number; description: string; address: string; category: string; status: string; files: string[] }) => Promise<void>;
+    addProductionOrder: (order: { opNumber: string; client: string; seller: string; price: number; currency: 'UYU' | 'USD'; description: string; address: string; category: string; status: string; files: string[] }) => Promise<void>;
     updateProductionOrder: (order: any) => Promise<void>;
     deleteProductionOrder: (id: string) => Promise<void>;
     

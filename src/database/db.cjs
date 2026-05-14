@@ -76,6 +76,7 @@ db.exec(`
     address TEXT,
     category TEXT,
     status TEXT,
+    currency TEXT DEFAULT 'UYU',
     files TEXT,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -96,6 +97,7 @@ const ensureColumnExists = (table, column, typeDef) => {
 
 ensureColumnExists('production_orders', 'category', 'TEXT');
 ensureColumnExists('production_orders', 'status', 'TEXT');
+ensureColumnExists('production_orders', 'currency', "TEXT DEFAULT 'UYU'");
 
 ensureColumnExists('tasks', 'totalHours', 'REAL DEFAULT 0');
 ensureColumnExists('tasks', 'vehicleId', 'TEXT');

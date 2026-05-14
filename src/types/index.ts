@@ -41,6 +41,7 @@ export interface ProductionOrder {
     address: string;
     category: string;
     status: string;
+    currency: 'UYU' | 'USD';
     files: string[]; // JSON string in DB, parsed to array in store
     createdAt?: string;
 }
