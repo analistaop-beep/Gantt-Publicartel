@@ -273,10 +273,18 @@ export const useStore = create<AppState>((set, get) => ({
     updateProductionOrder: async (order) => {
         try {
             set({ error: null });
-            const { id, ...data } = order;
+            const { id } = order;
             const { error } = await supabase.from('production_orders').update({
-                ...data,
-                files: JSON.stringify(data.files)
+                opNumber: order.opNumber,
+                client: order.client,
+                seller: order.seller,
+                price: order.price,
+                currency: order.currency,
+                description: order.description,
+                address: order.address,
+                category: order.category,
+                status: order.status,
+                files: JSON.stringify(order.files ?? [])
             }).eq('id', id);
             if (error) throw error;
             await get().fetchData();
