@@ -111,6 +111,27 @@ app.delete('/api/reminders/:id', (req, res) => {
     catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── Production Orders ─────────────────────────────────────
+app.get('/api/production-orders', (req, res) => {
+    try { res.json(Services.getProductionOrders()); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/production-orders', (req, res) => {
+    try { const id = Services.addProductionOrder(req.body); res.json({ id }); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/production-orders/:id', (req, res) => {
+    try { Services.updateProductionOrder({ ...req.body, id: req.params.id }); res.json({ ok: true }); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/production-orders/:id', (req, res) => {
+    try { Services.deleteProductionOrder(req.params.id); res.json({ ok: true }); }
+    catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── Start ────────────────────────────────────────────────
 app.listen(PORT, () => {
     console.log(`✅ Gantt API Server running at http://localhost:${PORT}`);

@@ -76,6 +76,10 @@ ipcMain.handle('get-reminders', () => Services.getReminders());
 ipcMain.handle('add-reminder', (_, r) => Services.addReminder(r));
 ipcMain.handle('update-reminder', (_, r) => Services.updateReminder(r));
 ipcMain.handle('delete-reminder', (_, id) => Services.deleteReminder(id));
+ipcMain.handle('get-production-orders', () => Services.getProductionOrders());
+ipcMain.handle('add-production-order', (_, o) => Services.addProductionOrder(o));
+ipcMain.handle('update-production-order', (_, o) => Services.updateProductionOrder(o));
+ipcMain.handle('delete-production-order', (_, id) => Services.deleteProductionOrder(id));
 
 app.whenReady().then(() => {
     createWindow();

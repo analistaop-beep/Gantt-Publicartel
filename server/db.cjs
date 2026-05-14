@@ -64,6 +64,20 @@ db.exec(`
     address TEXT NOT NULL,
     totalHours REAL NOT NULL
   );
+  
+  CREATE TABLE IF NOT EXISTS production_orders (
+    id TEXT PRIMARY KEY,
+    opNumber TEXT NOT NULL,
+    client TEXT NOT NULL,
+    seller TEXT NOT NULL,
+    price REAL NOT NULL,
+    description TEXT,
+    address TEXT,
+    category TEXT,
+    status TEXT,
+    files TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // Migrations
@@ -90,6 +104,8 @@ ensureColumnExists('tasks', 'type', "TEXT DEFAULT 'instalacion'");
 ensureColumnExists('tasks', 'section', "TEXT DEFAULT 'Instalaciones'");
 ensureColumnExists('members', 'sector', 'TEXT');
 ensureColumnExists('task_members', 'hours', 'REAL DEFAULT 8');
+ensureColumnExists('production_orders', 'category', 'TEXT');
+ensureColumnExists('production_orders', 'status', 'TEXT');
 
 // Backfill: set type = 'instalacion' for any tasks that still have NULL type
 try {

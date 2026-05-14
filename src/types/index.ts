@@ -31,6 +31,20 @@ export interface Task {
     members?: string[];
 }
 
+export interface ProductionOrder {
+    id: string;
+    opNumber: string;
+    client: string;
+    seller: string;
+    price: number;
+    description: string;
+    address: string;
+    category: string;
+    status: string;
+    files: string[]; // JSON string in DB, parsed to array in store
+    createdAt?: string;
+}
+
 export interface DailyStats {
     teamId: string;
     date: string;

@@ -223,6 +223,26 @@ const Services = {
             .run(reminder.opNumber, reminder.name, reminder.client, reminder.address, reminder.totalHours, reminder.id);
     },
     deleteReminder: (id) => db.prepare('DELETE FROM reminders WHERE id = ?').run(id),
+
+    // Production Orders
+    getProductionOrders: () => {
+        const orders = db.prepare('SELECT * FROM production_orders ORDER BY createdAt DESC').all();
+        return orders.map(o => ({
+            ...o,
+            files: JSON.parse(o.files || '[]')
+        }));
+    },
+    addProductionOrder: (order) => {
+        const id = uuidv4();
+        db.prepare('INSERT INTO production_orders (id, opNumber, client, seller, price, description, address, category, status, files) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+            .run(id, order.opNumber, order.client, order.seller, order.price, order.description, order.address, order.category, order.status, JSON.stringify(order.files || []));
+        return id;
+    },
+    updateProductionOrder: (order) => {
+        db.prepare('UPDATE production_orders SET opNumber = ?, client = ?, seller = ?, price = ?, description = ?, address = ?, category = ?, status = ?, files = ? WHERE id = ?')
+            .run(order.opNumber, order.client, order.seller, order.price, order.description, order.address, order.category, order.status, JSON.stringify(order.files || []), order.id);
+    },
+    deleteProductionOrder: (id) => db.prepare('DELETE FROM production_orders WHERE id = ?').run(id),
 };
 
 module.exports = Services;

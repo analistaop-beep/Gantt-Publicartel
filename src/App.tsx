@@ -14,6 +14,7 @@ const HerreriaPage = lazy(() => import('./pages/HerreriaPage').then(m => ({ defa
 const CorporeasPage = lazy(() => import('./pages/CorporeasPage').then(m => ({ default: m.CorporeasPage })));
 const LonasVinilosPage = lazy(() => import('./pages/LonasVinilosPage').then(m => ({ default: m.LonasVinilosPage })));
 const PinturaPage = lazy(() => import('./pages/PinturaPage').then(m => ({ default: m.PinturaPage })));
+const OrdersPage = lazy(() => import('./pages/OrdersPage').then(m => ({ default: m.OrdersPage })));
 
 const LoadingView = () => (
   <div className="h-full w-full flex flex-col items-center justify-center bg-gray-900 gap-4">
@@ -80,6 +81,7 @@ function App() {
             case 'corporeas': return <CorporeasPage />;
             case 'lonas': return <LonasVinilosPage />;
             case 'pintura': return <PinturaPage />;
+            case 'orders': return <OrdersPage />;
             default: return <GanttPage />;
           }
         })()}
@@ -114,7 +116,7 @@ function App() {
       </button>
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <div className={`flex-1 min-h-0 ${['gantt', 'herreria', 'corporeas', 'lonas', 'pintura', 'members', 'vehicles'].includes(activeTab) ? '' : 'p-8 overflow-auto'} transition-all duration-300`}>
+        <div className={`flex-1 min-h-0 ${['gantt', 'herreria', 'corporeas', 'lonas', 'pintura', 'members', 'vehicles', 'orders'].includes(activeTab) ? '' : 'p-8 overflow-auto'} transition-all duration-300`}>
           {renderContent()}
         </div>
       </main>

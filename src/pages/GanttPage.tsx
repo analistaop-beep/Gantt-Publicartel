@@ -81,11 +81,58 @@ export const GanttPage: React.FC = () => {
     const [isPendingTasksOpen, setIsPendingTasksOpen] = useState(false);
     const [isCapacityOpen, setIsCapacityOpen] = useState(false);
     const [memberSearch, setMemberSearch] = useState('');
+    const [pendingSearch, setPendingSearch] = useState('');
+    const [pendingTasksHeight, setPendingTasksHeight] = useState(300);
+    const [isResizing, setIsResizing] = useState(false);
+
+    const startResizing = (e: React.MouseEvent) => {
+        setIsResizing(true);
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isResizing) return;
+            const newHeight = window.innerHeight - e.clientY - 40;
+            if (newHeight > 64 && newHeight < window.innerHeight * 0.7) {
+                setPendingTasksHeight(newHeight);
+                if (!isPendingTasksOpen && newHeight > 100) {
+                    setIsPendingTasksOpen(true);
+                }
+            }
+        };
+
+        const handleMouseUp = () => setIsResizing(false);
+
+        if (isResizing) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isResizing, isPendingTasksOpen]);
 
     // Filter pending tasks (tasks with no date)
     const pendingTasks = useMemo(() => {
-        return tasks.filter(t => !t.date || t.date === '');
-    }, [tasks]);
+        let pts = tasks.filter(t => !t.date || t.date === '');
+        
+        if (pendingSearch.trim()) {
+            const search = pendingSearch.toLowerCase();
+            pts = [...pts].sort((a, b) => {
+                const aMatch = a.client?.toLowerCase().includes(search) || a.opNumber?.toString().toLowerCase().includes(search);
+                const bMatch = b.client?.toLowerCase().includes(search) || b.opNumber?.toString().toLowerCase().includes(search);
+                if (aMatch && !bMatch) return -1;
+                if (!aMatch && bMatch) return 1;
+                return 0;
+            });
+        }
+        
+        return pts;
+    }, [tasks, pendingSearch]);
 
     // Vehicle availability logic
     const busyVehiclesOnDate = useMemo(() => {
@@ -1511,8 +1558,8 @@ export const GanttPage: React.FC = () => {
 
             {/* Bottom Drawer: Tareas Pendientes */}
             <div
-                className={`relative mx-10 mb-6 z-[60] glass rounded-[2.5rem] border border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-500 ease-in-out ${isPendingTasksOpen ? 'h-[20vh] max-h-[20vh]' : 'h-16'
-                    }`}
+                className={`relative mx-10 mb-6 z-[60] glass rounded-[2.5rem] border border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 ease-in-out ${isResizing ? 'duration-0' : ''}`}
+                style={{ height: isPendingTasksOpen ? `${pendingTasksHeight}px` : '64px' }}
                 onDragOver={(e) => {
                     const isTaskDrag = Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'taskid');
                     if (isTaskDrag) {
@@ -1556,6 +1603,14 @@ export const GanttPage: React.FC = () => {
                     }
                 }}
             >
+                {/* Resizer Handle */}
+                <div 
+                    onMouseDown={startResizing}
+                    className="absolute -top-1 left-12 right-12 h-2 cursor-ns-resize z-[70] flex items-center justify-center group"
+                >
+                    <div className="w-12 h-1 rounded-full bg-white/10 group-hover:bg-blue-500/50 transition-all"></div>
+                </div>
+
                 {/* Header / Toggle Button */}
                 <div
                     className="flex justify-between items-center px-10 h-16 cursor-pointer group"
@@ -1574,6 +1629,17 @@ export const GanttPage: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        <div className="relative group/search">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/search:text-blue-400 transition-colors" size={14} />
+                            <input
+                                type="text"
+                                placeholder="Buscar OP o Cliente..."
+                                value={pendingSearch}
+                                onChange={(e) => setPendingSearch(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all w-40 lg:w-60"
+                            />
+                        </div>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -1607,7 +1673,10 @@ export const GanttPage: React.FC = () => {
 
                 {/* Content */}
                 <div className={`px-10 pb-10 overflow-hidden transition-opacity duration-300 ${isPendingTasksOpen ? 'opacity-100' : 'opacity-0'}`}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[calc(20vh-80px)] overflow-y-auto custom-scrollbar pr-2 pt-2">
+                    <div 
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto custom-scrollbar pr-2 pt-2"
+                        style={{ maxHeight: `${pendingTasksHeight - 80}px` }}
+                    >
                         {pendingTasks.length === 0 ? (
                             <div className="col-span-full py-10 text-center text-slate-500 italic">
                                 No hay tareas pendientes para instalaciones.
@@ -1615,6 +1684,10 @@ export const GanttPage: React.FC = () => {
                         ) : (
                             pendingTasks.map(task => {
                                 const taskVehicles = (task.vehicles || []).map((vId: string) => vehicles.find(v => v.id === vId)).filter(Boolean);
+                                const isMatch = pendingSearch && (
+                                    task.client?.toLowerCase().includes(pendingSearch.toLowerCase()) || 
+                                    task.opNumber?.toString().toLowerCase().includes(pendingSearch.toLowerCase())
+                                );
                                 
                                 return (
                                 <div
@@ -1624,7 +1697,11 @@ export const GanttPage: React.FC = () => {
                                     onDragEnd={handleDragEnd}
                                     onContextMenu={(e) => handleContextMenu(e, task)}
                                     onClick={() => handleEditTask(task)}
-                                    className="bg-slate-800/40 hover:bg-slate-800/60 border border-white/10 rounded-2xl p-4 transition-all hover:scale-[1.02] cursor-pointer group/item relative shadow-lg"
+                                    className={`group/item relative shadow-lg rounded-2xl p-4 transition-all hover:scale-[1.02] cursor-pointer border ${
+                                        isMatch 
+                                            ? 'bg-emerald-500/20 border-emerald-500/50 shadow-emerald-500/10' 
+                                            : 'bg-slate-800/40 border-white/10 hover:bg-slate-800/60'
+                                    }`}
                                 >
                                     <div className="flex justify-between items-start mb-2">
                                         <span className="text-[10px] font-black text-blue-400 uppercase tracking-wider">OP: {task.opNumber}</span>
@@ -1937,8 +2014,6 @@ export const GanttPage: React.FC = () => {
                 </div>
             )}
 
-
-
-        </div >
+        </div>
     );
 };

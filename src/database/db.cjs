@@ -65,6 +65,20 @@ db.exec(`
     address TEXT NOT NULL,
     totalHours REAL NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS production_orders (
+    id TEXT PRIMARY KEY,
+    opNumber TEXT NOT NULL,
+    client TEXT NOT NULL,
+    seller TEXT NOT NULL,
+    price REAL NOT NULL,
+    description TEXT,
+    address TEXT,
+    category TEXT,
+    status TEXT,
+    files TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // Migrations
@@ -79,6 +93,9 @@ const ensureColumnExists = (table, column, typeDef) => {
     console.error(`Failed to ensure column ${column} in ${table}:`, e.message);
   }
 };
+
+ensureColumnExists('production_orders', 'category', 'TEXT');
+ensureColumnExists('production_orders', 'status', 'TEXT');
 
 ensureColumnExists('tasks', 'totalHours', 'REAL DEFAULT 0');
 ensureColumnExists('tasks', 'vehicleId', 'TEXT');

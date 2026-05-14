@@ -18,6 +18,7 @@ interface AppState {
     lonasTasks: any[];
     pinturaTasks: any[];
     reminders: any[];
+    productionOrders: any[];
     isLoading: boolean;
     isSaving: boolean;
     error: string | null;
@@ -43,6 +44,14 @@ interface AppState {
     addReminder: (reminder: { opNumber: string; name: string; client: string; address: string; totalHours: number }) => Promise<void>;
     updateReminder: (reminder: any) => Promise<void>;
     deleteReminder: (id: string) => Promise<void>;
+    
+    // Production Orders
+    addProductionOrder: (order: { opNumber: string; client: string; seller: string; price: number; description: string; address: string; category: string; status: string; files: string[] }) => Promise<void>;
+    updateProductionOrder: (order: any) => Promise<void>;
+    deleteProductionOrder: (id: string) => Promise<void>;
+    
+    // Files
+    uploadFile: (file: File | Blob, fileName: string) => Promise<string>;
 
     // Teams
     addTeam: (team: { name: string }) => Promise<void>;
@@ -105,6 +114,7 @@ export const useStore = create<AppState>((set, get) => ({
     lonasTasks: [],
     pinturaTasks: [],
     reminders: [],
+    productionOrders: [],
     isLoading: false,
     isSaving: false,
     error: null,
@@ -120,13 +130,15 @@ export const useStore = create<AppState>((set, get) => ({
                 { data: vehicles },
                 { data: teams },
                 { data: allTasks },
-                { data: reminders }
+                { data: reminders },
+                { data: productionOrders }
             ] = await Promise.all([
                 supabase.from('members').select('*').order('name'),
                 supabase.from('vehicles').select('*').order('name'),
                 supabase.from('teams').select('*').order('id'),
                 supabase.from('tasks').select('*, task_members(memberId, hours), task_vehicles(vehicleId)').order('date'),
                 supabase.from('reminders').select('*').order('opNumber'),
+                supabase.from('production_orders').select('*').order('createdAt', { ascending: false }),
             ]);
 
             const mappedTasks = (allTasks || []).map(task => ({
@@ -146,6 +158,10 @@ export const useStore = create<AppState>((set, get) => ({
                 lonasTasks: mappedTasks.filter(t => t.type === 'lonas'),
                 pinturaTasks: mappedTasks.filter(t => t.type === 'pintura'),
                 reminders: reminders || [],
+                productionOrders: (productionOrders || []).map(o => ({
+                    ...o,
+                    files: typeof o.files === 'string' ? JSON.parse(o.files) : (o.files || [])
+                })),
                 isLoading: false
             });
         } catch (err: any) {
@@ -243,6 +259,53 @@ export const useStore = create<AppState>((set, get) => ({
         const { error } = await supabase.from('reminders').delete().eq('id', id);
         if (error) throw error;
         await get().fetchData();
+    },
+    
+    addProductionOrder: async (order) => {
+        const { error } = await supabase.from('production_orders').insert([{ 
+            id: uuidv4(), 
+            ...order,
+            files: JSON.stringify(order.files)
+        }]);
+        if (error) throw error;
+        await get().fetchData();
+    },
+    updateProductionOrder: async (order) => {
+        try {
+            set({ error: null });
+            const { id, ...data } = order;
+            const { error } = await supabase.from('production_orders').update({
+                ...data,
+                files: JSON.stringify(data.files)
+            }).eq('id', id);
+            if (error) throw error;
+            await get().fetchData();
+        } catch (err: any) {
+            set({ error: err.message });
+            throw err;
+        }
+    },
+    deleteProductionOrder: async (id) => {
+        const { error } = await supabase.from('production_orders').delete().eq('id', id);
+        if (error) throw error;
+        await get().fetchData();
+    },
+
+    uploadFile: async (file, fileName) => {
+        const fileExt = fileName.split('.').pop();
+        const path = `orders/${uuidv4()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+            .from('production-orders')
+            .upload(path, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage
+            .from('production-orders')
+            .getPublicUrl(path);
+
+        return data.publicUrl;
     },
 
     addTask: async (task) => {

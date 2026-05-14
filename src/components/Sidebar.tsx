@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Truck, CalendarDays, Lock, X, Hammer, Sun, Moon, Layers, Image, Palette } from 'lucide-react';
+import { Users, Truck, CalendarDays, Lock, X, Hammer, Sun, Moon, Layers, Image, Palette, ClipboardList } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
 
@@ -21,6 +21,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         { id: 'lonas', label: 'Lonas + Vinilos', icon: Image },
         { id: 'pintura', label: 'Pintura', icon: Palette },
     ];
+
+    const orderMenuItem = { id: 'orders', label: 'Órdenes', icon: ClipboardList };
 
     const configMenuItems = [
         { id: 'members', label: 'Integrantes', icon: Users },
@@ -48,6 +50,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                 ))}
 
                 <div className="flex-1" />
+
+                <div className="h-px bg-white/10 my-2 mx-2" />
+
+                <button
+                    onClick={() => setActiveTab(orderMenuItem.id)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === orderMenuItem.id
+                        ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                        : 'hover:bg-white/5 text-slate-400'
+                        }`}
+                >
+                    <orderMenuItem.icon size={20} />
+                    <span className="font-medium">{orderMenuItem.label}</span>
+                </button>
 
                 {configMenuItems.map((item) => (
                     <button
