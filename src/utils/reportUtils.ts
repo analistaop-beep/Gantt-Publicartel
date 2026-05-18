@@ -345,8 +345,8 @@ const parseRichText = (text: string): TextSegment[] => {
         
         // Find next marker or end of string
         let nextMarker = text.length;
-        const nextBold = text.indexOf('**', i);
-        const nextItalic = text.indexOf('*', i);
+        const nextBold = text.indexOf('**', i + 1);
+        const nextItalic = text.indexOf('*', i + 1);
         
         if (nextBold !== -1 && nextBold < nextMarker) nextMarker = nextBold;
         if (nextItalic !== -1 && nextItalic < nextMarker) nextMarker = nextItalic;

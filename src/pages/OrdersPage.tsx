@@ -278,8 +278,8 @@ export const OrdersPage: React.FC = () => {
                 }
                 
                 let nextMarker = line.length;
-                const nextBold = line.indexOf('**', i);
-                const nextItalic = line.indexOf('*', i);
+                const nextBold = line.indexOf('**', i + 1);
+                const nextItalic = line.indexOf('*', i + 1);
                 
                 if (nextBold !== -1 && nextBold < nextMarker) nextMarker = nextBold;
                 if (nextItalic !== -1 && nextItalic < nextMarker) nextMarker = nextItalic;
