@@ -50,6 +50,9 @@ export const exportToExcel = (headers: string[], rows: any[][], filename: string
  * Generates an elegant PDF report for a single task.
  */
 export const exportTaskToPDF = async (task: any, members: any[], vehicles: any[], isPrintOrder: boolean = false) => {
+    task = normalizeToNFC(task);
+    members = normalizeToNFC(members);
+    vehicles = normalizeToNFC(vehicles);
     try {
         const doc = new jsPDF();
         let logoData: any = null;
@@ -302,17 +305,116 @@ const isImageUrl = (url: string): boolean => {
     return /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/.test(clean);
 };
 
+/**
+ * Recursively normalizes string values in an object or array to Unicode NFC form.
+ * This fixes spacing/rendering issues in PDFs for text inputted on macOS/iOS (which uses NFD).
+ */
+const normalizeToNFC = <T>(val: T): T => {
+    if (typeof val === 'string') {
+        return val.normalize('NFC') as unknown as T;
+    }
+    if (Array.isArray(val)) {
+        return val.map(item => normalizeToNFC(item)) as unknown as T;
+    }
+    if (val && typeof val === 'object') {
+        const obj = {} as any;
+        for (const key in val) {
+            if (Object.prototype.hasOwnProperty.call(val, key)) {
+                obj[key] = normalizeToNFC(val[key]);
+            }
+        }
+        return obj as T;
+    }
+    return val;
+};
+
 interface TextSegment {
     text: string;
     bold: boolean;
     italic: boolean;
 }
 
-interface StyledWord {
-    text: string;
+interface CharStyle {
     bold: boolean;
     italic: boolean;
 }
+
+const normalizeUnicodeFormatting = (text: string): string => {
+    if (!text) return '';
+    const nfcText = text.normalize('NFC');
+    let result = '';
+    for (let i = 0; i < nfcText.length; i++) {
+        const code = nfcText.codePointAt(i);
+        if (code === undefined) continue;
+        
+        if (code > 0xFFFF) {
+            i++; // Skip surrogate pair
+            
+            // Mathematical Bold Capital (A-Z)
+            if (code >= 0x1D400 && code <= 0x1D419) {
+                result += String.fromCodePoint(code - 0x1D400 + 0x41);
+            }
+            // Mathematical Bold Lowercase (a-z)
+            else if (code >= 0x1D41A && code <= 0x1D433) {
+                result += String.fromCodePoint(code - 0x1D41A + 0x61);
+            }
+            // Mathematical Italic Capital (A-Z)
+            else if (code >= 0x1D434 && code <= 0x1D44D) {
+                result += String.fromCodePoint(code - 0x1D434 + 0x41);
+            }
+            // Mathematical Italic Lowercase (a-z)
+            else if (code >= 0x1D44E && code <= 0x1D467) {
+                result += String.fromCodePoint(code - 0x1D44E + 0x61);
+            }
+            // Mathematical Bold Italic Capital (A-Z)
+            else if (code >= 0x1D468 && code <= 0x1D481) {
+                result += String.fromCodePoint(code - 0x1D468 + 0x41);
+            }
+            // Mathematical Bold Italic Lowercase (a-z)
+            else if (code >= 0x1D482 && code <= 0x1D49B) {
+                result += String.fromCodePoint(code - 0x1D482 + 0x61);
+            }
+            // Sans-serif Bold Capital (A-Z)
+            else if (code >= 0x1D5D4 && code <= 0x1D5ED) {
+                result += String.fromCodePoint(code - 0x1D5D4 + 0x41);
+            }
+            // Sans-serif Bold Lowercase (a-z)
+            else if (code >= 0x1D5EE && code <= 0x1D607) {
+                result += String.fromCodePoint(code - 0x1D5EE + 0x61);
+            }
+            // Sans-serif Italic Capital (A-Z)
+            else if (code >= 0x1D608 && code <= 0x1D621) {
+                result += String.fromCodePoint(code - 0x1D608 + 0x41);
+            }
+            // Sans-serif Italic Lowercase (a-z)
+            else if (code >= 0x1D622 && code <= 0x1D63B) {
+                result += String.fromCodePoint(code - 0x1D622 + 0x61);
+            }
+            // Sans-serif Bold Italic Capital (A-Z)
+            else if (code >= 0x1D63C && code <= 0x1D655) {
+                result += String.fromCodePoint(code - 0x1D63C + 0x41);
+            }
+            // Sans-serif Bold Italic Lowercase (a-z)
+            else if (code >= 0x1D656 && code <= 0x1D66F) {
+                result += String.fromCodePoint(code - 0x1D656 + 0x61);
+            }
+            // Monospace Capital (A-Z)
+            else if (code >= 0x1D670 && code <= 0x1D689) {
+                result += String.fromCodePoint(code - 0x1D670 + 0x41);
+            }
+            // Monospace Lowercase (a-z)
+            else if (code >= 0x1D68A && code <= 0x1D6A3) {
+                result += String.fromCodePoint(code - 0x1D68A + 0x61);
+            }
+            else {
+                result += String.fromCodePoint(code);
+            }
+        } else {
+            result += String.fromCharCode(code);
+        }
+    }
+    return result;
+};
 
 const parseRichText = (text: string): TextSegment[] => {
     const segments: TextSegment[] = [];
@@ -343,7 +445,6 @@ const parseRichText = (text: string): TextSegment[] => {
             }
         }
         
-        // Find next marker or end of string
         let nextMarker = text.length;
         const nextBold = text.indexOf('**', i + 1);
         const nextItalic = text.indexOf('*', i + 1);
@@ -363,7 +464,8 @@ const parseRichText = (text: string): TextSegment[] => {
 };
 
 const wrapRichText = (doc: any, text: string, maxWidth: number, fontSize: number): TextSegment[][] => {
-    const paragraphs = text.split('\n');
+    const normalizedText = normalizeUnicodeFormatting(text);
+    const paragraphs = normalizedText.split('\n');
     const wrappedLines: TextSegment[][] = [];
     
     doc.setFontSize(fontSize);
@@ -375,59 +477,67 @@ const wrapRichText = (doc: any, text: string, maxWidth: number, fontSize: number
         }
         
         const segments = parseRichText(paragraph);
+        let plainText = '';
+        const charStyles: CharStyle[] = [];
         
-        const tokens: StyledWord[] = [];
         for (const seg of segments) {
-            const words = seg.text.split(/(\s+)/);
-            for (const word of words) {
-                if (word.length > 0) {
-                    tokens.push({
-                        text: word,
-                        bold: seg.bold,
-                        italic: seg.italic
-                    });
-                }
+            plainText += seg.text;
+            for (let j = 0; j < seg.text.length; j++) {
+                charStyles.push({ bold: seg.bold, italic: seg.italic });
             }
         }
         
-        let currentLine: TextSegment[] = [];
-        let currentLineWidth = 0;
+        doc.setFont('helvetica', 'normal');
+        const wrappedLinesText: string[] = doc.splitTextToSize(plainText, maxWidth);
         
-        for (const token of tokens) {
-            const style = token.bold ? 'bold' : (token.italic ? 'italic' : 'normal');
-            doc.setFont('helvetica', style);
-            const tokenWidth = doc.getTextWidth(token.text);
+        let charIdx = 0;
+        for (let i = 0; i < wrappedLinesText.length; i++) {
+            const lineText = wrappedLinesText[i];
+            const lineSegments: TextSegment[] = [];
+            let currentSegText = '';
+            let currentSegBold = false;
+            let currentSegItalic = false;
             
-            if (currentLineWidth + tokenWidth <= maxWidth) {
-                const lastSeg = currentLine[currentLine.length - 1];
-                if (lastSeg && lastSeg.bold === token.bold && lastSeg.italic === token.italic) {
-                    lastSeg.text += token.text;
+            for (let j = 0; j < lineText.length; j++) {
+                const style = charStyles[charIdx] || { bold: false, italic: false };
+                
+                if (j === 0) {
+                    currentSegText = lineText[j];
+                    currentSegBold = style.bold;
+                    currentSegItalic = style.italic;
+                } else if (style.bold === currentSegBold && style.italic === currentSegItalic) {
+                    currentSegText += lineText[j];
                 } else {
-                    currentLine.push({
-                        text: token.text,
-                        bold: token.bold,
-                        italic: token.italic
+                    lineSegments.push({
+                        text: currentSegText,
+                        bold: currentSegBold,
+                        italic: currentSegItalic
                     });
+                    currentSegText = lineText[j];
+                    currentSegBold = style.bold;
+                    currentSegItalic = style.italic;
                 }
-                currentLineWidth += tokenWidth;
-            } else {
-                if (token.text.trim() === '') {
-                    continue;
-                }
-                if (currentLine.length > 0) {
-                    wrappedLines.push(currentLine);
-                }
-                currentLine = [{
-                    text: token.text,
-                    bold: token.bold,
-                    italic: token.italic
-                }];
-                currentLineWidth = tokenWidth;
+                
+                charIdx++;
             }
-        }
-        
-        if (currentLine.length > 0) {
-            wrappedLines.push(currentLine);
+            
+            if (currentSegText.length > 0) {
+                lineSegments.push({
+                    text: currentSegText,
+                    bold: currentSegBold,
+                    italic: currentSegItalic
+                });
+            }
+            
+            wrappedLines.push(lineSegments);
+            
+            const nextLine = wrappedLinesText[i + 1];
+            if (nextLine && nextLine.length > 0) {
+                const firstCharOfNextLine = nextLine[0];
+                while (charIdx < plainText.length && plainText[charIdx] !== firstCharOfNextLine) {
+                    charIdx++;
+                }
+            }
         }
     }
     
@@ -469,6 +579,7 @@ const drawRichText = (
  * including all fields and embedded image attachments.
  */
 export const printOrderSummaryPDF = async (order: any): Promise<void> => {
+    order = normalizeToNFC(order);
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
