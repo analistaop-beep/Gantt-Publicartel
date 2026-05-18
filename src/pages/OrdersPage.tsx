@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users } from 'lucide-react';
+import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic } from 'lucide-react';
 import { sileo } from 'sileo';
 import { convertToWebP } from '../utils/fileUtils';
 import { printOrderSummaryPDF } from '../utils/reportUtils';
@@ -212,6 +212,89 @@ export const OrdersPage: React.FC = () => {
         const newFiles = [...formData.files];
         newFiles.splice(index, 1);
         setFormData({ ...formData, files: newFiles });
+    };
+
+    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+    const applyFormatting = (formatType: 'bold' | 'italic') => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+        
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = formData.description;
+        const selectedText = text.substring(start, end);
+        
+        let replacement = '';
+        if (formatType === 'bold') {
+            replacement = `**${selectedText}**`;
+        } else {
+            replacement = `*${selectedText}*`;
+        }
+        
+        const newText = text.substring(0, start) + replacement + text.substring(end);
+        setFormData(prev => ({ ...prev, description: newText }));
+        
+        // Reset focus and selection
+        setTimeout(() => {
+            textarea.focus();
+            const addedLen = formatType === 'bold' ? 2 : 1;
+            textarea.setSelectionRange(start + addedLen, start + addedLen + selectedText.length);
+        }, 0);
+    };
+
+    const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+            e.preventDefault();
+            applyFormatting('bold');
+        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
+            e.preventDefault();
+            applyFormatting('italic');
+        }
+    };
+
+    const renderFormattedText = (text: string) => {
+        if (!text) return null;
+        const lines = text.split('\n');
+        return lines.map((line, lineIdx) => {
+            const parts = [];
+            let i = 0;
+            
+            while (i < line.length) {
+                if (line.startsWith('**', i)) {
+                    const closeIdx = line.indexOf('**', i + 2);
+                    if (closeIdx !== -1) {
+                        parts.push(<strong key={i} className="font-extrabold text-white">{line.substring(i + 2, closeIdx)}</strong>);
+                        i = closeIdx + 2;
+                        continue;
+                    }
+                } else if (line.startsWith('*', i)) {
+                    const closeIdx = line.indexOf('*', i + 1);
+                    if (closeIdx !== -1) {
+                        parts.push(<em key={i} className="italic text-slate-300">{line.substring(i + 1, closeIdx)}</em>);
+                        i = closeIdx + 1;
+                        continue;
+                    }
+                }
+                
+                let nextMarker = line.length;
+                const nextBold = line.indexOf('**', i);
+                const nextItalic = line.indexOf('*', i);
+                
+                if (nextBold !== -1 && nextBold < nextMarker) nextMarker = nextBold;
+                if (nextItalic !== -1 && nextItalic < nextMarker) nextMarker = nextItalic;
+                
+                parts.push(line.substring(i, nextMarker));
+                i = nextMarker;
+            }
+            
+            return (
+                <React.Fragment key={lineIdx}>
+                    {parts}
+                    {lineIdx < lines.length - 1 && <br />}
+                </React.Fragment>
+            );
+        });
     };
 
     const handleStatusChange = async (order: any, newStatus: string) => {
@@ -613,14 +696,36 @@ export const OrdersPage: React.FC = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Descripción</label>
+                                <div className="flex justify-between items-center mr-1">
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Descripción</label>
+                                    <div className="flex gap-2 mb-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => applyFormatting('bold')}
+                                            className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-white rounded text-[10px] font-bold border border-white/10 flex items-center gap-1 transition-all hover:scale-105"
+                                            title="Negrita (Ctrl+B)"
+                                        >
+                                            <Bold size={11} className="text-slate-400" /> Negrita
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => applyFormatting('italic')}
+                                            className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-white rounded text-[10px] italic border border-white/10 flex items-center gap-1 transition-all hover:scale-105"
+                                            title="Cursiva (Ctrl+I)"
+                                        >
+                                            <Italic size={11} className="text-slate-400" /> Cursiva
+                                        </button>
+                                    </div>
+                                </div>
                                 <div className="relative group">
                                     <AlignLeft size={18} className="absolute left-4 top-4 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                                     <textarea
+                                        ref={textareaRef}
                                         className="input w-full pl-12 pt-3 min-h-[100px]"
                                         placeholder="Detalles del trabajo..."
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        onKeyDown={handleTextareaKeyDown}
                                     />
                                 </div>
                             </div>
@@ -864,8 +969,12 @@ export const OrdersPage: React.FC = () => {
                                 {/* Description */}
                                 <div>
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">DESCRIPCIÓN DEL PROYECTO</label>
-                                    <div className="p-5 bg-white/[0.02] border border-white/5 rounded-xl text-slate-300 whitespace-pre-wrap leading-relaxed min-h-[120px] text-sm">
-                                        {viewingOrder.description || <span className="italic text-slate-500">Sin descripción detallada.</span>}
+                                    <div className="p-5 bg-white/[0.02] border border-white/5 rounded-xl text-slate-300 leading-relaxed min-h-[120px] text-sm">
+                                        {viewingOrder.description ? (
+                                            renderFormattedText(viewingOrder.description)
+                                        ) : (
+                                            <span className="italic text-slate-500">Sin descripción detallada.</span>
+                                        )}
                                     </div>
                                 </div>
 

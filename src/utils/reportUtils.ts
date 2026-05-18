@@ -302,6 +302,168 @@ const isImageUrl = (url: string): boolean => {
     return /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/.test(clean);
 };
 
+interface TextSegment {
+    text: string;
+    bold: boolean;
+    italic: boolean;
+}
+
+interface StyledWord {
+    text: string;
+    bold: boolean;
+    italic: boolean;
+}
+
+const parseRichText = (text: string): TextSegment[] => {
+    const segments: TextSegment[] = [];
+    let i = 0;
+    
+    while (i < text.length) {
+        if (text.startsWith('**', i)) {
+            const closeIdx = text.indexOf('**', i + 2);
+            if (closeIdx !== -1) {
+                segments.push({
+                    text: text.substring(i + 2, closeIdx),
+                    bold: true,
+                    italic: false
+                });
+                i = closeIdx + 2;
+                continue;
+            }
+        } else if (text.startsWith('*', i)) {
+            const closeIdx = text.indexOf('*', i + 1);
+            if (closeIdx !== -1) {
+                segments.push({
+                    text: text.substring(i + 1, closeIdx),
+                    bold: false,
+                    italic: true
+                });
+                i = closeIdx + 1;
+                continue;
+            }
+        }
+        
+        // Find next marker or end of string
+        let nextMarker = text.length;
+        const nextBold = text.indexOf('**', i);
+        const nextItalic = text.indexOf('*', i);
+        
+        if (nextBold !== -1 && nextBold < nextMarker) nextMarker = nextBold;
+        if (nextItalic !== -1 && nextItalic < nextMarker) nextMarker = nextItalic;
+        
+        segments.push({
+            text: text.substring(i, nextMarker),
+            bold: false,
+            italic: false
+        });
+        i = nextMarker;
+    }
+    
+    return segments.filter(s => s.text.length > 0);
+};
+
+const wrapRichText = (doc: any, text: string, maxWidth: number, fontSize: number): TextSegment[][] => {
+    const paragraphs = text.split('\n');
+    const wrappedLines: TextSegment[][] = [];
+    
+    doc.setFontSize(fontSize);
+    
+    for (const paragraph of paragraphs) {
+        if (paragraph.trim() === '') {
+            wrappedLines.push([{ text: '', bold: false, italic: false }]);
+            continue;
+        }
+        
+        const segments = parseRichText(paragraph);
+        
+        const tokens: StyledWord[] = [];
+        for (const seg of segments) {
+            const words = seg.text.split(/(\s+)/);
+            for (const word of words) {
+                if (word.length > 0) {
+                    tokens.push({
+                        text: word,
+                        bold: seg.bold,
+                        italic: seg.italic
+                    });
+                }
+            }
+        }
+        
+        let currentLine: TextSegment[] = [];
+        let currentLineWidth = 0;
+        
+        for (const token of tokens) {
+            const style = token.bold ? 'bold' : (token.italic ? 'italic' : 'normal');
+            doc.setFont('helvetica', style);
+            const tokenWidth = doc.getTextWidth(token.text);
+            
+            if (currentLineWidth + tokenWidth <= maxWidth) {
+                const lastSeg = currentLine[currentLine.length - 1];
+                if (lastSeg && lastSeg.bold === token.bold && lastSeg.italic === token.italic) {
+                    lastSeg.text += token.text;
+                } else {
+                    currentLine.push({
+                        text: token.text,
+                        bold: token.bold,
+                        italic: token.italic
+                    });
+                }
+                currentLineWidth += tokenWidth;
+            } else {
+                if (token.text.trim() === '') {
+                    continue;
+                }
+                if (currentLine.length > 0) {
+                    wrappedLines.push(currentLine);
+                }
+                currentLine = [{
+                    text: token.text,
+                    bold: token.bold,
+                    italic: token.italic
+                }];
+                currentLineWidth = tokenWidth;
+            }
+        }
+        
+        if (currentLine.length > 0) {
+            wrappedLines.push(currentLine);
+        }
+    }
+    
+    return wrappedLines;
+};
+
+const drawRichText = (
+    doc: any,
+    text: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    fontSize: number,
+    lineHeight: number,
+    color: [number, number, number]
+): number => {
+    const lines = wrapRichText(doc, text, maxWidth, fontSize);
+    let currentY = y;
+    
+    doc.setFontSize(fontSize);
+    doc.setTextColor(...color);
+    
+    for (const line of lines) {
+        let currentX = x;
+        for (const seg of line) {
+            const style = seg.bold ? 'bold' : (seg.italic ? 'italic' : 'normal');
+            doc.setFont('helvetica', style);
+            doc.text(seg.text, currentX, currentY);
+            currentX += doc.getTextWidth(seg.text);
+        }
+        currentY += lineHeight;
+    }
+    
+    return lines.length * lineHeight;
+};
+
 /**
  * Generates and downloads a complete PDF summary of a Production Order,
  * including all fields and embedded image attachments.
@@ -425,15 +587,14 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
     y += 5;
 
     const descText = order.description || 'Sin descripción.';
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(...navy);
-    const descLines = doc.splitTextToSize(descText, contentW);
-    const descBlockH = descLines.length * 5 + 6;
+    const lines = wrapRichText(doc, descText, contentW - 8, 10);
+    const descBlockH = lines.length * 5 + 6;
+
+    checkPage(descBlockH + 10);
 
     doc.setFillColor(...light);
     doc.rect(margin, y, contentW, descBlockH, 'F');
-    doc.text(descLines, margin + 4, y + 5);
+    drawRichText(doc, descText, margin + 4, y + 5, contentW - 8, 10, 5, navy);
     y += descBlockH + 10;
 
     // ─── Comments ───────────────────────────────────────────────────
