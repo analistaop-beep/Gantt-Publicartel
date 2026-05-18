@@ -146,6 +146,29 @@ export const LonasVinilosPage: React.FC = () => {
         }
     }, [error]);
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (isTaskModalOpen) {
+                    setIsTaskModalOpen(false);
+                    setEditingTask(null);
+                    setSelectedContext(null);
+                } else if (isFragmentModalOpen) {
+                    setIsFragmentModalOpen(false);
+                    setFragmentTargetTask(null);
+                } else if (isRemindersListOpen) {
+                    setIsRemindersListOpen(false);
+                } else if (quickAddType) {
+                    setQuickAddType(null);
+                } else if (isErrorModalOpen) {
+                    setIsErrorModalOpen(false);
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isTaskModalOpen, isFragmentModalOpen, isRemindersListOpen, quickAddType, isErrorModalOpen]);
+
     // Navigation logic
     const allDaysInWeek = useMemo(() => {
         const start = currentWeekStart;

@@ -26,6 +26,18 @@ export const TeamsPage: React.FC = () => {
         setFormData({ name: '' });
     };
 
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (isModalOpen) {
+                    closeModal();
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isModalOpen]);
+
 
 
     return (

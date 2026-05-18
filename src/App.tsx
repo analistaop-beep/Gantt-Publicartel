@@ -91,7 +91,9 @@ function App() {
 
   return (
     <>
-      <Toaster />
+      <div className="fixed inset-0 pointer-events-none z-[9999]">
+        <Toaster />
+      </div>
       {!isAuthenticated ? (
         <LoginPage onLogin={() => setIsAuthenticated(true)} />
       ) : (

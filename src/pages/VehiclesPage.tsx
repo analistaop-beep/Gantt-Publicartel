@@ -8,6 +8,18 @@ export const VehiclesPage: React.FC = () => {
     const [isEditing, setIsEditing] = useState<string | null>(null);
     const [formData, setFormData] = useState({ name: '', plate: '' });
 
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (isEditing) {
+                    setIsEditing(null);
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isEditing]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -29,8 +41,8 @@ export const VehiclesPage: React.FC = () => {
     };
 
     return (
-        <div className="h-full flex flex-col bg-slate-50 dark:bg-gray-900">
-            <div className="sticky top-0 z-30 bg-white/95 dark:bg-gray-900/80 backdrop-blur-md px-10 py-6 border-b border-slate-200 dark:border-white/5">
+        <div className="h-full flex flex-col">
+            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-10 py-6 border-b border-white/5">
                 <div className="flex justify-between items-center">
                     <h2 className="text-2xl font-bold">Vehículos</h2>
                 {!isEditing && (

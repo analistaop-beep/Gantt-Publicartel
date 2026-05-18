@@ -158,6 +158,29 @@ export const GanttPage: React.FC = () => {
         }
     }, [error]);
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (isTaskModalOpen) {
+                    setIsTaskModalOpen(false);
+                    setEditingTask(null);
+                    setSelectedContext(null);
+                } else if (isFragmentModalOpen) {
+                    setIsFragmentModalOpen(false);
+                    setFragmentTargetTask(null);
+                } else if (isRemindersListOpen) {
+                    setIsRemindersListOpen(false);
+                } else if (quickAddType) {
+                    setQuickAddType(null);
+                } else if (isErrorModalOpen) {
+                    setIsErrorModalOpen(false);
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isTaskModalOpen, isFragmentModalOpen, isRemindersListOpen, quickAddType, isErrorModalOpen]);
+
     // Navigation logic
     const allDaysInWeek = useMemo(() => {
         const start = currentWeekStart;
@@ -585,12 +608,19 @@ export const GanttPage: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col xl:flex-row justify-between items-center gap-6 p-6">
                 <div className="flex flex-col md:flex-row items-center gap-6">
-                    <div>
-                        <h2 className="text-3xl font-bold flex items-center gap-3">
-                            <Calendar className="text-blue-500" />
-                            <span className="capitalize">{weekLabel}</span>
-                        </h2>
-                        <p className="text-slate-400 mt-1">Gantt semanal por equipos</p>
+                    <div className="flex items-center gap-5">
+                        <div className="w-14 h-14 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
+                            <Calendar className="text-white" size={28} />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-3 mb-1">
+                                <h1 className="text-xl font-black text-white tracking-tight uppercase">Instalaciones</h1>
+                            </div>
+                            <p className="text-slate-500 font-bold text-sm tracking-wide flex items-center gap-2">
+                                Semana <span className="text-blue-400/80">{weekLabel}</span>
+                                {isTodayInWeek && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>}
+                            </p>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-2 flex-nowrap overflow-x-auto pb-2 md:pb-0 no-scrollbar">

@@ -10,6 +10,18 @@ export const MembersPage: React.FC = () => {
     const [formData, setFormData] = useState({ name: '', role: '', sector: '', ci: '', code: '' });
     const [searchQuery, setSearchQuery] = useState('');
 
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (isEditing) {
+                    setIsEditing(null);
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isEditing]);
+
     const filteredMembers = members.filter(member => 
         member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (member.role || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -43,8 +55,8 @@ export const MembersPage: React.FC = () => {
     };
 
     return (
-        <div className="h-full flex flex-col bg-slate-50 dark:bg-gray-900">
-            <div className="sticky top-0 z-30 bg-white/95 dark:bg-gray-900/80 backdrop-blur-md px-10 py-6 border-b border-slate-200 dark:border-white/5">
+        <div className="h-full flex flex-col">
+            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-10 py-6 border-b border-white/5">
                 <div className="flex justify-between items-center gap-6">
                     <div className="flex items-center gap-8 flex-1">
                         <h2 className="text-2xl font-bold whitespace-nowrap">Integrantes</h2>
