@@ -430,7 +430,7 @@ export const OrdersPage: React.FC = () => {
             <div className="flex-1 min-h-0 overflow-auto custom-scrollbar p-10">
                 <div className="glass rounded-[1.25rem] overflow-hidden shadow-2xl border-white/10">
                     <div className="overflow-x-auto custom-scrollbar">
-                        <table className="w-full text-left border-collapse">
+                        <table className="w-full text-left border-collapse orders-table">
                             <thead>
                                 <tr className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10">
                                     <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">N° OP</th>
