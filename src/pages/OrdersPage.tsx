@@ -432,7 +432,7 @@ export const OrdersPage: React.FC = () => {
                     <div className="overflow-x-auto custom-scrollbar">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-white/5 border-b border-white/10">
+                                <tr className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10">
                                     <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">N° OP</th>
                                     <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Cliente</th>
                                     <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Categoría</th>
@@ -443,7 +443,7 @@ export const OrdersPage: React.FC = () => {
                                     <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-white/5">
+                            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                                 {filteredOrders.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="px-8 py-20 text-center text-slate-500 italic">
@@ -452,7 +452,7 @@ export const OrdersPage: React.FC = () => {
                                     </tr>
                                 ) : (
                                     filteredOrders.map((order) => (
-                                        <tr key={order.id} className="hover:bg-white/[0.02] transition-colors group">
+                                        <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors group">
                                             <td className="px-8 py-4">
                                                 <span className="font-mono font-bold text-blue-400">{order.opNumber}</span>
                                             </td>
