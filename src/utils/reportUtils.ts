@@ -680,8 +680,6 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
     y += 18;
 
     labelFn('DIRECCIÓN', order.address || 'No especificada', col1, y);
-    const priceStr = `${order.currency === 'USD' ? 'U$D' : '$U'} ${(order.price || 0).toLocaleString('es-UY')}`;
-    labelFn('PRECIO DE VENTA', priceStr, col2, y, emerald);
     y += 20;
 
     // ─── Separator ────────────────────────────────────────────────────
