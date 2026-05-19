@@ -398,7 +398,7 @@ export const OrdersPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-10 py-6 border-b border-white/5">
+            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-10 py-6 border-b border-white/5 sticky-header-custom">
                 <div className="flex justify-between items-center gap-6">
                     <div className="flex items-center gap-8 flex-1">
                         <h2 className="text-2xl font-bold whitespace-nowrap flex items-center gap-3">
@@ -885,49 +885,49 @@ export const OrdersPage: React.FC = () => {
 
             {/* View Details Modal */}
             {viewingOrder && (
-                <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4">
-                    <div className="bg-[#0f172a] w-full max-w-6xl shadow-2xl border border-white/10 rounded-2xl h-full max-h-[92vh] flex flex-col overflow-hidden relative">
+                <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-[#0f172a] w-full max-w-6xl shadow-2xl border border-slate-200 dark:border-white/10 rounded-2xl h-full max-h-[92vh] flex flex-col overflow-hidden relative">
 
                         {/* Header */}
-                        <div className="flex items-center justify-between px-10 py-7 border-b border-white/8 flex-shrink-0 bg-[#0f172a]/80 backdrop-blur-sm">
+                        <div className="flex items-center justify-between px-10 py-7 border-b border-slate-200 dark:border-white/8 flex-shrink-0 bg-slate-50/80 dark:bg-[#0f172a]/80 backdrop-blur-sm">
                             <div>
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-1 block">
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 mb-1 block">
                                     ORDEN DE PRODUCCIÓN
                                 </span>
-                                <h3 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
-                                    OP <span className="text-blue-400">#{viewingOrder.opNumber}</span>
+                                <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+                                    OP <span className="text-blue-600 dark:text-blue-400">#{viewingOrder.opNumber}</span>
                                 </h3>
                             </div>
                             <button
                                 onClick={() => setViewingOrder(null)}
-                                className="p-2.5 hover:bg-white/8 transition-colors text-slate-400 hover:text-white rounded-xl"
+                                className="p-2.5 hover:bg-slate-100 dark:hover:bg-white/8 transition-colors text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl"
                             >
                                 <X size={22} />
                             </button>
                         </div>
 
                         {/* Info Grid (original style) */}
-                        <div className="px-10 py-8 border-b border-white/5 flex-shrink-0 bg-white/[0.025]">
+                        <div className="px-10 py-8 border-b border-slate-100 dark:border-white/5 flex-shrink-0 bg-sky-50/30 dark:bg-white/[0.025]">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                                 <div className="space-y-8">
                                     <div>
                                         <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">CLIENTE</label>
-                                        <p className="text-xl font-bold text-white">{viewingOrder.client}</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{viewingOrder.client}</p>
                                     </div>
                                     <div>
                                         <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">VENDEDOR</label>
-                                        <p className="text-lg text-slate-300 font-medium">{viewingOrder.seller}</p>
+                                        <p className="text-lg text-slate-700 dark:text-slate-300 font-medium">{viewingOrder.seller}</p>
                                     </div>
                                 </div>
 
                                 <div className="space-y-8">
                                     <div>
                                         <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">DIRECCIÓN</label>
-                                        <p className="text-lg text-slate-300">{viewingOrder.address || 'No especificada'}</p>
+                                        <p className="text-lg text-slate-700 dark:text-slate-300">{viewingOrder.address || 'No especificada'}</p>
                                     </div>
                                     <div>
                                         <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">PRECIO VENTA</label>
-                                        <p className="text-3xl font-black text-emerald-400">
+                                        <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
                                             {viewingOrder.currency === 'USD' ? 'U$D' : '$U'} {viewingOrder.price?.toLocaleString('es-UY')}
                                         </p>
                                     </div>
@@ -936,7 +936,7 @@ export const OrdersPage: React.FC = () => {
                                 <div className="space-y-8">
                                     <div>
                                         <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">CATEGORÍA</label>
-                                        <span className="text-slate-400 text-xs font-bold uppercase tracking-wider block bg-white/5 px-3 py-1 rounded-sm border border-white/5 w-fit">
+                                        <span className="text-slate-700 dark:text-slate-400 text-xs font-bold uppercase tracking-wider block bg-slate-100 dark:bg-white/5 px-3 py-1 rounded-sm border border-slate-200 dark:border-white/5 w-fit">
                                             {viewingOrder.category}
                                         </span>
                                     </div>
@@ -944,11 +944,11 @@ export const OrdersPage: React.FC = () => {
                                         <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">ESTADO</label>
                                         {(() => {
                                             const s = viewingOrder.status || '';
-                                            let color = 'text-slate-400 bg-white/5 border-white/10';
-                                            if (s === 'Gestión de Acopio') color = 'text-amber-400 bg-amber-400/10 border-amber-400/20';
-                                            if (s === 'En Proceso') color = 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-                                            if (s === 'Para Facturar') color = 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
-                                            if (s === 'Terminada') color = 'text-slate-500 bg-white/5 border-white/10';
+                                            let color = 'text-slate-600 bg-slate-100 border-slate-200 dark:text-slate-400 dark:bg-white/5 dark:border-white/10';
+                                            if (s === 'Gestión de Acopio') color = 'text-amber-700 bg-amber-500/10 border-amber-500/20 dark:text-amber-400 dark:bg-amber-400/10 dark:border-amber-400/20';
+                                            if (s === 'En Proceso') color = 'text-blue-700 bg-blue-500/10 border-blue-500/20 dark:text-blue-400 dark:bg-blue-400/10 dark:border-blue-400/20';
+                                            if (s === 'Para Facturar') color = 'text-emerald-700 bg-emerald-500/10 border-emerald-500/20 dark:text-emerald-400 dark:bg-emerald-400/10 dark:border-emerald-400/20';
+                                            if (s === 'Terminada') color = 'text-slate-500 bg-slate-100 border-slate-200 dark:text-slate-500 dark:bg-white/5 dark:border-white/10';
                                             return (
                                                 <span className={`text-xs font-bold uppercase tracking-wider block px-3 py-1 rounded-sm border w-fit ${color}`}>
                                                     {s}
@@ -964,13 +964,13 @@ export const OrdersPage: React.FC = () => {
                         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_380px]">
 
                             {/* Left: Description + Comments */}
-                            <div className="overflow-y-auto custom-scrollbar p-8 space-y-8 border-r border-white/5">
+                            <div className="overflow-y-auto custom-scrollbar p-8 space-y-8 border-r border-slate-200 dark:border-white/5">
 
 
                                 {/* Description */}
                                 <div>
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">DESCRIPCIÓN DEL PROYECTO</label>
-                                    <div className="p-5 bg-white/[0.02] border border-white/5 rounded-xl text-slate-300 leading-relaxed min-h-[120px] text-sm">
+                                    <div className="p-5 bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-xl text-slate-800 dark:text-slate-300 leading-relaxed min-h-[120px] text-sm">
                                         {viewingOrder.description ? (
                                             renderFormattedText(viewingOrder.description)
                                         ) : (
@@ -985,7 +985,7 @@ export const OrdersPage: React.FC = () => {
                                         <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block">
                                             TAREAS ASOCIADAS
                                             {linkedTasks.length > 0 && (
-                                                <span className="ml-2 px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded text-[9px] font-black">
+                                                <span className="ml-2 px-1.5 py-0.5 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-[9px] font-black">
                                                     {linkedTasks.length}
                                                 </span>
                                             )}
@@ -993,7 +993,7 @@ export const OrdersPage: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={handleOpenRegisterTask}
-                                            className="px-3 py-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 font-bold border border-blue-500/20 rounded-lg text-[10px] uppercase transition-all tracking-wider flex items-center gap-1.5"
+                                            className="px-3 py-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-600 dark:text-blue-400 font-bold border border-blue-500/20 rounded-lg text-[10px] uppercase transition-all tracking-wider flex items-center gap-1.5"
                                         >
                                             <Plus size={12} /> Registrar nueva tarea
                                         </button>
@@ -1001,14 +1001,14 @@ export const OrdersPage: React.FC = () => {
                                     {linkedTasks.length > 0 ? (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {linkedTasks.map((task: any) => {
-                                                let badgeColor = 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-                                                if (task.section === 'Herrería') badgeColor = 'text-orange-400 bg-orange-400/10 border-orange-400/20';
-                                                if (task.section === 'Corpóreas') badgeColor = 'text-purple-400 bg-purple-400/10 border-purple-400/20';
-                                                if (task.section === 'Lonas') badgeColor = 'text-pink-400 bg-pink-400/10 border-pink-400/20';
-                                                if (task.section === 'Pintura') badgeColor = 'text-teal-400 bg-teal-400/10 border-teal-400/20';
+                                                let badgeColor = 'text-blue-600 bg-blue-400/10 border-blue-400/20 dark:text-blue-400 dark:bg-blue-400/10 dark:border-blue-400/20';
+                                                if (task.section === 'Herrería') badgeColor = 'text-orange-600 bg-orange-400/10 border-orange-400/20 dark:text-orange-400 dark:bg-orange-400/10 dark:border-orange-400/20';
+                                                if (task.section === 'Corpóreas') badgeColor = 'text-purple-600 bg-purple-400/10 border-purple-400/20 dark:text-purple-400 dark:bg-purple-400/10 dark:border-purple-400/20';
+                                                if (task.section === 'Lonas') badgeColor = 'text-pink-600 bg-pink-400/10 border-pink-400/20 dark:text-pink-400 dark:bg-pink-400/10 dark:border-pink-400/20';
+                                                if (task.section === 'Pintura') badgeColor = 'text-teal-600 bg-teal-400/10 border-teal-400/20 dark:text-teal-400 dark:bg-teal-400/10 dark:border-teal-400/20';
 
                                                 return (
-                                                    <div key={task.id} className="p-4 bg-white/[0.015] border border-white/5 rounded-xl space-y-2 hover:bg-white/[0.03] transition-colors relative group/task-card">
+                                                    <div key={task.id} className="p-4 bg-slate-50 dark:bg-white/[0.015] border border-slate-200 dark:border-white/5 rounded-xl space-y-2 hover:bg-slate-100/50 dark:hover:bg-white/[0.03] transition-colors relative group/task-card">
                                                         <div className="flex justify-between items-start gap-2">
                                                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-wider ${badgeColor}`}>
                                                                 {task.section}
@@ -1016,23 +1016,23 @@ export const OrdersPage: React.FC = () => {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleDeleteTask(task.id)}
-                                                                className="opacity-0 group-hover/task-card:opacity-100 p-1 hover:bg-red-500/10 text-slate-500 hover:text-red-400 rounded-lg transition-all"
+                                                                className="opacity-0 group-hover/task-card:opacity-100 p-1 hover:bg-red-500/10 text-slate-400 hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400 rounded-lg transition-all"
                                                                 title="Eliminar tarea"
                                                             >
                                                                 <Trash2 size={12} />
                                                             </button>
                                                         </div>
-                                                        <h4 className="text-sm font-bold text-white truncate">{task.name}</h4>
+                                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{task.name}</h4>
                                                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-slate-500">
                                                             <div className="flex items-center gap-1">
-                                                                <Calendar size={12} className="text-slate-400" />
+                                                                <Calendar size={12} className="text-slate-400 dark:text-slate-500" />
                                                                 <span>{task.date ? new Date(task.date + 'T12:00:00').toLocaleDateString('es-UY') : 'Sin fecha'}</span>
                                                             </div>
                                                             <div className="flex items-center gap-1">
-                                                                <Users size={12} className="text-slate-400" />
+                                                                <Users size={12} className="text-slate-400 dark:text-slate-500" />
                                                                 <span>{(task.members || []).length} operarios</span>
                                                             </div>
-                                                            <div className="flex items-center gap-1 font-mono font-bold text-emerald-400">
+                                                            <div className="flex items-center gap-1 font-mono font-bold text-emerald-600 dark:text-emerald-400">
                                                                 <span>{task.totalHours} hrs</span>
                                                             </div>
                                                         </div>
@@ -1041,7 +1041,7 @@ export const OrdersPage: React.FC = () => {
                                             })}
                                         </div>
                                     ) : (
-                                        <div className="p-6 bg-white/[0.01] border border-dashed border-white/8 text-slate-500 italic text-sm text-center rounded-xl">
+                                        <div className="p-6 bg-slate-50/50 dark:bg-white/[0.01] border border-dashed border-slate-200 dark:border-white/8 text-slate-400 dark:text-slate-500 italic text-sm text-center rounded-xl">
                                             No hay tareas registradas para esta Orden de Producción.
                                         </div>
                                     )}
@@ -1052,7 +1052,7 @@ export const OrdersPage: React.FC = () => {
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">
                                         COMENTARIOS
                                         {viewingOrder.comments?.length > 0 && (
-                                            <span className="ml-2 px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded text-[9px] font-black">
+                                            <span className="ml-2 px-1.5 py-0.5 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-[9px] font-black">
                                                 {viewingOrder.comments.length}
                                             </span>
                                         )}
@@ -1060,9 +1060,9 @@ export const OrdersPage: React.FC = () => {
                                     {viewingOrder.comments?.length > 0 ? (
                                         <div className="space-y-3">
                                             {[...viewingOrder.comments].reverse().map((c: any, i: number) => (
-                                                <div key={i} className="p-4 bg-white/[0.025] border border-white/5 rounded-xl space-y-1.5 hover:bg-white/[0.04] transition-colors">
-                                                    <p className="text-sm text-slate-200 leading-relaxed">{c.text}</p>
-                                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">
+                                                <div key={i} className="p-4 bg-slate-50 dark:bg-white/[0.025] border border-slate-200 dark:border-white/5 rounded-xl space-y-1.5 hover:bg-slate-100/50 dark:hover:bg-white/[0.04] transition-colors">
+                                                    <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed">{c.text}</p>
+                                                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
                                                         {new Date(c.date).toLocaleString('es-UY', {
                                                             day: '2-digit', month: '2-digit', year: 'numeric',
                                                             hour: '2-digit', minute: '2-digit'
@@ -1072,7 +1072,7 @@ export const OrdersPage: React.FC = () => {
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="p-6 bg-white/[0.01] border border-dashed border-white/8 text-slate-500 italic text-sm text-center rounded-xl">
+                                        <div className="p-6 bg-slate-50/50 dark:bg-white/[0.01] border border-dashed border-slate-200 dark:border-white/8 text-slate-400 dark:text-slate-500 italic text-sm text-center rounded-xl">
                                             No hay comentarios registrados.
                                         </div>
                                     )}
@@ -1080,11 +1080,11 @@ export const OrdersPage: React.FC = () => {
                             </div>
 
                             {/* Right: File thumbnails */}
-                            <div className="overflow-y-auto custom-scrollbar p-6 bg-[#0a1120]">
+                            <div className="overflow-y-auto custom-scrollbar p-6 bg-sky-50/50 dark:bg-[#0a1120]">
                                 <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-4">
                                     ARCHIVOS ADJUNTOS
                                     {viewingOrder.files?.length > 0 && (
-                                        <span className="ml-2 px-1.5 py-0.5 bg-slate-700/60 text-slate-400 rounded text-[9px] font-black">
+                                        <span className="ml-2 px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400 rounded text-[9px] font-black">
                                             {viewingOrder.files.length}
                                         </span>
                                     )}
@@ -1098,7 +1098,7 @@ export const OrdersPage: React.FC = () => {
                                                 <div
                                                     key={i}
                                                     onClick={() => isImg ? setLightboxImage(file) : window.open(file, '_blank')}
-                                                    className="group relative aspect-square rounded-xl overflow-hidden bg-slate-800/50 border border-white/8 hover:border-blue-500/60 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer"
+                                                    className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-white/8 hover:border-blue-500/60 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer"
                                                     title={fileName}
                                                 >
                                                     {isImg ? (
@@ -1108,12 +1108,12 @@ export const OrdersPage: React.FC = () => {
                                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                                         />
                                                     ) : (
-                                                        <div className="w-full h-full flex flex-col items-center justify-center p-3 bg-slate-900/30">
+                                                        <div className="w-full h-full flex flex-col items-center justify-center p-3 bg-slate-50 dark:bg-slate-900/30">
                                                             <div className="w-14 h-14 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
                                                                 <FileText size={28} className="text-red-400" />
                                                             </div>
-                                                            <span className="text-[9px] font-bold text-slate-400 group-hover:text-white transition-colors uppercase tracking-wide">PDF</span>
-                                                            <span className="text-[8px] text-slate-600 truncate w-full text-center mt-1 px-1">{fileName}</span>
+                                                            <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-white transition-colors uppercase tracking-wide">PDF</span>
+                                                            <span className="text-[8px] text-slate-500 dark:text-slate-600 truncate w-full text-center mt-1 px-1">{fileName}</span>
                                                         </div>
                                                     )}
 
@@ -1147,7 +1147,7 @@ export const OrdersPage: React.FC = () => {
                                         })}
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center h-48 text-slate-600 border border-dashed border-white/5 rounded-xl">
+                                    <div className="flex flex-col items-center justify-center h-48 text-slate-400 dark:text-slate-600 border border-dashed border-slate-200 dark:border-white/5 rounded-xl">
                                         <FileText size={36} className="mb-3 opacity-30" />
                                         <span className="text-xs italic">Sin archivos adjuntos</span>
                                     </div>
@@ -1156,7 +1156,7 @@ export const OrdersPage: React.FC = () => {
                         </div>
 
                         {/* Footer */}
-                        <div className="px-8 py-5 border-t border-white/8 flex-shrink-0 flex justify-end gap-3 bg-[#0f172a]/80">
+                        <div className="px-8 py-5 border-t border-slate-200 dark:border-white/8 flex-shrink-0 flex justify-end gap-3 bg-slate-50/80 dark:bg-[#0f172a]/80">
                             <button
                                 onClick={() => handlePrintSummary(viewingOrder)}
                                 disabled={isPrinting}
@@ -1170,7 +1170,7 @@ export const OrdersPage: React.FC = () => {
                             </button>
                             <button
                                 onClick={() => setViewingOrder(null)}
-                                className="px-7 py-2.5 bg-white/5 hover:bg-white/10 text-white font-bold transition-all border border-white/10 rounded-xl text-sm"
+                                className="px-7 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white font-bold transition-all border border-slate-200 dark:border-white/10 rounded-xl text-sm"
                             >
                                 CERRAR
                             </button>

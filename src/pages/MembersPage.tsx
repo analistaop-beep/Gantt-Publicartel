@@ -56,7 +56,7 @@ export const MembersPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-10 py-6 border-b border-white/5">
+            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-10 py-6 border-b border-white/5 sticky-header-custom">
                 <div className="flex justify-between items-center gap-6">
                     <div className="flex items-center gap-8 flex-1">
                         <h2 className="text-2xl font-bold whitespace-nowrap">Integrantes</h2>

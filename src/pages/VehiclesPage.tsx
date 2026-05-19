@@ -42,7 +42,7 @@ export const VehiclesPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-10 py-6 border-b border-white/5">
+            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-10 py-6 border-b border-white/5 sticky-header-custom">
                 <div className="flex justify-between items-center">
                     <h2 className="text-2xl font-bold">Vehículos</h2>
                 {!isEditing && (

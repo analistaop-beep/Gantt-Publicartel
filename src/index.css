@@ -253,3 +253,9 @@ html.light .bg-slate-800\/90 {
 html.light .hover\:bg-white\/5:hover {
   background-color: rgba(0, 0, 0, 0.05) !important;
 }
+
+/* Sticky headers light mode override */
+html.light .sticky-header-custom {
+  background-color: #cad9ff !important;
+  border-color: rgba(148, 163, 184, 0.4) !important;
+}
