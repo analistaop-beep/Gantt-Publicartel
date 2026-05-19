@@ -93,6 +93,7 @@ export const OrdersPage: React.FC = () => {
         order.opNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.seller.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (order.category || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (order.description || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -410,7 +411,7 @@ export const OrdersPage: React.FC = () => {
                             <input
                                 type="text"
                                 className="input-sm w-full pl-12 bg-white/5 border-white/10"
-                                placeholder="Buscar por OP, cliente, vendedor..."
+                                placeholder="Buscar por OP, cliente, vendedor, categoría..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
