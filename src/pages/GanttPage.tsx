@@ -1364,7 +1364,7 @@ export const GanttPage: React.FC = () => {
                                                                                 setFormData({ ...formData, members: newMembers });
                                                                             }}
                                                                         />
-                                                                        <span className="text-[12px] font-black text-slate-200 uppercase truncate">{m.name}</span>
+                                                                        <span className="text-[12px] font-black text-black dark:text-slate-200 uppercase truncate">{m.name}</span>
                                                                     </label>
                                                                     {isChecked && (
                                                                         <div className="flex items-center gap-1">

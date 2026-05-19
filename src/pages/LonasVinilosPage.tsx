@@ -1370,7 +1370,7 @@ export const LonasVinilosPage: React.FC = () => {
                                                                                     });
                                                                                 }}
                                                                             />
-                                                                            <span className="text-sm text-slate-200 font-bold uppercase truncate">{m.name}</span>
+                                                                            <span className="text-sm text-black dark:text-slate-200 font-bold uppercase truncate">{m.name}</span>
                                                                         </label>
                                                                         {isChecked && (
                                                                             <div className="flex items-center gap-1 animate-in slide-in-from-right-2 duration-200">
