@@ -274,3 +274,16 @@ html.light .orders-table tbody tr {
 html.light .orders-table tbody tr:hover {
   background-color: #dbeafe !important;
 }
+
+/* Employee name label visibility overrides */
+.member-name {
+  font-weight: 500 !important;
+}
+
+html.light .member-name {
+  color: #000000 !important;
+}
+
+html.dark .member-name {
+  color: #cbd5e1 !important;
+}
