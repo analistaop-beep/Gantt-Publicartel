@@ -589,7 +589,6 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
     // ─── Color Palette ───────────────────────────────────────────────
     const navy = [10, 22, 45] as [number, number, number];
     const blue = [37, 99, 235] as [number, number, number];
-    const emerald = [16, 185, 129] as [number, number, number];
     const light = [241, 245, 249] as [number, number, number];
     const muted = [100, 116, 139] as [number, number, number];
     const white: [number, number, number] = [255, 255, 255];
