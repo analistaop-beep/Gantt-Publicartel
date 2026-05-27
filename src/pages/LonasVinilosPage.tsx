@@ -1646,6 +1646,7 @@ export const LonasVinilosPage: React.FC = () => {
                                     client: '',
                                     address: 'Montevideo',
                                     totalHours: 1,
+                                    estimatedHours: 1,
                                     duration: 8,
                                     vehicles: [],
                                     members: [],
