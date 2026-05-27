@@ -280,6 +280,7 @@ export const HerreriaPage: React.FC = () => {
                 client: '',
                 address: 'Montevideo',
                 totalHours: 1,
+                estimatedHours: 1,
                 duration: 1,
                 vehicles: [],
                 members: [],
