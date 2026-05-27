@@ -1645,6 +1645,7 @@ export const CorporeasPage: React.FC = () => {
                         client: '',
                         address: 'Montevideo',
                         totalHours: 1,
+                        estimatedHours: 1,
                         duration: 8,
                         vehicles: [],
                         members: [],
@@ -1898,18 +1899,19 @@ export const CorporeasPage: React.FC = () => {
                     onClick={() => {
                         setEditingTask(contextMenu.task);
                         setFormData({
-                            opNumber: contextMenu.task.opNumber || '',
-                            name: contextMenu.task.name || '',
-                            client: contextMenu.task.client || '',
-                            address: contextMenu.task.address || 'Montevideo',
-                            totalHours: contextMenu.task.totalHours || 0,
-                            duration: contextMenu.task.duration || 0,
-                            vehicles: contextMenu.task.vehicles || [],
-                            members: contextMenu.task.members || [],
-                            additionalJobs: contextMenu.task.additionalJobs || [],
-                            date: contextMenu.task.date || '',
-                            teamId: contextMenu.task.teamId || '',
-                            section: contextMenu.task.section || 'Herrería'
+                            opNumber: contextMenu.task.opNumber?.toString() ?? '',
+                            name: contextMenu.task.name?.toString() ?? '',
+                            client: contextMenu.task.client?.toString() ?? '',
+                            address: contextMenu.task.address?.toString() ?? 'Montevideo',
+                            totalHours: Number(contextMenu.task.totalHours) || 0,
+                            estimatedHours: Number(contextMenu.task.estimatedHours) || 0,
+                            duration: Number(contextMenu.task.duration) || 0,
+                            vehicles: (contextMenu.task.vehicles ?? []).map(String),
+                            members: (contextMenu.task.members ?? []),
+                            additionalJobs: (contextMenu.task.additionalJobs ?? []),
+                            date: contextMenu.task.date?.toString() ?? '',
+                            teamId: contextMenu.task.teamId ?? null,
+                            section: contextMenu.task.section?.toString() ?? 'Herrería',
                         });
                         setIsTaskModalOpen(true);
                         setContextMenu(null);

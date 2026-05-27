@@ -1636,12 +1636,13 @@ export const GanttPage: React.FC = () => {
                                     client: '',
                                     address: '',
                                     totalHours: 1,
+                                    estimatedHours: 1,
                                     duration: 8,
                                     vehicles: [],
                                     members: [],
                                     additionalJobs: [],
                                     date: '',
-                                    teamId: teams[0]?.id || null,
+                                    teamId: null,
                                     section: 'Instalaciones'
                                 });
                                 setIsTaskModalOpen(true);

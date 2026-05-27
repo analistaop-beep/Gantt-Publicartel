@@ -67,6 +67,7 @@ interface AppState {
         address: string;
         date: string;
         totalHours: number;
+        estimatedHours?: number;
         duration: number;
         teamId: string | null;
         vehicles?: string[];
@@ -343,6 +344,7 @@ export const useStore = create<AppState>((set, get) => ({
             const { error: taskError } = await supabase.from('tasks').insert([{
                 id: taskId,
                 ...taskData,
+                estimatedHours: taskData.estimatedHours ?? taskData.totalHours,
                 additionalJobs: JSON.stringify(additionalJobs),
                 groupId: taskData.date ? taskId : (taskData as any).groupId || taskId
             }]);
