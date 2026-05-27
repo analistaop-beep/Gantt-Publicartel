@@ -1901,14 +1901,15 @@ export const GanttPage: React.FC = () => {
                                 opNumber: contextMenu.task.opNumber || '',
                                 name: contextMenu.task.name || '',
                                 client: contextMenu.task.client || '',
-                                address: contextMenu.task.address || '',
+                                address: contextMenu.task.address || 'Montevideo',
                                 totalHours: contextMenu.task.totalHours || 0,
+                                estimatedHours: contextMenu.task.estimatedHours || 0,
                                 duration: contextMenu.task.duration || 0,
                                 vehicles: contextMenu.task.vehicles || [],
                                 members: contextMenu.task.members || [],
                                 additionalJobs: contextMenu.task.additionalJobs || [],
                                 date: contextMenu.task.date || '',
-                                teamId: contextMenu.task.teamId || '',
+                                teamId: contextMenu.task.teamId || null,
                                 section: contextMenu.task.section || 'Instalaciones'
                             });
                             setIsTaskModalOpen(true);

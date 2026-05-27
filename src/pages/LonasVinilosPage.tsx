@@ -312,7 +312,7 @@ export const LonasVinilosPage: React.FC = () => {
                 : (task.members || []).map((mId: any) => ({ id: mId, hours: 8 })),
             additionalJobs: task.additionalJobs || [],
             date: task.date || '',
-            teamId: task.teamId || '',
+            teamId: task.teamId || null,
             section: task.section || 'Herrería'
         });
         setIsTaskModalOpen(true);
@@ -1904,12 +1904,13 @@ export const LonasVinilosPage: React.FC = () => {
                                     client: contextMenu.task.client || '',
                                     address: contextMenu.task.address || 'Montevideo',
                                     totalHours: contextMenu.task.totalHours || 0,
+                                    estimatedHours: contextMenu.task.estimatedHours || contextMenu.task.totalHours || 0,
                                     duration: contextMenu.task.duration || 0,
                                     vehicles: contextMenu.task.vehicles || [],
                                     members: contextMenu.task.members || [],
                                     additionalJobs: contextMenu.task.additionalJobs || [],
                                     date: contextMenu.task.date || '',
-                                    teamId: contextMenu.task.teamId || '',
+                                    teamId: contextMenu.task.teamId || null,
                                     section: contextMenu.task.section || 'Herrería'
                                 });
                                 setIsTaskModalOpen(true);
