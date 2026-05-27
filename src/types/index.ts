@@ -26,6 +26,7 @@ export interface Task {
     date: string; // YYYY-MM-DD
     totalHours: number; // The absolute duration of the job
     duration: number; // The calculated clock hours (totalHours / members)
+    estimatedHours?: number; // The fixed planned hours for the task
     teamId: string;
     vehicleId?: string;
     members?: string[];

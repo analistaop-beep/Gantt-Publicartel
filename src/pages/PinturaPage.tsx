@@ -43,6 +43,7 @@ export const PinturaPage: React.FC = () => {
         client: '',
         address: 'Montevideo',
         totalHours: 1,
+        estimatedHours: 1,
         duration: 1,
         vehicles: [] as string[],
         members: [] as Array<{ id: string, hours: number }>,
@@ -255,6 +256,7 @@ export const PinturaPage: React.FC = () => {
                 await updateTask({
                     ...editingTask,
                     ...formData,
+                    estimatedHours: editingTask?.estimatedHours ?? formData.estimatedHours,
                     date: dateToUse,
                     teamId: teamIdToUse || null
                 });
@@ -278,6 +280,7 @@ export const PinturaPage: React.FC = () => {
                 client: '',
                 address: 'Montevideo',
                 totalHours: 1,
+                estimatedHours: 1,
                 duration: 1,
                 vehicles: [],
                 members: [],
@@ -301,6 +304,7 @@ export const PinturaPage: React.FC = () => {
             client: task.client || '',
             address: task.address || 'Montevideo',
             totalHours: task.totalHours || 0,
+            estimatedHours: task.estimatedHours || task.totalHours || 0,
             duration: task.duration || 0,
             vehicles: task.vehicles || [],
             members: Array.isArray(task.members) && typeof task.members[0] === 'object'

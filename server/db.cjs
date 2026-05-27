@@ -95,6 +95,7 @@ const ensureColumnExists = (table, column, typeDef) => {
 };
 
 ensureColumnExists('tasks', 'totalHours', 'REAL DEFAULT 0');
+ensureColumnExists('tasks', 'estimatedHours', 'REAL DEFAULT 0');
 ensureColumnExists('tasks', 'vehicleId', 'TEXT');
 ensureColumnExists('tasks', 'opNumber', 'TEXT DEFAULT ""');
 ensureColumnExists('tasks', 'address', 'TEXT DEFAULT ""');

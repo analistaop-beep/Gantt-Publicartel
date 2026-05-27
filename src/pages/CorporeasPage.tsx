@@ -43,6 +43,7 @@ export const CorporeasPage: React.FC = () => {
         client: '',
         address: 'Montevideo',
         totalHours: 1,
+        estimatedHours: 1,
         duration: 1,
         vehicles: [] as string[],
         members: [] as Array<{ id: string, hours: number }>,
@@ -278,6 +279,7 @@ export const CorporeasPage: React.FC = () => {
                 client: '',
                 address: 'Montevideo',
                 totalHours: 1,
+                estimatedHours: 1,
                 duration: 1,
                 vehicles: [],
                 members: [],
@@ -301,6 +303,7 @@ export const CorporeasPage: React.FC = () => {
             client: task.client || '',
             address: task.address || 'Montevideo',
             totalHours: task.totalHours || 0,
+            estimatedHours: task.estimatedHours || 0,
             duration: task.duration || 0,
             vehicles: task.vehicles || [],
             members: Array.isArray(task.members) && typeof task.members[0] === 'object'

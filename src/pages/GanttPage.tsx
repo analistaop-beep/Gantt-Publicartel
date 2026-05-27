@@ -43,6 +43,7 @@ export const GanttPage: React.FC = () => {
         client: '',
         address: '',
         totalHours: 1,
+        estimatedHours: 1,
         duration: 1,
         vehicles: [] as string[],
         members: [] as Array<{ id: string, hours: number }>,
@@ -261,6 +262,7 @@ export const GanttPage: React.FC = () => {
                     date: dateToUse,
                     teamId: teamIdToUse,
                     type: 'instalacion',
+                    estimatedHours: formData.estimatedHours,
                     section: formData.section || 'Instalaciones'
                 });
                 sileo.success({ title: 'Tarea creada con éxito' });
@@ -274,6 +276,7 @@ export const GanttPage: React.FC = () => {
                 client: '',
                 address: '',
                 totalHours: 1,
+                estimatedHours: 1,
                 duration: 1,
                 vehicles: [],
                 members: [],
@@ -297,6 +300,7 @@ export const GanttPage: React.FC = () => {
             client: task.client || '',
             address: task.address || '',
             totalHours: task.totalHours || 0,
+            estimatedHours: task.estimatedHours || task.totalHours || 0,
             duration: task.duration || 0,
             vehicles: task.vehicles || [],
             members: Array.isArray(task.members) && typeof task.members[0] === 'object'
