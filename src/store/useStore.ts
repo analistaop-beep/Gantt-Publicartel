@@ -375,7 +375,7 @@ export const useStore = create<AppState>((set, get) => ({
     updateTask: async (task) => {
         try {
             set({ error: null });
-            const { vehicles = [], members = [], additionalJobs = [], task_members, task_vehicles, ...taskData } = task;
+            const { id, vehicles = [], members = [], additionalJobs = [], task_members, task_vehicles, ...taskData } = task;
 
             // Sanitize teamId: empty string violates foreign key constraint in Supabase/Postgres
             if (taskData.teamId === '') {
@@ -385,24 +385,24 @@ export const useStore = create<AppState>((set, get) => ({
             const { error: taskError } = await supabase.from('tasks').update({
                 ...taskData,
                 additionalJobs: JSON.stringify(additionalJobs)
-            }).eq('id', task.id);
+            }).eq('id', id);
 
             if (taskError) throw taskError;
 
-            // Update members (delete all and re-insert for simplicity, matching original server logic)
-            await supabase.from('task_members').delete().eq('taskId', task.id);
+            // Update members (delete all and re-insert)
+            await supabase.from('task_members').delete().eq('taskId', id);
             if (members.length > 0) {
                 const { error: mError } = await supabase.from('task_members').insert(
-                    members.map((m: any) => ({ taskId: task.id, memberId: m.id, hours: m.hours }))
+                    members.map((m: any) => ({ taskId: id, memberId: m.id, hours: m.hours }))
                 );
                 if (mError) throw mError;
             }
 
             // Update vehicles
-            await supabase.from('task_vehicles').delete().eq('taskId', task.id);
+            await supabase.from('task_vehicles').delete().eq('taskId', id);
             if (vehicles.length > 0) {
                 const { error: vError } = await supabase.from('task_vehicles').insert(
-                    vehicles.map((vId: string) => ({ taskId: task.id, vehicleId: vId }))
+                    vehicles.map((vId: string) => ({ taskId: id, vehicleId: vId }))
                 );
                 if (vError) throw vError;
             }
@@ -588,7 +588,7 @@ export const useStore = create<AppState>((set, get) => ({
 
             // 2. Process updates
             for (const [, task] of updatedTasks) {
-                const { vehicles = [], members = [], additionalJobs = [], task_members, task_vehicles, ...taskData } = task;
+                const { id, vehicles = [], members = [], additionalJobs = [], task_members, task_vehicles, ...taskData } = task;
 
                 // Sanitize teamId
                 if (taskData.teamId === '') {
@@ -598,24 +598,24 @@ export const useStore = create<AppState>((set, get) => ({
                 const { error: taskError } = await supabase.from('tasks').update({
                     ...taskData,
                     additionalJobs: JSON.stringify(additionalJobs)
-                }).eq('id', task.id);
+                }).eq('id', id);
 
                 if (taskError) throw taskError;
 
                 // Update members
-                await supabase.from('task_members').delete().eq('taskId', task.id);
+                await supabase.from('task_members').delete().eq('taskId', id);
                 if (members.length > 0) {
                     const { error: mError } = await supabase.from('task_members').insert(
-                        members.map((m: any) => ({ taskId: task.id, memberId: m.id, hours: m.hours }))
+                        members.map((m: any) => ({ taskId: id, memberId: m.id, hours: m.hours }))
                     );
                     if (mError) throw mError;
                 }
 
                 // Update vehicles
-                await supabase.from('task_vehicles').delete().eq('taskId', task.id);
+                await supabase.from('task_vehicles').delete().eq('taskId', id);
                 if (vehicles.length > 0) {
                     const { error: vError } = await supabase.from('task_vehicles').insert(
-                        vehicles.map((vId: string) => ({ taskId: task.id, vehicleId: vId }))
+                        vehicles.map((vId: string) => ({ taskId: id, vehicleId: vId }))
                     );
                     if (vError) throw vError;
                 }

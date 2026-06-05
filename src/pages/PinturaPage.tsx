@@ -329,7 +329,7 @@ export const PinturaPage: React.FC = () => {
         setIsDragging(false);
     };
 
-    const handleDrop = (e: React.DragEvent, teamId: string | null, date: Date) => {
+    const handleDrop = async (e: React.DragEvent, teamId: string | null, date: Date) => {
         e.preventDefault();
         setIsDragging(false);
         const taskId = e.dataTransfer.getData('taskId') || e.dataTransfer.getData('taskid');
@@ -339,7 +339,8 @@ export const PinturaPage: React.FC = () => {
         const newDate = format(date, 'yyyy-MM-dd');
         if (task.teamId === teamId && task.date === newDate) return;
 
-        updateTaskLocal({
+        // Update task in database and local store
+        await updateTask({
             ...task,
             teamId,
             date: newDate

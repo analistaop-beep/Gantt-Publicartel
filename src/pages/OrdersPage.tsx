@@ -1007,8 +1007,13 @@ export const OrdersPage: React.FC = () => {
                                                 if (task.section === 'Lonas') badgeColor = 'text-pink-600 bg-pink-400/10 border-pink-400/20 dark:text-pink-400 dark:bg-pink-400/10 dark:border-pink-400/20';
                                                 if (task.section === 'Pintura') badgeColor = 'text-teal-600 bg-teal-400/10 border-teal-400/20 dark:text-teal-400 dark:bg-teal-400/10 dark:border-teal-400/20';
 
+                                                // Check if the task date is in the past
+                                                const today = new Date();
+                                                today.setHours(0, 0, 0, 0);
+                                                const isPastDate = task.date && new Date(task.date + 'T00:00:00') < today;
+
                                                 return (
-                                                    <div key={task.id} className="p-4 bg-slate-50 dark:bg-white/[0.015] border border-slate-200 dark:border-white/5 rounded-xl space-y-2 hover:bg-slate-100/50 dark:hover:bg-white/[0.03] transition-colors relative group/task-card">
+                                                    <div key={task.id} className={`p-4 border rounded-xl space-y-2 transition-colors relative group/task-card ${isPastDate ? 'bg-emerald-50 dark:bg-emerald-500/[0.07] border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100/70 dark:hover:bg-emerald-500/[0.12]' : 'bg-slate-50 dark:bg-white/[0.015] border-slate-200 dark:border-white/5 hover:bg-slate-100/50 dark:hover:bg-white/[0.03]'}`}>
                                                         <div className="flex justify-between items-start gap-2">
                                                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-wider ${badgeColor}`}>
                                                                 {task.section}
