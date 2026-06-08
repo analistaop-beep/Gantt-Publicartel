@@ -44,7 +44,8 @@ export const OrdersPage: React.FC = () => {
         members: [] as Array<{ id: string, hours: number }>,
         date: '',
         teamId: null as string | null,
-        section: 'Instalaciones'
+        section: 'Instalaciones',
+        blockedBy: null as string | null
     });
 
     const isImageFile = (url: string) => {
@@ -350,7 +351,8 @@ export const OrdersPage: React.FC = () => {
             members: [],
             date: '',
             teamId: null,
-            section: 'Instalaciones'
+            section: 'Instalaciones',
+            blockedBy: null
         });
         setTaskMemberSearch('');
         setIsTaskModalOpen(true);
@@ -369,7 +371,8 @@ export const OrdersPage: React.FC = () => {
             
             await addTask({
                 ...taskFormData,
-                type: sectionToType[taskFormData.section] as any
+                type: sectionToType[taskFormData.section] as any,
+                blockedBy: taskFormData.blockedBy || null
             });
 
             sileo.success({ title: 'Tarea registrada con éxito' });
@@ -1304,6 +1307,32 @@ export const OrdersPage: React.FC = () => {
                                                         required
                                                     />
                                                 </div>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Bloqueada por (Tarea previa)</label>
+                                                <select
+                                                    className="input w-full text-xs"
+                                                    value={taskFormData.blockedBy || ''}
+                                                    onChange={(e) => setTaskFormData({ ...taskFormData, blockedBy: e.target.value || null })}
+                                                >
+                                                    <option value="">Ninguna</option>
+                                                    {linkedTasks.map(at => {
+                                                        const sectionLabels: Record<string, string> = {
+                                                            instalacion: 'Instalaciones',
+                                                            herreria: 'Herrería',
+                                                            corporeas: 'Corpóreas',
+                                                            lonas: 'Lonas',
+                                                            pintura: 'Pintura'
+                                                        };
+                                                        const sec = sectionLabels[at.type || 'instalacion'] || at.section || 'General';
+                                                        return (
+                                                            <option key={at.id} value={at.id}>
+                                                                {sec}: {at.name} {at.date ? `(Agendada: ${at.date})` : '(Pendiente)'}
+                                                            </option>
+                                                        );
+                                                    })}
+                                                </select>
                                             </div>
                                         </div>
 

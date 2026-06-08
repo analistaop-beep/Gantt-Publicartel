@@ -127,8 +127,8 @@ const Services = {
         const taskType = task.type || 'instalacion';
 
         db.transaction((taskData) => {
-            db.prepare('INSERT INTO tasks (id, opNumber, name, client, address, date, totalHours, duration, teamId, groupId, additionalJobs, type, section) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-                .run(id, taskData.opNumber ?? "", taskData.name ?? "", taskData.client ?? "", taskData.address ?? "", taskData.date ?? "", taskData.totalHours ?? 0, taskData.duration ?? 0, taskData.teamId || null, groupId, additionalJobsStr, taskType, taskData.section ?? 'Instalaciones');
+            db.prepare('INSERT INTO tasks (id, opNumber, name, client, address, date, totalHours, duration, teamId, groupId, additionalJobs, type, section, blockedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                .run(id, taskData.opNumber ?? "", taskData.name ?? "", taskData.client ?? "", taskData.address ?? "", taskData.date ?? "", taskData.totalHours ?? 0, taskData.duration ?? 0, taskData.teamId || null, groupId, additionalJobsStr, taskType, taskData.section ?? 'Instalaciones', taskData.blockedBy || null);
 
             if (taskData.members && taskData.members.length > 0) {
                 const insertMember = db.prepare('INSERT INTO task_members (taskId, memberId, hours) VALUES (?, ?, ?)');
@@ -156,8 +156,8 @@ const Services = {
         const additionalJobsStr = JSON.stringify(task.additionalJobs || []);
 
         db.transaction((taskData) => {
-            db.prepare('UPDATE tasks SET opNumber = ?, name = ?, client = ?, address = ?, date = ?, totalHours = ?, duration = ?, teamId = ?, additionalJobs = ?, section = ? WHERE id = ?')
-                .run(taskData.opNumber ?? "", taskData.name ?? "", taskData.client ?? "", taskData.address ?? "", taskData.date ?? "", taskData.totalHours ?? 0, taskData.duration ?? 0, taskData.teamId || null, additionalJobsStr, taskData.section ?? 'Instalaciones', taskData.id);
+            db.prepare('UPDATE tasks SET opNumber = ?, name = ?, client = ?, address = ?, date = ?, totalHours = ?, duration = ?, teamId = ?, additionalJobs = ?, section = ?, blockedBy = ? WHERE id = ?')
+                .run(taskData.opNumber ?? "", taskData.name ?? "", taskData.client ?? "", taskData.address ?? "", taskData.date ?? "", taskData.totalHours ?? 0, taskData.duration ?? 0, taskData.teamId || null, additionalJobsStr, taskData.section ?? 'Instalaciones', taskData.blockedBy || null, taskData.id);
 
             db.prepare('DELETE FROM task_members WHERE taskId = ?').run(taskData.id);
             if (taskData.members && taskData.members.length > 0) {

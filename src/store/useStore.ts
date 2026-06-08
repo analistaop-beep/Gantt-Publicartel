@@ -75,6 +75,7 @@ interface AppState {
         additionalJobs?: Array<{ description: string; client: string }>;
         type?: 'instalacion' | 'herreria' | 'corporeas' | 'lonas' | 'pintura';
         section?: string;
+        blockedBy?: string | null;
     }) => Promise<void>;
     updateTask: (task: any) => Promise<void>;
     deleteTask: (id: string) => Promise<void>;

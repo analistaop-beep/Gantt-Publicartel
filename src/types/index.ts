@@ -30,6 +30,7 @@ export interface Task {
     teamId: string;
     vehicleId?: string;
     members?: string[];
+    blockedBy?: string | null;
 }
 
 export interface ProductionOrder {

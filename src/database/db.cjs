@@ -108,6 +108,7 @@ ensureColumnExists('tasks', 'groupId', 'TEXT');
 ensureColumnExists('tasks', 'additionalJobs', 'TEXT DEFAULT "[]"');
 ensureColumnExists('tasks', 'type', "TEXT DEFAULT 'instalacion'");
 ensureColumnExists('tasks', 'section', "TEXT DEFAULT 'Instalaciones'");
+ensureColumnExists('tasks', 'blockedBy', 'TEXT DEFAULT NULL');
 ensureColumnExists('members', 'sector', 'TEXT');
 ensureColumnExists('task_members', 'hours', 'REAL DEFAULT 8');
 

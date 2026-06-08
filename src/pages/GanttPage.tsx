@@ -18,7 +18,7 @@ import { FileDown, FileText, Printer } from 'lucide-react';
 
 export const GanttPage: React.FC = () => {
     const {
-        teams, tasks, herreriaTasks, members, vehicles, reminders,
+        teams, tasks, herreriaTasks, corporeasTasks, lonasTasks, pinturaTasks, members, vehicles, reminders,
         addTask, addMember, addVehicle, updateTask, deleteTask,
         updateTaskLocal, deleteTaskLocal, addTaskLocal,
         saveAllChanges, hasPendingChanges, isSaving,
@@ -50,7 +50,8 @@ export const GanttPage: React.FC = () => {
         additionalJobs: [] as Array<{ description: string; client: string }>,
         date: format(new Date(), 'yyyy-MM-dd'),
         teamId: null as string | null,
-        section: 'Instalaciones'
+        section: 'Instalaciones',
+        blockedBy: null as string | null
     });
 
     const [quickMemberData, setQuickMemberData] = useState({ name: '', role: '', sector: 'Instalaciones' });
@@ -117,10 +118,33 @@ export const GanttPage: React.FC = () => {
         };
     }, [isResizing, isPendingTasksOpen]);
 
+    // Unify all task types to resolve cross-section blocking dependencies
+    const allTasks = useMemo(() => {
+        return [
+            ...tasks,
+            ...herreriaTasks,
+            ...(corporeasTasks || []),
+            ...(lonasTasks || []),
+            ...(pinturaTasks || [])
+        ];
+    }, [tasks, herreriaTasks, corporeasTasks, lonasTasks, pinturaTasks]);
+
     // Filter pending tasks (tasks with no date)
     const pendingTasks = useMemo(() => {
         let pts = tasks.filter(t => !t.date || t.date === '');
         
+        // A blocked task only appears in Pendientes when its blocker has been
+        // scheduled on a date strictly BEFORE today (already executed).
+        pts = pts.filter(t => {
+            if (!t.blockedBy) return true;
+            const blocker = allTasks.find(at => at.id === t.blockedBy);
+            if (!blocker || !blocker.date || blocker.date === '') return false;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const blockerDate = new Date(blocker.date + 'T00:00:00');
+            return blockerDate < today; // unblocked only if blocker is in the past
+        });
+
         if (pendingSearch.trim()) {
             const search = pendingSearch.toLowerCase();
             pts = [...pts].sort((a, b) => {
@@ -133,7 +157,7 @@ export const GanttPage: React.FC = () => {
         }
         
         return pts;
-    }, [tasks, pendingSearch]);
+    }, [tasks, allTasks, pendingSearch]);
 
     // Vehicle availability logic
     const busyVehiclesOnDate = useMemo(() => {
@@ -253,7 +277,8 @@ export const GanttPage: React.FC = () => {
                     ...formData,
                     date: dateToUse,
                     teamId: teamIdToUse,
-                    section: formData.section || 'Instalaciones'
+                    section: formData.section || 'Instalaciones',
+                    blockedBy: formData.blockedBy || null
                 });
                 sileo.success({ title: 'Tarea actualizada con éxito' });
             } else {
@@ -263,7 +288,8 @@ export const GanttPage: React.FC = () => {
                     teamId: teamIdToUse,
                     type: 'instalacion',
                     estimatedHours: formData.estimatedHours,
-                    section: formData.section || 'Instalaciones'
+                    section: formData.section || 'Instalaciones',
+                    blockedBy: formData.blockedBy || null
                 });
                 sileo.success({ title: 'Tarea creada con éxito' });
             }
@@ -283,7 +309,8 @@ export const GanttPage: React.FC = () => {
                 additionalJobs: [],
                 date: format(new Date(), 'yyyy-MM-dd'),
                 teamId: teams[0]?.id || null,
-                section: 'Instalaciones'
+                section: 'Instalaciones',
+                blockedBy: null
             });
             setMemberSearch('');
         } catch (err) {
@@ -309,7 +336,8 @@ export const GanttPage: React.FC = () => {
             additionalJobs: task.additionalJobs || [],
             date: task.date || '',
             teamId: task.teamId || null,
-            section: task.section || 'Instalaciones'
+            section: task.section || 'Instalaciones',
+            blockedBy: task.blockedBy || null
         });
         setIsTaskModalOpen(true);
     };
@@ -1211,15 +1239,45 @@ export const GanttPage: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">DESCRIPCIÓN / TAREA</label>
-                                                <input
-                                                    className="input w-full"
-                                                    placeholder="Nombre de la tarea..."
-                                                    value={formData.name}
-                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                    required
-                                                />
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">BLOQUEADA POR (TAREA PREVIA)</label>
+                                                    <select
+                                                        className="input w-full"
+                                                        value={formData.blockedBy || ''}
+                                                        onChange={(e) => setFormData({ ...formData, blockedBy: e.target.value || null })}
+                                                    >
+                                                        <option value="">NINGUNA</option>
+                                                        {allTasks
+                                                            .filter(at => at.opNumber && at.opNumber.toString().trim() === formData.opNumber.toString().trim() && at.id !== editingTask?.id)
+                                                            .map(at => {
+                                                                const sectionLabels: Record<string, string> = {
+                                                                    instalacion: 'Instalaciones',
+                                                                    herreria: 'Herrería',
+                                                                    corporeas: 'Corpóreas',
+                                                                    lonas: 'Lonas',
+                                                                    pintura: 'Pintura'
+                                                                };
+                                                                const sec = sectionLabels[at.type || 'instalacion'] || at.section || 'General';
+                                                                return (
+                                                                    <option key={at.id} value={at.id}>
+                                                                        {sec}: {at.name} {at.date ? `(Agendada: ${at.date})` : '(Pendiente)'}
+                                                                    </option>
+                                                                );
+                                                            })
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">DESCRIPCIÓN / TAREA</label>
+                                                    <input
+                                                        className="input w-full"
+                                                        placeholder="Nombre de la tarea..."
+                                                        value={formData.name}
+                                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
                                             </div>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1643,7 +1701,8 @@ export const GanttPage: React.FC = () => {
                                     additionalJobs: [],
                                     date: '',
                                     teamId: null,
-                                    section: 'Instalaciones'
+                                    section: 'Instalaciones',
+                                    blockedBy: null
                                 });
                                 setIsTaskModalOpen(true);
                             }}
@@ -1910,7 +1969,8 @@ export const GanttPage: React.FC = () => {
                                 additionalJobs: contextMenu.task.additionalJobs || [],
                                 date: contextMenu.task.date || '',
                                 teamId: contextMenu.task.teamId || null,
-                                section: contextMenu.task.section || 'Instalaciones'
+                                section: contextMenu.task.section || 'Instalaciones',
+                                blockedBy: contextMenu.task.blockedBy || null
                             });
                             setIsTaskModalOpen(true);
                             setContextMenu(null);

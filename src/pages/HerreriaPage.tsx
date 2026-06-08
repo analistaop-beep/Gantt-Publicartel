@@ -18,7 +18,7 @@ import { FileDown, FileText, Printer } from 'lucide-react';
 
 export const HerreriaPage: React.FC = () => {
     const {
-        teams, tasks: instalacionTasks, herreriaTasks: tasks, members, vehicles, reminders,
+        teams, tasks: instalacionTasks, herreriaTasks: tasks, corporeasTasks, lonasTasks, pinturaTasks, members, vehicles, reminders,
         addTask, deleteTask, addMember, addVehicle, updateTask,
         updateTaskLocal, deleteTaskLocal, addTaskLocal,
         saveAllChanges, hasPendingChanges, isSaving,
@@ -50,7 +50,8 @@ export const HerreriaPage: React.FC = () => {
         additionalJobs: [] as Array<{ description: string; client: string }>,
         date: '',
         teamId: null as string | null,
-        section: 'Herrería'
+        section: 'Herrería',
+        blockedBy: null as string | null
     });
 
     const [quickMemberData, setQuickMemberData] = useState({ name: '', role: '', sector: 'Herrería' });
@@ -117,10 +118,33 @@ export const HerreriaPage: React.FC = () => {
         };
     }, [isResizing, isPendingTasksOpen]);
 
+    // Unify all task types to resolve cross-section blocking dependencies
+    const allTasks = useMemo(() => {
+        return [
+            ...(instalacionTasks || []),
+            ...tasks,
+            ...(corporeasTasks || []),
+            ...(lonasTasks || []),
+            ...(pinturaTasks || [])
+        ];
+    }, [instalacionTasks, tasks, corporeasTasks, lonasTasks, pinturaTasks]);
+
     // Filter pending tasks (tasks with no date)
     const pendingTasks = useMemo(() => {
         let pts = tasks.filter(t => !t.date || t.date === '');
         
+        // A blocked task only appears in Pendientes when its blocker has been
+        // scheduled on a date strictly BEFORE today (already executed).
+        pts = pts.filter(t => {
+            if (!t.blockedBy) return true;
+            const blocker = allTasks.find(at => at.id === t.blockedBy);
+            if (!blocker || !blocker.date || blocker.date === '') return false;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const blockerDate = new Date(blocker.date + 'T00:00:00');
+            return blockerDate < today; // unblocked only if blocker is in the past
+        });
+
         if (pendingSearch.trim()) {
             const search = pendingSearch.toLowerCase();
             pts = [...pts].sort((a, b) => {
@@ -133,7 +157,7 @@ export const HerreriaPage: React.FC = () => {
         }
         
         return pts;
-    }, [tasks, pendingSearch]);
+    }, [tasks, allTasks, pendingSearch]);
 
     // Filter tasks for the timeline (tasks with a date)
     const timelineTasks = useMemo(() => {
@@ -258,7 +282,8 @@ export const HerreriaPage: React.FC = () => {
                     ...formData,
                     estimatedHours: editingTask?.estimatedHours ?? formData.estimatedHours,
                     date: dateToUse,
-                    teamId: teamIdToUse || null
+                    teamId: teamIdToUse || null,
+                    blockedBy: formData.blockedBy || null
                 });
                 sileo.success({ title: 'Tarea actualizada con éxito' });
             } else {
@@ -267,7 +292,8 @@ export const HerreriaPage: React.FC = () => {
                     date: dateToUse,
                     teamId: teamIdToUse || null,
                     type: 'herreria',
-                    section: formData.section || 'Herrería'
+                    section: formData.section || 'Herrería',
+                    blockedBy: formData.blockedBy || null
                 });
                 sileo.success({ title: 'Tarea creada con éxito' });
             }
@@ -287,7 +313,8 @@ export const HerreriaPage: React.FC = () => {
                 additionalJobs: [],
                 date: '',
                 teamId: teams[0]?.id || null,
-                section: 'Herrería'
+                section: 'Herrería',
+                blockedBy: null
             });
             setMemberSearch('');
         } catch (err) {
@@ -313,7 +340,8 @@ export const HerreriaPage: React.FC = () => {
             additionalJobs: task.additionalJobs || [],
             date: task.date || '',
             teamId: task.teamId || '',
-            section: task.section || 'Herrería'
+            section: task.section || 'Herrería',
+            blockedBy: task.blockedBy || null
         });
         setIsTaskModalOpen(true);
     };
@@ -1196,6 +1224,35 @@ export const HerreriaPage: React.FC = () => {
                                                     </select>
                                                 </div>
 
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Bloqueada por (Tarea previa)</label>
+                                                    <select
+                                                        className="input-sm w-full"
+                                                        value={formData.blockedBy || ''}
+                                                        onChange={(e) => setFormData({ ...formData, blockedBy: e.target.value || null })}
+                                                    >
+                                                        <option value="">Ninguna</option>
+                                                        {allTasks
+                                                            .filter(at => at.opNumber && at.opNumber.toString().trim() === formData.opNumber.toString().trim() && at.id !== editingTask?.id)
+                                                            .map(at => {
+                                                                const sectionLabels: Record<string, string> = {
+                                                                    instalacion: 'Instalaciones',
+                                                                    herreria: 'Herrería',
+                                                                    corporeas: 'Corpóreas',
+                                                                    lonas: 'Lonas',
+                                                                    pintura: 'Pintura'
+                                                                };
+                                                                const sec = sectionLabels[at.type || 'instalacion'] || at.section || 'General';
+                                                                return (
+                                                                    <option key={at.id} value={at.id}>
+                                                                        {sec}: {at.name} {at.date ? `(Agendada: ${at.date})` : '(Pendiente)'}
+                                                                    </option>
+                                                                );
+                                                            })
+                                                        }
+                                                    </select>
+                                                </div>
+
                                                 <div className="grid grid-cols-3 gap-3">
                                                     <div className="col-span-1 space-y-1">
                                                         <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">OP</label>
@@ -1654,7 +1711,8 @@ export const HerreriaPage: React.FC = () => {
                                     additionalJobs: [],
                                     date: '',
                                     teamId: teams[0]?.id || null,
-                                    section: 'Herrería'
+                                    section: 'Herrería',
+                                    blockedBy: null
                                 });
                                 setIsTaskModalOpen(true);
                             }}
@@ -1913,7 +1971,8 @@ export const HerreriaPage: React.FC = () => {
                                     additionalJobs: contextMenu.task.additionalJobs || [],
                                     date: contextMenu.task.date || '',
                                     teamId: contextMenu.task.teamId || null,
-                                    section: contextMenu.task.section || 'Herrería'
+                                    section: contextMenu.task.section || 'Herrería',
+                                    blockedBy: contextMenu.task.blockedBy || null
                                 });
                                 setIsTaskModalOpen(true);
                                 setContextMenu(null);

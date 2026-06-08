@@ -18,7 +18,7 @@ import { FileDown, FileText, Printer } from 'lucide-react';
 
 export const CorporeasPage: React.FC = () => {
     const {
-        teams, tasks: instalacionTasks, corporeasTasks: tasks, members, vehicles, reminders,
+        teams, tasks: instalacionTasks, corporeasTasks: tasks, herreriaTasks, lonasTasks, pinturaTasks, members, vehicles, reminders,
         addTask, deleteTask, addMember, addVehicle, updateTask,
         updateTaskLocal, deleteTaskLocal, addTaskLocal,
         saveAllChanges, hasPendingChanges, isSaving,
@@ -50,7 +50,8 @@ export const CorporeasPage: React.FC = () => {
         additionalJobs: [] as Array<{ description: string; client: string }>,
         date: '',
         teamId: null as string | null,
-        section: 'Corpóreas'
+        section: 'Corpóreas',
+        blockedBy: null as string | null
     });
 
     const [quickMemberData, setQuickMemberData] = useState({ name: '', role: '', sector: 'Corpóreas' });
@@ -117,10 +118,33 @@ export const CorporeasPage: React.FC = () => {
         };
     }, [isResizing, isPendingTasksOpen]);
 
+    // Unify all task types to resolve cross-section blocking dependencies
+    const allTasks = useMemo(() => {
+        return [
+            ...(instalacionTasks || []),
+            ...tasks,
+            ...(herreriaTasks || []),
+            ...(lonasTasks || []),
+            ...(pinturaTasks || [])
+        ];
+    }, [instalacionTasks, tasks, herreriaTasks, lonasTasks, pinturaTasks]);
+
     // Filter pending tasks (tasks with no date)
     const pendingTasks = useMemo(() => {
         let pts = tasks.filter(t => !t.date || t.date === '');
         
+        // A blocked task only appears in Pendientes when its blocker has been
+        // scheduled on a date strictly BEFORE today (already executed).
+        pts = pts.filter(t => {
+            if (!t.blockedBy) return true;
+            const blocker = allTasks.find(at => at.id === t.blockedBy);
+            if (!blocker || !blocker.date || blocker.date === '') return false;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const blockerDate = new Date(blocker.date + 'T00:00:00');
+            return blockerDate < today; // unblocked only if blocker is in the past
+        });
+
         if (pendingSearch.trim()) {
             const search = pendingSearch.toLowerCase();
             pts = [...pts].sort((a, b) => {
@@ -133,7 +157,7 @@ export const CorporeasPage: React.FC = () => {
         }
         
         return pts;
-    }, [tasks, pendingSearch]);
+    }, [tasks, allTasks, pendingSearch]);
 
     // Filter tasks for the timeline (tasks with a date)
     const timelineTasks = useMemo(() => {
@@ -257,7 +281,8 @@ export const CorporeasPage: React.FC = () => {
                     ...editingTask,
                     ...formData,
                     date: dateToUse,
-                    teamId: teamIdToUse || null
+                    teamId: teamIdToUse || null,
+                    blockedBy: formData.blockedBy || null
                 });
                 sileo.success({ title: 'Tarea actualizada con éxito' });
             } else {
@@ -266,7 +291,8 @@ export const CorporeasPage: React.FC = () => {
                     date: dateToUse,
                     teamId: teamIdToUse || null,
                     type: 'corporeas',
-                    section: formData.section || 'Herrería'
+                    section: formData.section || 'Herrería',
+                    blockedBy: formData.blockedBy || null
                 });
                 sileo.success({ title: 'Tarea creada con éxito' });
             }
@@ -286,7 +312,8 @@ export const CorporeasPage: React.FC = () => {
                 additionalJobs: [],
                 date: '',
                 teamId: teams[0]?.id || null,
-                section: 'Corpóreas'
+                section: 'Corpóreas',
+                blockedBy: null
             });
             setMemberSearch('');
         } catch (err) {
@@ -312,7 +339,8 @@ export const CorporeasPage: React.FC = () => {
             additionalJobs: task.additionalJobs || [],
             date: task.date || '',
             teamId: task.teamId || '',
-            section: task.section || 'Herrería'
+            section: task.section || 'Herrería',
+            blockedBy: task.blockedBy || null
         });
         setIsTaskModalOpen(true);
     };
@@ -1194,6 +1222,35 @@ export const CorporeasPage: React.FC = () => {
                                         </select>
                                     </div>
 
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Bloqueada por (Tarea previa)</label>
+                                        <select
+                                            className="input-sm w-full"
+                                            value={formData.blockedBy || ''}
+                                            onChange={(e) => setFormData({ ...formData, blockedBy: e.target.value || null })}
+                                        >
+                                            <option value="">Ninguna</option>
+                                            {allTasks
+                                                .filter(at => at.opNumber && at.opNumber.toString().trim() === formData.opNumber.toString().trim() && at.id !== editingTask?.id)
+                                                .map(at => {
+                                                    const sectionLabels: Record<string, string> = {
+                                                        instalacion: 'Instalaciones',
+                                                        herreria: 'Herrería',
+                                                        corporeas: 'Corpóreas',
+                                                        lonas: 'Lonas',
+                                                        pintura: 'Pintura'
+                                                    };
+                                                    const sec = sectionLabels[at.type || 'instalacion'] || at.section || 'General';
+                                                    return (
+                                                        <option key={at.id} value={at.id}>
+                                                            {sec}: {at.name} {at.date ? `(Agendada: ${at.date})` : '(Pendiente)'}
+                                                        </option>
+                                                    );
+                                                })
+                                            }
+                                        </select>
+                                    </div>
+
                                     <div className="grid grid-cols-3 gap-3">
                                         <div className="col-span-1 space-y-1">
                                             <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">OP</label>
@@ -1652,7 +1709,8 @@ export const CorporeasPage: React.FC = () => {
                         additionalJobs: [],
                         date: '',
                         teamId: teams[0]?.id || null,
-                        section: 'Corpóreas'
+                        section: 'Corpóreas',
+                        blockedBy: null
                     });
                     setIsTaskModalOpen(true);
                 }}
@@ -1912,6 +1970,7 @@ export const CorporeasPage: React.FC = () => {
                             date: contextMenu.task.date?.toString() ?? '',
                             teamId: contextMenu.task.teamId ?? null,
                             section: contextMenu.task.section?.toString() ?? 'Herrería',
+                            blockedBy: contextMenu.task.blockedBy || null
                         });
                         setIsTaskModalOpen(true);
                         setContextMenu(null);
