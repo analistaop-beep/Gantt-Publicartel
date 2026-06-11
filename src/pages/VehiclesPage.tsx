@@ -42,11 +42,11 @@ export const VehiclesPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-10 py-6 border-b border-white/5 sticky-header-custom">
-                <div className="flex justify-between items-center">
+            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-4 py-4 md:px-10 md:py-6 border-b border-white/5 sticky-header-custom">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <h2 className="text-2xl font-bold">Vehículos</h2>
                 {!isEditing && (
-                    <form onSubmit={handleSubmit} className="flex gap-2">
+                    <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                         <input
                             className="input text-sm"
                             placeholder="Nombre / Modelo"
@@ -69,7 +69,7 @@ export const VehiclesPage: React.FC = () => {
             </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-auto custom-scrollbar p-10">
+        <div className="flex-1 min-h-0 overflow-auto custom-scrollbar p-4 md:p-10">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {vehicles.map((vehicle) => (
                     <div key={vehicle.id} className="glass p-5 rounded-md flex items-center justify-between group">
@@ -106,7 +106,7 @@ export const VehiclesPage: React.FC = () => {
 
             {isEditing && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-[80vw] shadow-2xl border border-white/10">
+                    <div className="bg-[#1e293b] p-4 md:p-8 rounded-sm w-full max-w-[95vw] md:max-w-[80vw] shadow-2xl border border-white/10">
                         <h3 className="text-xl font-bold mb-6">EDITAR VEHÍCULO</h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-1">

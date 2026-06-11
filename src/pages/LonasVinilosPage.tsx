@@ -146,14 +146,13 @@ export const LonasVinilosPage: React.FC = () => {
         });
 
         if (pendingSearch.trim()) {
-            const search = pendingSearch.toLowerCase();
-            pts = [...pts].sort((a, b) => {
-                const aMatch = a.client?.toLowerCase().includes(search) || a.opNumber?.toString().toLowerCase().includes(search);
-                const bMatch = b.client?.toLowerCase().includes(search) || b.opNumber?.toString().toLowerCase().includes(search);
-                if (aMatch && !bMatch) return -1;
-                if (!aMatch && bMatch) return 1;
-                return 0;
-            });
+            const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+            const search = normalize(pendingSearch);
+            pts = pts.filter(t =>
+                normalize(t.client || '').includes(search) ||
+                normalize(t.opNumber?.toString() || '').includes(search) ||
+                normalize(t.name || '').includes(search)
+            );
         }
         
         return pts;
@@ -642,7 +641,7 @@ export const LonasVinilosPage: React.FC = () => {
     return (
         <div className="h-full flex flex-col overflow-hidden animate-in fade-in duration-500 border-none relative">
             {/* Header */}
-            <div className="flex flex-col xl:flex-row justify-between items-center gap-6 p-6">
+            <div className="flex flex-col xl:flex-row justify-between items-center gap-4 lg:gap-6 p-4 lg:p-6">
                 <div className="flex items-center gap-5">
                     <div className="w-14 h-14 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
                         <Calendar className="text-white" size={28} />
@@ -657,7 +656,7 @@ export const LonasVinilosPage: React.FC = () => {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-nowrap overflow-x-auto pb-2 md:pb-0 no-scrollbar ml-4">
+                    <div className="flex items-center gap-2 flex-nowrap overflow-x-auto pb-2 md:pb-0 no-scrollbar ml-4 w-full md:w-auto">
                         <button
                             onClick={handleClearWeek}
                             className="bg-red-600/10 hover:bg-red-600/20 text-red-400 px-4 py-2 rounded-md border border-red-500/30 text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap"
@@ -777,13 +776,13 @@ export const LonasVinilosPage: React.FC = () => {
             </div>
 
             {/* Gantt Timeline */}
-            <div className="flex-1 min-h-0 bg-[#0f172a] flex flex-col overflow-hidden border border-white/5 mx-10 mb-2 rounded-[1rem] relative shadow-2xl">
+            <div className="flex-1 min-h-0 bg-[#0f172a] flex flex-col overflow-hidden border-t sm:border border-white/5 mx-0 sm:mx-2 lg:mx-10 mb-0 sm:mb-2 rounded-none sm:rounded-[1rem] relative shadow-2xl">
                 <div className="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar flex flex-col" ref={timelineRef}>
                     <div className="w-full flex-1 flex flex-col">
                         {/* Timeline Days Header */}
-                        <div className="sticky top-0 z-40 bg-[#1e293b] border-b border-white/10 w-full">
+                        <div className="sticky top-0 z-40 bg-[#1e293b] border-b border-white/10 w-full min-w-max">
                             <div
-                                className="grid grid-cols-6 transition-all duration-700 ease-in-out"
+                                className="grid grid-cols-6 transition-all duration-700 ease-in-out min-w-[900px] lg:min-w-0"
                                 style={{
                                     width: isZoomed ? '200%' : '100%',
                                     transform: isZoomed ? `translateX(-${(zoomOffset / 6) * 100}%)` : 'translateX(0)'
@@ -809,7 +808,7 @@ export const LonasVinilosPage: React.FC = () => {
 
                         {/* Timeline Body */}
                         <div
-                            className="grid grid-cols-6 flex-1 transition-all duration-700 ease-in-out"
+                            className="grid grid-cols-6 flex-1 transition-all duration-700 ease-in-out min-w-[900px] lg:min-w-0"
                             style={{
                                 width: isZoomed ? '200%' : '100%',
                                 transform: isZoomed ? `translateX(-${(zoomOffset / 6) * 100}%)` : 'translateX(0)'

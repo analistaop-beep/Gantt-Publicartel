@@ -56,9 +56,9 @@ export const MembersPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-10 py-6 border-b border-white/5 sticky-header-custom">
-                <div className="flex justify-between items-center gap-6">
-                    <div className="flex items-center gap-8 flex-1">
+            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-4 py-4 md:px-10 md:py-6 border-b border-white/5 sticky-header-custom">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 flex-1 w-full">
                         <h2 className="text-2xl font-bold whitespace-nowrap">Integrantes</h2>
                         
                         {/* Search Bar */}
@@ -75,9 +75,9 @@ export const MembersPage: React.FC = () => {
                     </div>
 
                     {!isEditing && (
-                        <form onSubmit={handleSubmit} className="flex gap-2 items-center">
+                        <form onSubmit={handleSubmit} className="flex flex-wrap gap-2 items-center w-full md:w-auto mt-4 md:mt-0">
                         <input
-                            className="input text-sm"
+                            className="input text-sm flex-1 sm:flex-none sm:w-auto"
                             placeholder="Nombre"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -85,14 +85,14 @@ export const MembersPage: React.FC = () => {
                         />
 
                         <input
-                            className="input text-sm w-32"
+                            className="input text-sm flex-1 sm:flex-none w-full sm:w-32"
                             placeholder="N° C.I."
                             value={formData.ci}
                             onChange={(e) => setFormData({ ...formData, ci: e.target.value })}
                         />
 
                         <input
-                            className="input text-sm w-20 uppercase font-bold"
+                            className="input text-sm flex-1 sm:flex-none w-full sm:w-20 uppercase font-bold"
                             placeholder="Cód."
                             value={formData.code}
                             maxLength={4}
@@ -102,7 +102,7 @@ export const MembersPage: React.FC = () => {
 
 
                         <select
-                            className="input text-sm"
+                            className="input text-sm w-full sm:w-auto"
                             value={formData.sector}
                             onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
                             required
@@ -117,14 +117,14 @@ export const MembersPage: React.FC = () => {
                             <option value="Carpintería">Carpintería</option>
                             <option value="Corpóreas">Corpóreas</option>
                         </select>
-                        <button type="submit" className="btn btn-primary flex items-center gap-2">
+                        <button type="submit" className="btn btn-primary flex items-center gap-2 w-full sm:w-auto justify-center">
                             <Plus size={18} /> Agregar
                         </button>
                     </form>
                 )}
             </div>
         </div>
-        <div className="flex-1 min-h-0 overflow-auto custom-scrollbar p-10">
+        <div className="flex-1 min-h-0 overflow-auto custom-scrollbar p-4 md:p-10">
             <div className="glass rounded-[1.25rem] overflow-hidden shadow-2xl border-white/10">
                 <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left border-collapse">
@@ -214,7 +214,7 @@ export const MembersPage: React.FC = () => {
 
             {isEditing && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-[80vw] shadow-2xl border border-white/10">
+                    <div className="bg-[#1e293b] p-4 md:p-8 rounded-sm w-full max-w-[95vw] md:max-w-[80vw] shadow-2xl border border-white/10">
                         <h3 className="text-xl font-bold mb-6">EDITAR INTEGRANTE</h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-1">

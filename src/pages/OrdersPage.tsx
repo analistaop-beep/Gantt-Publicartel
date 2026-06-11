@@ -401,15 +401,15 @@ export const OrdersPage: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col">
-            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-10 py-6 border-b border-white/5 sticky-header-custom">
-                <div className="flex justify-between items-center gap-6">
-                    <div className="flex items-center gap-8 flex-1">
+            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-4 py-4 md:px-10 md:py-6 border-b border-white/5 sticky-header-custom">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 flex-1 w-full">
                         <h2 className="text-2xl font-bold whitespace-nowrap flex items-center gap-3">
                             <ClipboardList className="text-blue-400" />
                             Órdenes de Producción
                         </h2>
 
-                        <div className="relative flex-1 max-w-md group">
+                        <div className="relative flex-1 max-w-md w-full group">
                             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                             <input
                                 type="text"
@@ -423,14 +423,14 @@ export const OrdersPage: React.FC = () => {
 
                     <button
                         onClick={() => openModal()}
-                        className="btn btn-primary flex items-center gap-2"
+                        className="btn btn-primary flex items-center gap-2 w-full md:w-auto justify-center mt-4 md:mt-0"
                     >
                         <Plus size={18} /> Nueva Orden
                     </button>
                 </div>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-auto custom-scrollbar p-10">
+            <div className="flex-1 min-h-0 overflow-auto custom-scrollbar p-4 md:p-10">
                 <div className="glass rounded-[1.25rem] overflow-hidden shadow-2xl border-white/10">
                     <div className="overflow-x-auto custom-scrollbar">
                         <table className="w-full text-left border-collapse orders-table">
@@ -560,7 +560,7 @@ export const OrdersPage: React.FC = () => {
             {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-[#1e293b] p-8 rounded-sm w-full max-w-[80vw] shadow-2xl border border-white/10 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                    <div className="bg-[#1e293b] p-4 md:p-8 rounded-sm w-full max-w-[95vw] md:max-w-[80vw] shadow-2xl border border-white/10 max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <div className="flex justify-between items-center mb-8">
                             <h3 className="text-xl font-bold flex items-center gap-3">
                                 {isEditing ? <Edit2 className="text-blue-400" size={20} /> : <Plus className="text-blue-400" size={20} />}
@@ -572,7 +572,7 @@ export const OrdersPage: React.FC = () => {
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Número de OP</label>
                                     <div className="relative group">
@@ -615,7 +615,7 @@ export const OrdersPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Cliente</label>
                                     <div className="relative group">
@@ -649,7 +649,7 @@ export const OrdersPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Dirección</label>
                                     <div className="relative group">
