@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic } from 'lucide-react';
+import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic, Filter } from 'lucide-react';
 import { sileo } from 'sileo';
 import { convertToWebP } from '../utils/fileUtils';
 import { printOrderSummaryPDF } from '../utils/reportUtils';
@@ -29,6 +29,9 @@ export const OrdersPage: React.FC = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [isPrinting, setIsPrinting] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('Todos');
+    const [sellerFilter, setSellerFilter] = useState('Todos');
+    const [categoryFilter, setCategoryFilter] = useState('Todos');
 
     // State for associated task creation modal
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -86,17 +89,27 @@ export const OrdersPage: React.FC = () => {
     });
     const [newComment, setNewComment] = useState('');
     const categories = ['Proyectos', 'Outdoor', 'Digital', 'Mantenimiento', 'Otros'];
-    const statuses = ['Gestión de Acopio', 'En Proceso', 'Para Facturar', 'Terminada'];
+    const statuses = [
+        'Gestión de Acopio', 'En Proceso', 'Para Facturar', 'Terminada',
+        'En Diseño', 'Detenido Comercial', 'En Herrería', 'En Corpóreas',
+        'En Impresión', 'Para Relevar', 'Para Instalar'
+    ];
     const sellers = ["W. Maciel", "P. Goicoechea", "N. Mannise", "F. Cruz", "P. Lizuain", "V. Castellucci", "Otro"];
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-    const filteredOrders = productionOrders.filter(order =>
-        order.opNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.seller.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (order.category || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (order.description || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredOrders = productionOrders.filter(order => {
+        const matchesSearch = order.opNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            order.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            order.seller.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (order.category || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (order.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+            
+        const matchesStatus = statusFilter === 'Todos' || order.status === statusFilter;
+        const matchesSeller = sellerFilter === 'Todos' || order.seller === sellerFilter;
+        const matchesCategory = categoryFilter === 'Todos' || order.category === categoryFilter;
+        
+        return matchesSearch && matchesStatus && matchesSeller && matchesCategory;
+    });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -402,22 +415,69 @@ export const OrdersPage: React.FC = () => {
     return (
         <div className="h-full flex flex-col">
             <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-4 py-4 md:px-10 md:py-6 border-b border-white/5 sticky-header-custom">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
-                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 flex-1 w-full">
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 xl:gap-6">
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 lg:gap-8 flex-1 w-full">
                         <h2 className="text-2xl font-bold whitespace-nowrap flex items-center gap-3">
                             <ClipboardList className="text-blue-400" />
                             Órdenes de Producción
                         </h2>
 
-                        <div className="relative flex-1 max-w-md w-full group">
-                            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
-                            <input
-                                type="text"
-                                className="input-sm w-full pl-12 bg-white/5 border-white/10"
-                                placeholder="Buscar por OP, cliente, vendedor, categoría..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
+                        <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 flex-1 w-full">
+                            <div className="relative flex-1 min-w-[200px] w-full sm:w-auto group">
+                                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                                <input
+                                    type="text"
+                                    className="input-sm w-full pl-12 bg-white/5 border-white/10"
+                                    placeholder="Buscar por OP, cliente..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="relative min-w-[150px] w-full sm:w-auto group">
+                                <Filter size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                                <select
+                                    className="input-sm w-full pl-11 bg-white/5 border-white/10 appearance-none pr-8 cursor-pointer text-sm"
+                                    value={statusFilter}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                >
+                                    <option value="Todos" className="bg-gray-900 text-white">Estado (Todos)</option>
+                                    {statuses.map(s => (
+                                        <option key={s} value={s} className="bg-gray-900 text-white">{s}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" />
+                            </div>
+
+                            <div className="relative min-w-[150px] w-full sm:w-auto group">
+                                <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                                <select
+                                    className="input-sm w-full pl-11 bg-white/5 border-white/10 appearance-none pr-8 cursor-pointer text-sm"
+                                    value={sellerFilter}
+                                    onChange={(e) => setSellerFilter(e.target.value)}
+                                >
+                                    <option value="Todos" className="bg-gray-900 text-white">Vendedor (Todos)</option>
+                                    {sellers.map(s => (
+                                        <option key={s} value={s} className="bg-gray-900 text-white">{s}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" />
+                            </div>
+
+                            <div className="relative min-w-[150px] w-full sm:w-auto group">
+                                <Layers size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                                <select
+                                    className="input-sm w-full pl-11 bg-white/5 border-white/10 appearance-none pr-8 cursor-pointer text-sm"
+                                    value={categoryFilter}
+                                    onChange={(e) => setCategoryFilter(e.target.value)}
+                                >
+                                    <option value="Todos" className="bg-gray-900 text-white">Categoría (Todas)</option>
+                                    {categories.map(c => (
+                                        <option key={c} value={c} className="bg-gray-900 text-white">{c}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" />
+                            </div>
                         </div>
                     </div>
 
@@ -481,6 +541,13 @@ export const OrdersPage: React.FC = () => {
                                                     if (s === 'En Proceso') color = 'text-blue-400 bg-blue-400/10 border-blue-400/20';
                                                     if (s === 'Para Facturar') color = 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
                                                     if (s === 'Terminada') color = 'text-slate-500 bg-white/5 border-white/10';
+                                                    if (s === 'En Diseño') color = 'text-purple-400 bg-purple-400/10 border-purple-400/20';
+                                                    if (s === 'Detenido Comercial') color = 'text-red-400 bg-red-400/10 border-red-400/20';
+                                                    if (s === 'En Herrería') color = 'text-orange-400 bg-orange-400/10 border-orange-400/20';
+                                                    if (s === 'En Corpóreas') color = 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20';
+                                                    if (s === 'En Impresión') color = 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
+                                                    if (s === 'Para Relevar') color = 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
+                                                    if (s === 'Para Instalar') color = 'text-lime-400 bg-lime-400/10 border-lime-400/20';
 
                                                     return (
                                                         <div className="relative inline-block group/select">
