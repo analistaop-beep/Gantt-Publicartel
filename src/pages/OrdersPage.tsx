@@ -31,17 +31,13 @@ const MultiSelect = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const isAllSelected = selectedOptions.length === 0 || selectedOptions.length === options.length;
+    const isAllSelected = selectedOptions.length === options.length;
 
     const toggleOption = (option: string) => {
-        if (isAllSelected) {
-            onChange(options.filter(o => o !== option));
-        } else if (selectedOptions.includes(option)) {
-            const newSelection = selectedOptions.filter(o => o !== option);
-            onChange(newSelection.length === 0 ? [] : newSelection);
+        if (selectedOptions.includes(option)) {
+            onChange(selectedOptions.filter(o => o !== option));
         } else {
-            const newSelection = [...selectedOptions, option];
-            onChange(newSelection.length === options.length ? [] : newSelection);
+            onChange([...selectedOptions, option]);
         }
     };
 
@@ -57,6 +53,7 @@ const MultiSelect = ({
                 </div>
                 <span className="truncate text-white">
                     {isAllSelected ? `${placeholder} (Todos)` :
+                        selectedOptions.length === 0 ? 'Ninguno' :
                         selectedOptions.length === 1 ? selectedOptions[0] :
                             `${selectedOptions.length} seleccionados`}
                 </span>
@@ -70,7 +67,11 @@ const MultiSelect = ({
                             type="button"
                             className="w-full px-4 py-2 text-left text-sm hover:bg-white/10 flex items-center gap-2 text-white"
                             onClick={() => {
-                                onChange([]);
+                                if (isAllSelected) {
+                                    onChange([]);
+                                } else {
+                                    onChange([...options]);
+                                }
                             }}
                         >
                             <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${isAllSelected ? 'bg-blue-500 border-blue-500' : 'border-white/20'}`}>
@@ -120,7 +121,8 @@ export const OrdersPage: React.FC = () => {
         addTask,
         deleteTask,
         members,
-        vehicles
+        vehicles,
+        user
     } = useStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState<string | null>(null);
@@ -128,10 +130,18 @@ export const OrdersPage: React.FC = () => {
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [isPrinting, setIsPrinting] = useState(false);
+    const categories = ['Proyectos', 'Outdoor', 'Digital', 'Mantenimiento', 'Otros'];
+    const statuses = [
+        'Gestión de Acopio', 'En Proceso', 'Para Facturar', 'Terminada',
+        'En Diseño', 'Detenido Comercial', 'En Herrería', 'En Corpóreas',
+        'En Impresión', 'Para Relevar', 'Para Instalar'
+    ];
+    const sellers = ["W. Maciel", "P. Goicoechea", "N. Mannise", "F. Cruz", "P. Lizuain", "V. Castellucci", "Otro"];
+
     const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState<string[]>([]);
-    const [sellerFilter, setSellerFilter] = useState<string[]>([]);
-    const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+    const [statusFilter, setStatusFilter] = useState<string[]>(statuses);
+    const [sellerFilter, setSellerFilter] = useState<string[]>(sellers);
+    const [categoryFilter, setCategoryFilter] = useState<string[]>(categories);
 
     // State for associated task creation modal
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -185,16 +195,9 @@ export const OrdersPage: React.FC = () => {
         category: 'Proyectos',
         status: 'Gestión de Acopio',
         files: [] as string[],
-        comments: [] as Array<{ text: string, date: string }>
+        comments: [] as Array<{ text: string, date: string, author?: string }>
     });
     const [newComment, setNewComment] = useState('');
-    const categories = ['Proyectos', 'Outdoor', 'Digital', 'Mantenimiento', 'Otros'];
-    const statuses = [
-        'Gestión de Acopio', 'En Proceso', 'Para Facturar', 'Terminada',
-        'En Diseño', 'Detenido Comercial', 'En Herrería', 'En Corpóreas',
-        'En Impresión', 'Para Relevar', 'Para Instalar'
-    ];
-    const sellers = ["W. Maciel", "P. Goicoechea", "N. Mannise", "F. Cruz", "P. Lizuain", "V. Castellucci", "Otro"];
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     const filteredOrders = productionOrders.filter(order => {
@@ -204,9 +207,9 @@ export const OrdersPage: React.FC = () => {
             (order.category || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (order.description || '').toLowerCase().includes(searchQuery.toLowerCase());
             
-        const matchesStatus = statusFilter.length === 0 || statusFilter.includes(order.status || 'Gestión de Acopio');
-        const matchesSeller = sellerFilter.length === 0 || sellerFilter.includes(order.seller);
-        const matchesCategory = categoryFilter.length === 0 || categoryFilter.includes(order.category || 'Proyectos');
+        const matchesStatus = statusFilter.includes(order.status || 'Gestión de Acopio');
+        const matchesSeller = sellerFilter.includes(order.seller);
+        const matchesCategory = categoryFilter.includes(order.category || 'Proyectos');
         
         return matchesSearch && matchesStatus && matchesSeller && matchesCategory;
     });
@@ -895,7 +898,8 @@ export const OrdersPage: React.FC = () => {
                                                     if (newComment.trim()) {
                                                         const comment = {
                                                             text: newComment.trim(),
-                                                            date: new Date().toISOString()
+                                                            date: new Date().toISOString(),
+                                                            author: user?.user_metadata?.name || user?.email || 'Usuario'
                                                         };
                                                         setFormData({
                                                             ...formData,
@@ -912,7 +916,8 @@ export const OrdersPage: React.FC = () => {
                                                 if (newComment.trim()) {
                                                     const comment = {
                                                         text: newComment.trim(),
-                                                        date: new Date().toISOString()
+                                                        date: new Date().toISOString(),
+                                                        author: user?.user_metadata?.name || user?.email || 'Usuario'
                                                     };
                                                     setFormData({
                                                         ...formData,
@@ -935,7 +940,8 @@ export const OrdersPage: React.FC = () => {
                                                 <div key={i} className="glass p-3 rounded-lg border-white/5 space-y-1">
                                                     <p className="text-sm text-slate-200">{c.text}</p>
                                                     <div className="flex justify-between items-center">
-                                                        <span className="text-[9px] font-bold text-slate-500 uppercase">
+                                                        <span className="text-[9px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                                            {c.author && <span className="text-blue-500 dark:text-blue-400">{c.author} •</span>}
                                                             {new Date(c.date).toLocaleString('es-UY', {
                                                                 day: '2-digit', month: '2-digit', year: 'numeric',
                                                                 hour: '2-digit', minute: '2-digit'
@@ -1216,7 +1222,8 @@ export const OrdersPage: React.FC = () => {
                                             {[...viewingOrder.comments].reverse().map((c: any, i: number) => (
                                                 <div key={i} className="p-4 bg-slate-50 dark:bg-white/[0.025] border border-slate-200 dark:border-white/5 rounded-xl space-y-1.5 hover:bg-slate-100/50 dark:hover:bg-white/[0.04] transition-colors">
                                                     <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed">{c.text}</p>
-                                                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
+                                                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                                                        {c.author && <span className="text-blue-500 dark:text-blue-400">{c.author} •</span>}
                                                         {new Date(c.date).toLocaleString('es-UY', {
                                                             day: '2-digit', month: '2-digit', year: 'numeric',
                                                             hour: '2-digit', minute: '2-digit'
