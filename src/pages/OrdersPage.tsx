@@ -1031,8 +1031,8 @@ export const OrdersPage: React.FC = () => {
 
             {/* View Details Modal */}
             {viewingOrder && (
-                <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-[#0f172a] w-full max-w-6xl shadow-2xl border border-slate-200 dark:border-white/10 rounded-2xl h-full max-h-[92vh] flex flex-col overflow-hidden relative">
+                <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-2 sm:p-4">
+                    <div className="bg-white dark:bg-[#0f172a] w-full max-w-[98vw] 2xl:max-w-[1800px] shadow-2xl border border-slate-200 dark:border-white/10 rounded-2xl h-full max-h-[96vh] flex flex-col overflow-hidden relative">
 
                         {/* Header */}
                         <div className="flex items-center justify-between px-10 py-7 border-b border-slate-200 dark:border-white/8 flex-shrink-0 bg-slate-50/80 dark:bg-[#0f172a]/80 backdrop-blur-sm">
