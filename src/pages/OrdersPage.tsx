@@ -591,7 +591,7 @@ export const OrdersPage: React.FC = () => {
                                     </tr>
                                 ) : (
                                     filteredOrders.map((order) => (
-                                        <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors group">
+                                        <tr key={order.id} className={`hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-all duration-300 group ${order.status === 'Terminada' ? 'opacity-40 grayscale-[20%] hover:opacity-100' : ''}`}>
                                             <td className="px-8 py-4">
                                                 <span className="font-mono font-bold text-blue-400">{order.opNumber}</span>
                                             </td>
