@@ -1,9 +1,106 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic, Filter } from 'lucide-react';
+import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic, Filter, Check } from 'lucide-react';
 import { sileo } from 'sileo';
 import { convertToWebP } from '../utils/fileUtils';
 import { printOrderSummaryPDF } from '../utils/reportUtils';
+
+const MultiSelect = ({
+    options,
+    selectedOptions,
+    onChange,
+    placeholder,
+    icon: Icon
+}: {
+    options: string[];
+    selectedOptions: string[];
+    onChange: (selected: string[]) => void;
+    placeholder: string;
+    icon: any;
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const toggleOption = (option: string) => {
+        if (selectedOptions.includes(option)) {
+            onChange(selectedOptions.filter(o => o !== option));
+        } else {
+            onChange([...selectedOptions, option]);
+        }
+    };
+
+    const isAllSelected = selectedOptions.length === 0;
+
+    return (
+        <div className="relative min-w-[150px] w-full sm:w-auto group" ref={dropdownRef}>
+            <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className="input-sm w-full pl-11 bg-white/5 border-white/10 pr-8 text-sm text-left flex items-center justify-between hover:bg-white/10 transition-colors"
+            >
+                <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${isOpen ? 'text-blue-400' : 'text-slate-500 group-hover:text-blue-400'}`}>
+                    <Icon size={18} />
+                </div>
+                <span className="truncate text-white">
+                    {isAllSelected ? `${placeholder} (Todos)` :
+                        selectedOptions.length === 1 ? selectedOptions[0] :
+                            `${selectedOptions.length} seleccionados`}
+                </span>
+                <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isOpen && (
+                <div className="absolute z-50 w-full min-w-[200px] mt-1 bg-gray-900 border border-white/10 rounded-lg shadow-xl overflow-hidden left-0">
+                    <div className="max-h-60 overflow-y-auto custom-scrollbar py-1">
+                        <button
+                            type="button"
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-white/10 flex items-center gap-2 text-white"
+                            onClick={() => {
+                                onChange([]);
+                                setIsOpen(false);
+                            }}
+                        >
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${isAllSelected ? 'bg-blue-500 border-blue-500' : 'border-white/20'}`}>
+                                {isAllSelected && <Check size={12} className="text-white" />}
+                            </div>
+                            Todos
+                        </button>
+                        {options.map(option => {
+                            const isSelected = selectedOptions.includes(option);
+                            return (
+                                <button
+                                    key={option}
+                                    type="button"
+                                    className="w-full px-4 py-2 text-left text-sm hover:bg-white/10 flex items-center gap-2 text-slate-300 hover:text-white"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        toggleOption(option);
+                                    }}
+                                >
+                                    <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${isSelected && !isAllSelected ? 'bg-blue-500 border-blue-500' : 'border-white/20'}`}>
+                                        {isSelected && !isAllSelected && <Check size={12} className="text-white" />}
+                                    </div>
+                                    <span className="truncate">{option}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 export const OrdersPage: React.FC = () => {
     const { 
@@ -29,9 +126,9 @@ export const OrdersPage: React.FC = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [isPrinting, setIsPrinting] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState('Todos');
-    const [sellerFilter, setSellerFilter] = useState('Todos');
-    const [categoryFilter, setCategoryFilter] = useState('Todos');
+    const [statusFilter, setStatusFilter] = useState<string[]>([]);
+    const [sellerFilter, setSellerFilter] = useState<string[]>([]);
+    const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
 
     // State for associated task creation modal
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -104,9 +201,9 @@ export const OrdersPage: React.FC = () => {
             (order.category || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (order.description || '').toLowerCase().includes(searchQuery.toLowerCase());
             
-        const matchesStatus = statusFilter === 'Todos' || order.status === statusFilter;
-        const matchesSeller = sellerFilter === 'Todos' || order.seller === sellerFilter;
-        const matchesCategory = categoryFilter === 'Todos' || order.category === categoryFilter;
+        const matchesStatus = statusFilter.length === 0 || statusFilter.includes(order.status || 'Gestión de Acopio');
+        const matchesSeller = sellerFilter.length === 0 || sellerFilter.includes(order.seller);
+        const matchesCategory = categoryFilter.length === 0 || categoryFilter.includes(order.category || 'Proyectos');
         
         return matchesSearch && matchesStatus && matchesSeller && matchesCategory;
     });
@@ -434,50 +531,29 @@ export const OrdersPage: React.FC = () => {
                                 />
                             </div>
 
-                            <div className="relative min-w-[150px] w-full sm:w-auto group">
-                                <Filter size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
-                                <select
-                                    className="input-sm w-full pl-11 bg-white/5 border-white/10 appearance-none pr-8 cursor-pointer text-sm"
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                >
-                                    <option value="Todos" className="bg-gray-900 text-white">Estado (Todos)</option>
-                                    {statuses.map(s => (
-                                        <option key={s} value={s} className="bg-gray-900 text-white">{s}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" />
-                            </div>
+                            <MultiSelect
+                                options={statuses}
+                                selectedOptions={statusFilter}
+                                onChange={setStatusFilter}
+                                placeholder="Estado"
+                                icon={Filter}
+                            />
 
-                            <div className="relative min-w-[150px] w-full sm:w-auto group">
-                                <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
-                                <select
-                                    className="input-sm w-full pl-11 bg-white/5 border-white/10 appearance-none pr-8 cursor-pointer text-sm"
-                                    value={sellerFilter}
-                                    onChange={(e) => setSellerFilter(e.target.value)}
-                                >
-                                    <option value="Todos" className="bg-gray-900 text-white">Vendedor (Todos)</option>
-                                    {sellers.map(s => (
-                                        <option key={s} value={s} className="bg-gray-900 text-white">{s}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" />
-                            </div>
+                            <MultiSelect
+                                options={sellers}
+                                selectedOptions={sellerFilter}
+                                onChange={setSellerFilter}
+                                placeholder="Vendedor"
+                                icon={User}
+                            />
 
-                            <div className="relative min-w-[150px] w-full sm:w-auto group">
-                                <Layers size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
-                                <select
-                                    className="input-sm w-full pl-11 bg-white/5 border-white/10 appearance-none pr-8 cursor-pointer text-sm"
-                                    value={categoryFilter}
-                                    onChange={(e) => setCategoryFilter(e.target.value)}
-                                >
-                                    <option value="Todos" className="bg-gray-900 text-white">Categoría (Todas)</option>
-                                    {categories.map(c => (
-                                        <option key={c} value={c} className="bg-gray-900 text-white">{c}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" />
-                            </div>
+                            <MultiSelect
+                                options={categories}
+                                selectedOptions={categoryFilter}
+                                onChange={setCategoryFilter}
+                                placeholder="Categoría"
+                                icon={Layers}
+                            />
                         </div>
                     </div>
 
