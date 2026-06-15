@@ -40,10 +40,11 @@ export const LoginPage: React.FC = () => {
         sileo.success({ title: '¡Registro exitoso!', description: 'Has sido registrado y logueado.' });
       }
     } catch (err: any) {
-      let msg = 'Ocurrió un error. Verifica tus credenciales.';
-      if (err.message.includes('Invalid login credentials')) msg = 'Credenciales incorrectas.';
-      if (err.message.includes('User already registered')) msg = 'El usuario ya existe.';
-      if (err.message.includes('Password should be at least')) msg = 'La contraseña debe tener al menos 6 caracteres.';
+      console.error('Supabase Auth Error:', err);
+      let msg = err.message || 'Ocurrió un error. Verifica tus credenciales.';
+      if (err.message?.includes('Invalid login credentials')) msg = 'Credenciales incorrectas.';
+      if (err.message?.includes('User already registered')) msg = 'El usuario ya existe.';
+      if (err.message?.includes('Password should be at least')) msg = 'La contraseña debe tener al menos 6 caracteres.';
       sileo.error({ title: 'Error de acceso', description: msg });
     } finally {
       setIsLoading(false);
