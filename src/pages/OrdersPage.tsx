@@ -31,15 +31,19 @@ const MultiSelect = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const isAllSelected = selectedOptions.length === 0 || selectedOptions.length === options.length;
+
     const toggleOption = (option: string) => {
-        if (selectedOptions.includes(option)) {
-            onChange(selectedOptions.filter(o => o !== option));
+        if (isAllSelected) {
+            onChange(options.filter(o => o !== option));
+        } else if (selectedOptions.includes(option)) {
+            const newSelection = selectedOptions.filter(o => o !== option);
+            onChange(newSelection.length === 0 ? [] : newSelection);
         } else {
-            onChange([...selectedOptions, option]);
+            const newSelection = [...selectedOptions, option];
+            onChange(newSelection.length === options.length ? [] : newSelection);
         }
     };
-
-    const isAllSelected = selectedOptions.length === 0;
 
     return (
         <div className="relative min-w-[150px] w-full sm:w-auto group" ref={dropdownRef}>
@@ -67,7 +71,6 @@ const MultiSelect = ({
                             className="w-full px-4 py-2 text-left text-sm hover:bg-white/10 flex items-center gap-2 text-white"
                             onClick={() => {
                                 onChange([]);
-                                setIsOpen(false);
                             }}
                         >
                             <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${isAllSelected ? 'bg-blue-500 border-blue-500' : 'border-white/20'}`}>
@@ -76,7 +79,7 @@ const MultiSelect = ({
                             Todos
                         </button>
                         {options.map(option => {
-                            const isSelected = selectedOptions.includes(option);
+                            const isSelected = isAllSelected || selectedOptions.includes(option);
                             return (
                                 <button
                                     key={option}
@@ -88,8 +91,8 @@ const MultiSelect = ({
                                         toggleOption(option);
                                     }}
                                 >
-                                    <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${isSelected && !isAllSelected ? 'bg-blue-500 border-blue-500' : 'border-white/20'}`}>
-                                        {isSelected && !isAllSelected && <Check size={12} className="text-white" />}
+                                    <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-blue-500 border-blue-500' : 'border-white/20'}`}>
+                                        {isSelected && <Check size={12} className="text-white" />}
                                     </div>
                                     <span className="truncate">{option}</span>
                                 </button>
