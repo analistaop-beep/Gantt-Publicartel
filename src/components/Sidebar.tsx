@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Truck, CalendarDays, Lock, X, Hammer, Sun, Moon, Layers, Image, Palette, ClipboardList } from 'lucide-react';
+import { Users, Truck, CalendarDays, Lock, X, Hammer, Sun, Moon, Layers, Image, Palette, ClipboardList, LogOut } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
 
@@ -12,6 +12,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     const [isPassModalOpen, setIsPassModalOpen] = useState(false);
     const [password, setPassword] = useState('');
     const resetDatabase = useStore(state => state.resetDatabase);
+    const signOut = useStore(state => state.signOut);
+    const user = useStore(state => state.user);
     const { theme, toggleTheme } = useTheme();
 
     const mainMenuItems = [
@@ -132,7 +134,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                     </div>
                 </div>
             </nav>
-            <div className="p-4 border-t border-white/10 flex flex-col gap-4 relative">
+            <div className="p-4 border-t border-white/10 flex flex-col gap-3 relative">
+                {user && (
+                    <div className="text-center px-4 py-2 bg-white/5 rounded-md border border-white/5">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block mb-0.5">Usuario actual</span>
+                        <span className="text-sm font-bold text-white truncate block">{user.user_metadata?.name || user.email}</span>
+                    </div>
+                )}
+                
+                <button
+                    onClick={() => signOut()}
+                    className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/10 rounded-md transition-all text-xs font-bold uppercase tracking-wider group"
+                >
+                    <LogOut size={14} className="group-hover:-translate-x-1 transition-transform" />
+                    Cerrar Sesión
+                </button>
+
                 <button
                     onClick={toggleTheme}
                     className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md transition-all text-xs font-bold uppercase tracking-wider group border ${theme === 'dark'

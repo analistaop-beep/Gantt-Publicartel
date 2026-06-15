@@ -24,9 +24,10 @@ const LoadingView = () => (
 );
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('isAuthenticated') === 'true';
-  });
+  const user = useStore(state => state.user);
+  const isAuthLoading = useStore(state => state.isAuthLoading);
+  const initAuth = useStore(state => state.initAuth);
+
   const [activeTab, setActiveTab] = useState('gantt');
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth > 1024);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(() => window.innerWidth > 1024);
@@ -36,13 +37,17 @@ function App() {
   const saveAllChanges = useStore(state => state.saveAllChanges);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    initAuth();
+  }, [initAuth]);
+
+  useEffect(() => {
+    if (user) {
       fetchData();
       // Activate Realtime synchronization
       const unsubscribe = subscribeToChanges();
       return () => unsubscribe();
     }
-  }, [fetchData, subscribeToChanges, isAuthenticated]);
+  }, [fetchData, subscribeToChanges, user]);
 
   // Auto-save when the user hides the tab or closes the window
   useEffect(() => {
@@ -89,13 +94,17 @@ function App() {
     );
   };
 
+  if (isAuthLoading) {
+    return <LoadingView />;
+  }
+
   return (
     <>
       <div className="fixed inset-0 pointer-events-none z-[9999]">
         <Toaster />
       </div>
-      {!isAuthenticated ? (
-        <LoginPage onLogin={() => setIsAuthenticated(true)} />
+      {!user ? (
+        <LoginPage />
       ) : (
         <div className="flex h-screen bg-gray-900 text-white overflow-hidden font-sans relative">
 

@@ -10,6 +10,13 @@ interface PendingChanges {
 }
 
 interface AppState {
+    // Auth
+    user: any;
+    session: any;
+    isAuthLoading: boolean;
+    initAuth: () => void;
+    signOut: () => Promise<void>;
+
     members: any[];
     vehicles: any[];
     teams: any[];
@@ -108,6 +115,10 @@ function getTaskListKey(type: string): 'tasks' | 'herreriaTasks' | 'corporeasTas
 }
 
 export const useStore = create<AppState>((set, get) => ({
+    user: null,
+    session: null,
+    isAuthLoading: true,
+
     members: [],
     vehicles: [],
     teams: [],
@@ -124,6 +135,22 @@ export const useStore = create<AppState>((set, get) => ({
     pendingChanges: { updatedTasks: new Map(), deletedTaskIds: new Set() },
     hasPendingChanges: false,
     autoSaveTimer: null as any,
+
+    initAuth: () => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            set({ session, user: session?.user ?? null, isAuthLoading: false });
+        });
+
+        supabase.auth.onAuthStateChange((_event, session) => {
+            set({ session, user: session?.user ?? null, isAuthLoading: false });
+        });
+    },
+
+    signOut: async () => {
+        await supabase.auth.signOut();
+        // Option to clean state up entirely
+        set({ user: null, session: null });
+    },
 
     fetchData: async () => {
         set({ isLoading: true });
