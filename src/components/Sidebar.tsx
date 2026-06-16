@@ -12,8 +12,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     const [isPassModalOpen, setIsPassModalOpen] = useState(false);
     const [password, setPassword] = useState('');
     const resetDatabase = useStore(state => state.resetDatabase);
-    const signOut = useStore(state => state.signOut);
-    const user = useStore(state => state.user);
     const { theme, toggleTheme } = useTheme();
 
     const mainMenuItems = [
@@ -36,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
             <div className="p-6 border-b border-white/10 flex justify-center">
                 <img src="/logo-publicartel.png" alt="Publicartel" className="h-10 object-contain" />
             </div>
-            <nav className="flex-1 p-4 flex flex-col gap-2">
+            <nav className="flex-1 p-4 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
                 {mainMenuItems.map((item) => (
                     <button
                         key={item.id}
@@ -135,21 +133,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                 </div>
             </nav>
             <div className="p-4 border-t border-white/10 flex flex-col gap-3 relative">
-                {user && (
-                    <div className="text-center px-4 py-2 bg-white/5 rounded-md border border-white/5">
-                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block mb-0.5">Usuario actual</span>
-                        <span className="text-sm font-bold text-white truncate block">{user.user_metadata?.name || user.email}</span>
-                    </div>
-                )}
-                
-                <button
-                    onClick={() => signOut()}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/10 rounded-md transition-all text-xs font-bold uppercase tracking-wider group"
-                >
-                    <LogOut size={14} className="group-hover:-translate-x-1 transition-transform" />
-                    Cerrar Sesión
-                </button>
-
                 <button
                     onClick={toggleTheme}
                     className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md transition-all text-xs font-bold uppercase tracking-wider group border ${theme === 'dark'
