@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Truck, CalendarDays, Lock, X, Hammer, Sun, Moon, Layers, Image, Palette, ClipboardList, LogOut } from 'lucide-react';
+import { Users, Truck, CalendarDays, Lock, X, Hammer, Sun, Moon, Layers, Image, Palette, ClipboardList } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
 
