@@ -132,9 +132,9 @@ export const OrdersPage: React.FC = () => {
     const [isPrinting, setIsPrinting] = useState(false);
     const categories = ['Proyectos', 'Outdoor', 'Digital', 'Mantenimiento', 'Otros'];
     const statuses = [
-        'Gestión de Acopio', 'En Proceso', 'Para Facturar', 'Terminada',
-        'En Diseño', 'Detenido Comercial', 'En Herrería', 'En Corpóreas',
-        'En Impresión', 'Para Relevar', 'Para Instalar'
+        'En Proceso', 'En Diseño', 'Detenido Comercial', 'En Herrería',
+        'En Pintura', 'En Corpóreas', 'En Impresión', 'Para Relevar',
+        'Para Instalar', 'Para Facturar', 'Terminada'
     ];
     const sellers = ["W. Maciel", "P. Goicoechea", "N. Mannise", "F. Cruz", "P. Lizuain", "V. Castellucci", "Otro"];
 
@@ -194,7 +194,7 @@ export const OrdersPage: React.FC = () => {
         description: '',
         address: '',
         category: 'Proyectos',
-        status: 'Gestión de Acopio',
+        status: 'En Proceso',
         files: [] as string[],
         comments: [] as Array<{ text: string, date: string, author?: string }>
     });
@@ -208,7 +208,8 @@ export const OrdersPage: React.FC = () => {
             (order.category || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (order.description || '').toLowerCase().includes(searchQuery.toLowerCase());
             
-        const matchesStatus = statusFilter.includes(order.status || 'Gestión de Acopio');
+        const currentStatus = order.status === 'Gestión de Acopio' ? 'En Proceso' : (order.status || 'En Proceso');
+        const matchesStatus = statusFilter.includes(currentStatus);
         const matchesSeller = sellerFilter.includes(order.seller);
         const matchesCategory = categoryFilter.includes(order.category || 'Proyectos');
         
@@ -247,7 +248,7 @@ export const OrdersPage: React.FC = () => {
                 description: order.description || '',
                 address: order.address || '',
                 category: order.category || 'Proyectos',
-                status: order.status || 'Gestión de Acopio',
+                status: order.status || 'En Proceso',
                 files: order.files || [],
                 comments: order.comments || []
             });
@@ -263,7 +264,7 @@ export const OrdersPage: React.FC = () => {
                 description: '',
                 address: '',
                 category: 'Proyectos',
-                status: 'Gestión de Acopio',
+                status: 'En Proceso',
                 files: [],
                 comments: []
             });
@@ -285,7 +286,7 @@ export const OrdersPage: React.FC = () => {
             description: '',
             address: '',
             category: 'Proyectos',
-            status: 'Gestión de Acopio',
+            status: 'En Proceso',
             files: [],
             comments: []
         });
@@ -611,6 +612,9 @@ export const OrdersPage: React.FC = () => {
                                                     className="flex flex-col text-left group/client hover:opacity-80 transition-all"
                                                 >
                                                     <span className="font-bold text-white text-sm group-hover/client:text-blue-400 transition-colors underline decoration-blue-500/30 underline-offset-4">{order.client}</span>
+                                                    {order.subject && (
+                                                        <span className="text-[10px] text-slate-500 truncate max-w-[200px]">{order.subject}</span>
+                                                    )}
                                                     <span className="text-[10px] text-slate-500 truncate max-w-[200px]">{order.address || 'Sin dirección'}</span>
                                                 </button>
                                             </td>
@@ -621,9 +625,9 @@ export const OrdersPage: React.FC = () => {
                                             </td>
                                             <td className="px-8 py-4 text-center">
                                                 {(() => {
-                                                    const s = order.status || 'Gestión de Acopio';
+                                                    const s = order.status === 'Gestión de Acopio' ? 'En Proceso' : (order.status || 'En Proceso');
                                                     let color = 'text-slate-400 bg-white/5 border-white/10';
-                                                    if (s === 'Gestión de Acopio') color = 'text-amber-400 bg-amber-400/10 border-amber-400/20';
+                                                    if (s === 'En Pintura') color = 'text-pink-400 bg-pink-400/10 border-pink-400/20';
                                                     if (s === 'En Proceso') color = 'text-blue-400 bg-blue-400/10 border-blue-400/20';
                                                     if (s === 'Para Facturar') color = 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
                                                     if (s === 'Terminada') color = 'text-slate-500 bg-white/5 border-white/10';
@@ -1122,9 +1126,9 @@ export const OrdersPage: React.FC = () => {
                                     <div>
                                         <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">ESTADO</label>
                                         {(() => {
-                                            const s = viewingOrder.status || '';
+                                            const s = viewingOrder.status === 'Gestión de Acopio' ? 'En Proceso' : (viewingOrder.status || '');
                                             let color = 'text-slate-600 bg-slate-100 border-slate-200 dark:text-slate-400 dark:bg-white/5 dark:border-white/10';
-                                            if (s === 'Gestión de Acopio') color = 'text-amber-700 bg-amber-500/10 border-amber-500/20 dark:text-amber-400 dark:bg-amber-400/10 dark:border-amber-400/20';
+                                            if (s === 'En Pintura') color = 'text-pink-700 bg-pink-500/10 border-pink-500/20 dark:text-pink-400 dark:bg-pink-400/10 dark:border-pink-400/20';
                                             if (s === 'En Proceso') color = 'text-blue-700 bg-blue-500/10 border-blue-500/20 dark:text-blue-400 dark:bg-blue-400/10 dark:border-blue-400/20';
                                             if (s === 'Para Facturar') color = 'text-emerald-700 bg-emerald-500/10 border-emerald-500/20 dark:text-emerald-400 dark:bg-emerald-400/10 dark:border-emerald-400/20';
                                             if (s === 'Terminada') color = 'text-slate-500 bg-slate-100 border-slate-200 dark:text-slate-500 dark:bg-white/5 dark:border-white/10';
