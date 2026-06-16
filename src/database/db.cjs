@@ -98,6 +98,7 @@ const ensureColumnExists = (table, column, typeDef) => {
 ensureColumnExists('production_orders', 'category', 'TEXT');
 ensureColumnExists('production_orders', 'status', 'TEXT');
 ensureColumnExists('production_orders', 'currency', "TEXT DEFAULT 'UYU'");
+ensureColumnExists('production_orders', 'soporte', 'TEXT');
 
 ensureColumnExists('tasks', 'totalHours', 'REAL DEFAULT 0');
 ensureColumnExists('tasks', 'vehicleId', 'TEXT');

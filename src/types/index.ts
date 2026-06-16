@@ -50,6 +50,7 @@ export interface ProductionOrder {
     files: string[]; // JSON string in DB, parsed to array in store
     comments?: Array<{ text: string, date: string }>;
     createdAt?: string;
+    soporte?: string;
 }
 
 export interface DailyStats {

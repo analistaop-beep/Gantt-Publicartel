@@ -196,7 +196,8 @@ export const OrdersPage: React.FC = () => {
         category: 'Proyectos',
         status: 'En Proceso',
         files: [] as string[],
-        comments: [] as Array<{ text: string, date: string, author?: string }>
+        comments: [] as Array<{ text: string, date: string, author?: string }>,
+        soporte: ''
     });
     const [newComment, setNewComment] = useState('');
     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -250,7 +251,8 @@ export const OrdersPage: React.FC = () => {
                 category: order.category || 'Proyectos',
                 status: order.status || 'En Proceso',
                 files: order.files || [],
-                comments: order.comments || []
+                comments: order.comments || [],
+                soporte: order.soporte || ''
             });
         } else {
             setIsEditing(null);
@@ -266,7 +268,8 @@ export const OrdersPage: React.FC = () => {
                 category: 'Proyectos',
                 status: 'En Proceso',
                 files: [],
-                comments: []
+                comments: [],
+                soporte: ''
             });
         }
         setNewComment('');
@@ -288,7 +291,8 @@ export const OrdersPage: React.FC = () => {
             category: 'Proyectos',
             status: 'En Proceso',
             files: [],
-            comments: []
+            comments: [],
+            soporte: ''
         });
         setNewComment('');
     };
@@ -852,6 +856,28 @@ export const OrdersPage: React.FC = () => {
                                 </div>
                             </div>
 
+                            {formData.category === 'Outdoor' && (
+                                <div className="space-y-2">
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Soporte (4 dígitos - Opcional)</label>
+                                    <div className="relative group">
+                                        <Layers size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                                        <input
+                                            type="text"
+                                            maxLength={4}
+                                            className="input w-full pl-12"
+                                            placeholder="Ej: 1234"
+                                            value={formData.soporte}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/\D/g, '');
+                                                if (val.length <= 4) {
+                                                    setFormData({ ...formData, soporte: val });
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-2">
                                 <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Estado de la Orden</label>
                                 <div className="relative group">
@@ -1123,6 +1149,14 @@ export const OrdersPage: React.FC = () => {
                                             {viewingOrder.category}
                                         </span>
                                     </div>
+                                    {viewingOrder.category === 'Outdoor' && viewingOrder.soporte && (
+                                        <div>
+                                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">SOPORTE</label>
+                                            <p className="text-lg font-mono font-bold text-slate-700 dark:text-slate-300">
+                                                {viewingOrder.soporte}
+                                            </p>
+                                        </div>
+                                    )}
                                     <div>
                                         <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">ESTADO</label>
                                         {(() => {
