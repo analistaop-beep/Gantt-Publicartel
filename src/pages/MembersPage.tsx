@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Plus, Trash2, Edit2, User, Search } from 'lucide-react';
+import { Plus, Trash2, Edit2, User, Search, DollarSign } from 'lucide-react';
 import { getInitials } from '../utils/stringUtils';
 import { sileo } from 'sileo';
+import { useSectionRates, SECTIONS } from '../hooks/useSectionRates';
 
 export const MembersPage: React.FC = () => {
     const { members, addMember, updateMember, deleteMember } = useStore();
     const [isEditing, setIsEditing] = useState<string | null>(null);
     const [formData, setFormData] = useState({ name: '', role: '', sector: '', ci: '', code: '' });
     const [searchQuery, setSearchQuery] = useState('');
+    const { rates, setRate } = useSectionRates();
 
     React.useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -208,6 +210,47 @@ export const MembersPage: React.FC = () => {
                             )}
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        {/* ─── Hourly Rates Panel ─── */}
+        <div className="px-4 pb-8 md:px-10">
+            <div className="glass rounded-[1.25rem] overflow-hidden shadow-2xl border-white/10">
+                <div className="px-8 py-5 border-b border-white/10 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                        <DollarSign size={16} className="text-emerald-400" />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Configuración</p>
+                        <h3 className="text-base font-black text-white">Costo por Hora por Sección</h3>
+                    </div>
+                    <span className="ml-auto text-[10px] text-slate-500 italic">Se guarda automáticamente</span>
+                </div>
+                <div className="p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    {SECTIONS.map(section => (
+                        <div key={section} className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">{section}</label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400 font-bold text-sm pointer-events-none">$</span>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    step={10}
+                                    className="input w-full pl-8 font-mono font-bold text-emerald-400"
+                                    placeholder="0"
+                                    value={rates[section] ?? ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                                        setRate(section, val);
+                                    }}
+                                />
+                                {rates[section] ? (
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-slate-500 font-bold">/h</span>
+                                ) : null}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>

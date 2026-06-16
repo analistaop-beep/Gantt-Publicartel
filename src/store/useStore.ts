@@ -317,6 +317,7 @@ export const useStore = create<AppState>((set, get) => ({
                 address: order.address,
                 category: order.category,
                 status: order.status,
+                soporte: order.soporte ?? null,
                 files: JSON.stringify(order.files ?? []),
                 comments: JSON.stringify(order.comments ?? [])
             };

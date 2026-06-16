@@ -1,8 +1,28 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { sileo } from 'sileo';
+import { getSectionRates } from '../hooks/useSectionRates';
+
+/** Loads the Publicartel logo as a base64 data URL, works in both Electron and browser. */
+async function loadLogo(): Promise<string | null> {
+    try {
+        if (window && (window as any).electronAPI) {
+            return await (window as any).electronAPI.invoke('get-logo');
+        } else {
+            const response = await fetch('/logo-publicartel.png');
+            const blob = await response.blob();
+            return await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+    } catch (e) {
+        console.error('Error loading logo:', e);
+        return null;
+    }
+}
 
 /**
  * Exports data to an Excel-compatible XLS file using an HTML table.
@@ -580,6 +600,10 @@ const drawRichText = (
  */
 export const printOrderSummaryPDF = async (order: any): Promise<void> => {
     order = normalizeToNFC(order);
+    
+    // Load logo once
+    const logoData = await loadLogo();
+
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
@@ -609,15 +633,20 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
     doc.setFillColor(...blue);
     doc.rect(0, 38, pageW, 2, 'F');
 
-    doc.setTextColor(...white);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.text('PUBLICARTEL', margin, 16);
+    // Logo or text fallback
+    if (logoData) {
+        try { doc.addImage(logoData, 'PNG', margin, 7, 42, 16); } catch {}
+    } else {
+        doc.setTextColor(...white);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.text('PUBLICARTEL', margin, 16);
+    }
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(...light);
-    doc.text('RESUMEN DE ORDEN DE PRODUCCIÓN', margin, 24);
+    doc.text('RESUMEN DE ORDEN DE PRODUCCIÓN', margin, 28);
 
     // OP number top-right
     doc.setFont('helvetica', 'bold');
@@ -627,13 +656,7 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
     const opWidth = doc.getTextWidth(opText);
     doc.text(opText, pageW - margin - opWidth, 22);
 
-    // Date top-right small
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(...light);
-    const dateText = format(new Date(), "dd/MM/yyyy HH:mm", { locale: es });
-    const dateWidth = doc.getTextWidth(dateText);
-    doc.text(dateText, pageW - margin - dateWidth, 30);
+
 
     y = 50;
 
@@ -838,7 +861,7 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
         doc.setTextColor(...muted);
-        doc.text(`PUBLICARTEL — Generado el ${dateText}`, margin, pageH - 4);
+        doc.text(`PUBLICARTEL — Resumen de Orden de Producción`, margin, pageH - 4);
         doc.setTextColor(...white);
         doc.text(`Pág. ${p} / ${totalPages}`, pageW - margin - 14, pageH - 4);
     }
@@ -848,3 +871,361 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
     sileo.success({ title: 'Resumen PDF generado', description: `OP #${order.opNumber}` });
 };
 
+/**
+ * Helper to generate a bar chart base64 image comparing estimated vs final hours
+ */
+const generateComparativeChartBase64 = (tasks: any[]): string => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 400;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    // Draw background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Filter valid tasks for the chart
+    const validTasks = tasks.filter(t => t.name).slice(0, 15); // Max 15 tasks to fit well
+    if (validTasks.length === 0) return '';
+
+    const maxHours = Math.max(...validTasks.map(t => {
+        const est = Number(t.estimatedHours) || Number(t.totalHours) || 0;
+        const real = Number(t.realHours) || (t.members || []).reduce((acc: number, m: any) => acc + (typeof m === 'object' ? (Number(m.hours) || 8) : 8), 0);
+        return Math.max(est, real);
+    }), 10);
+
+    const paddingLeft = 60;
+    const paddingBottom = 100;
+    const paddingTop = 40;
+    const paddingRight = 40;
+    const chartW = canvas.width - paddingLeft - paddingRight;
+    const chartH = canvas.height - paddingTop - paddingBottom;
+
+    // Draw axes
+    ctx.beginPath();
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 2;
+    ctx.moveTo(paddingLeft, paddingTop);
+    ctx.lineTo(paddingLeft, canvas.height - paddingBottom);
+    ctx.lineTo(canvas.width - paddingRight, canvas.height - paddingBottom);
+    ctx.stroke();
+
+    // Draw Y axis labels & grid
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px helvetica';
+    ctx.textAlign = 'right';
+    const steps = 5;
+    for (let i = 0; i <= steps; i++) {
+        const val = (maxHours / steps) * i;
+        const y = canvas.height - paddingBottom - (chartH / steps) * i;
+        ctx.fillText(`${val.toFixed(1)}h`, paddingLeft - 10, y + 4);
+        
+        ctx.beginPath();
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+        ctx.moveTo(paddingLeft, y);
+        ctx.lineTo(canvas.width - paddingRight, y);
+        ctx.stroke();
+    }
+
+    // Legend
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(canvas.width - 200, 10, 15, 15);
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'left';
+    ctx.fillText('Horas Previstas', canvas.width - 180, 22);
+
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(canvas.width - 100, 10, 15, 15);
+    ctx.fillStyle = '#64748b';
+    ctx.fillText('Horas Finales', canvas.width - 80, 22);
+
+    // Draw Bars
+    const barGroupWidth = chartW / validTasks.length;
+    const barWidth = Math.min(barGroupWidth * 0.35, 40);
+
+    validTasks.forEach((t, i) => {
+        const est = Number(t.estimatedHours) || Number(t.totalHours) || 0;
+        const real = Number(t.realHours) || (t.members || []).reduce((acc: number, m: any) => acc + (typeof m === 'object' ? (Number(m.hours) || 8) : 8), 0);
+
+        const estH = (est / maxHours) * chartH;
+        const realH = (real / maxHours) * chartH;
+
+        const xCenter = paddingLeft + barGroupWidth * i + barGroupWidth / 2;
+
+        // Est bar
+        ctx.fillStyle = '#3b82f6';
+        ctx.fillRect(xCenter - barWidth, canvas.height - paddingBottom - estH, barWidth, estH);
+        
+        // Real bar
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(xCenter, canvas.height - paddingBottom - realH, barWidth, realH);
+
+        // Label
+        ctx.save();
+        ctx.translate(xCenter, canvas.height - paddingBottom + 15);
+        ctx.rotate(-Math.PI / 4);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#475569';
+        ctx.font = 'bold 11px helvetica';
+        const label = t.name.length > 20 ? t.name.substring(0, 17) + '...' : t.name;
+        ctx.fillText(label, 0, 0);
+        ctx.restore();
+    });
+
+    return canvas.toDataURL('image/png');
+};
+
+/**
+ * Generates and downloads a PDF comparing estimated vs final hours for an OP.
+ */
+export const printHoursAnalysisPDF = async (order: any, tasks: any[]): Promise<void> => {
+    order = normalizeToNFC(order);
+    tasks = normalizeToNFC(tasks);
+    
+    // Filter tasks for this OP
+    const opTasks = tasks.filter(t => t.opNumber?.toString() === order.opNumber?.toString());
+
+    // Load logo once
+    const logoData = await loadLogo();
+
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 18;
+
+    // ─── Color Palette ───────────────────────────────────────────────
+    const navy = [10, 22, 45] as [number, number, number];
+    const blue = [37, 99, 235] as [number, number, number];
+    const light = [241, 245, 249] as [number, number, number];
+    const muted = [100, 116, 139] as [number, number, number];
+    const white: [number, number, number] = [255, 255, 255];
+
+    let y = margin;
+
+    // ─── Header ────────────────────────────────────────────────
+    doc.setFillColor(...navy);
+    doc.rect(0, 0, pageW, 38, 'F');
+    doc.setFillColor(...blue);
+    doc.rect(0, 38, pageW, 2, 'F');
+
+    // Logo or text fallback
+    if (logoData) {
+        try { doc.addImage(logoData, 'PNG', margin, 7, 42, 16); } catch {}
+    } else {
+        doc.setTextColor(...white);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.text('PUBLICARTEL', margin, 16);
+    }
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...light);
+    doc.text('ANÁLISIS DE HORAS', margin, 28);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(...blue);
+    const opText = `OP #${order.opNumber}`;
+    const opWidth = doc.getTextWidth(opText);
+    doc.text(opText, pageW - margin - opWidth, 22);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...light);
+
+    y = 50;
+
+    // ─── General Info ────────────────────────────────────────────────
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...navy);
+    doc.text(`Cliente: ${order.client || 'N/A'}`, margin, y);
+    doc.text(`Proyecto: ${order.description?.substring(0, 50) || 'N/A'}`, margin, y + 6);
+    y += 15;
+
+    // ─── Load rates & Calculate totals ──────────────────────────────
+    const rates = getSectionRates();
+    let totalEst = 0;
+    let totalReal = 0;
+    let totalCostEst = 0;
+    let totalCostReal = 0;
+    let hasAnyRate = false;
+
+    const tableData = opTasks.map(t => {
+        const section = t.section || 'Instalaciones';
+        const est = Number(t.estimatedHours) || Number(t.totalHours) || 0;
+        const real = Number(t.realHours) || (t.members || []).reduce((acc: number, m: any) => acc + (typeof m === 'object' ? (Number(m.hours) || 8) : 8), 0);
+        const diff = est - real;
+        const rate = (rates as any)[section];
+
+        let costEstStr = '—';
+        let costRealStr = '—';
+        if (rate) {
+            hasAnyRate = true;
+            const cEst = est * rate;
+            const cReal = real * rate;
+            costEstStr = `$${Math.round(cEst).toLocaleString('es-UY')}`;
+            costRealStr = `$${Math.round(cReal).toLocaleString('es-UY')}`;
+            totalCostEst += cEst;
+            totalCostReal += cReal;
+        }
+
+        totalEst += est;
+        totalReal += real;
+
+        return [
+            t.name || 'Sin nombre',
+            section,
+            `${est.toFixed(1)}h`,
+            `${real.toFixed(1)}h`,
+            `${diff > 0 ? '+' : ''}${diff.toFixed(1)}h`,
+            costEstStr,
+            costRealStr,
+        ];
+    });
+
+    const totalDiff = totalEst - totalReal;
+    const totalCostDiff = totalCostEst - totalCostReal;
+
+    // ─── Summary Box ─────────────────────────────────────────────────
+    const summaryH = hasAnyRate ? 40 : 22;
+    doc.setFillColor(...light);
+    doc.rect(margin, y, pageW - margin * 2, summaryH, 'F');
+
+    // Hours row
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...muted);
+    doc.text('TOTAL PREVISTAS', margin + 10, y + 8);
+    doc.text('TOTAL FINALES', margin + 65, y + 8);
+    doc.text('BALANCE HRS', margin + 120, y + 8);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(37, 99, 235);
+    doc.text(`${totalEst.toFixed(1)}h`, margin + 10, y + 17);
+
+    doc.setTextColor(245, 158, 11);
+    doc.text(`${totalReal.toFixed(1)}h`, margin + 65, y + 17);
+
+    if (totalDiff < 0) doc.setTextColor(220, 38, 38);
+    else if (totalDiff > 0) doc.setTextColor(22, 163, 74);
+    else doc.setTextColor(...navy);
+    doc.text(`${totalDiff > 0 ? '+' : ''}${totalDiff.toFixed(1)}h`, margin + 120, y + 17);
+
+    // Economic row (only if at least one rate is configured)
+    if (hasAnyRate) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...muted);
+        doc.text('COSTO PREVISTO', margin + 10, y + 26);
+        doc.text('COSTO REAL', margin + 65, y + 26);
+        doc.text('DIFERENCIA ECONÓMICA', margin + 120, y + 26);
+
+        doc.setFontSize(12);
+        doc.setTextColor(37, 99, 235);
+        doc.text(`$${Math.round(totalCostEst).toLocaleString('es-UY')}`, margin + 10, y + 35);
+
+        doc.setTextColor(245, 158, 11);
+        doc.text(`$${Math.round(totalCostReal).toLocaleString('es-UY')}`, margin + 65, y + 35);
+
+        if (totalCostDiff < 0) doc.setTextColor(220, 38, 38);
+        else if (totalCostDiff > 0) doc.setTextColor(22, 163, 74);
+        else doc.setTextColor(...navy);
+        const sign = totalCostDiff > 0 ? '+' : totalCostDiff < 0 ? '-' : '';
+        doc.text(`${sign}$${Math.round(Math.abs(totalCostDiff)).toLocaleString('es-UY')}`, margin + 120, y + 35);
+    }
+
+    y += summaryH + 10;
+
+    // ─── Chart ───────────────────────────────────────────────────────
+    if (opTasks.length > 0) {
+        const chartBase64 = generateComparativeChartBase64(opTasks);
+        if (chartBase64) {
+            doc.addImage(chartBase64, 'PNG', margin, y, pageW - margin * 2, 80);
+            y += 85;
+        }
+    }
+
+    // ─── Table ───────────────────────────────────────────────────────
+    const head = hasAnyRate
+        ? [['Tarea', 'Sección', 'Prev.', 'Final', 'Dif.hrs', 'Costo Est.', 'Costo Real']]
+        : [['Tarea', 'Sección', 'Previstas', 'Finales', 'Diferencia']];
+
+    const body = tableData.length > 0
+        ? (hasAnyRate ? tableData : tableData.map(r => r.slice(0, 5)))
+        : [['No hay tareas asociadas', '', '', '', '']];
+
+    const footRow = hasAnyRate
+        ? ['TOTALES', '',
+            `${totalEst.toFixed(1)}h`, `${totalReal.toFixed(1)}h`,
+            `${totalDiff > 0 ? '+' : ''}${totalDiff.toFixed(1)}h`,
+            `$${Math.round(totalCostEst).toLocaleString('es-UY')}`,
+            `$${Math.round(totalCostReal).toLocaleString('es-UY')}`]
+        : ['TOTALES', '', `${totalEst.toFixed(1)}h`, `${totalReal.toFixed(1)}h`, `${totalDiff > 0 ? '+' : ''}${totalDiff.toFixed(1)}h`];
+
+    autoTable(doc, {
+        startY: y,
+        head,
+        body,
+        foot: tableData.length > 0 ? [footRow] : undefined,
+        theme: 'striped',
+        headStyles: { fillColor: navy, textColor: 255, fontStyle: 'bold', fontSize: 8 },
+        footStyles: { fillColor: light, textColor: navy, fontStyle: 'bold', fontSize: 8 },
+        styles: { fontSize: 8, cellPadding: 2.5 },
+        columnStyles: hasAnyRate ? {
+            0: { cellWidth: 45 },
+            2: { halign: 'right' },
+            3: { halign: 'right' },
+            4: { halign: 'right', fontStyle: 'bold' },
+            5: { halign: 'right' },
+            6: { halign: 'right' },
+        } : {
+            2: { halign: 'right' },
+            3: { halign: 'right' },
+            4: { halign: 'right', fontStyle: 'bold' },
+        },
+        didParseCell: function(data) {
+            // Force header alignment to match body alignment for numeric columns
+            const numericCols = hasAnyRate ? [2, 3, 4, 5, 6] : [2, 3, 4];
+            if (data.section === 'head' && numericCols.includes(data.column.index)) {
+                data.cell.styles.halign = 'right';
+            }
+            if (data.section === 'foot' && numericCols.includes(data.column.index)) {
+                data.cell.styles.halign = 'right';
+            }
+            // Difference hours column (index 4) coloring
+            if (data.section === 'body' && data.column.index === 4) {
+                const valStr = data.cell.text[0] || '';
+                if (valStr.startsWith('-')) data.cell.styles.textColor = [220, 38, 38];
+                else if (valStr.startsWith('+') || valStr === '0.0h') data.cell.styles.textColor = [22, 163, 74];
+            }
+            if (data.section === 'foot' && data.column.index === 4) {
+                const valStr = data.cell.text[0] || '';
+                if (valStr.startsWith('-')) data.cell.styles.textColor = [220, 38, 38];
+                else if (valStr.startsWith('+') || valStr === '0.0h') data.cell.styles.textColor = [22, 163, 74];
+            }
+        },
+        margin: { left: margin, right: margin }
+    });
+
+    // ─── Footer ───────────────────────────────────────────────────────
+    const totalPages = (doc as any).internal.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p++) {
+        doc.setPage(p);
+        doc.setFillColor(...navy);
+        doc.rect(0, pageH - 10, pageW, 10, 'F');
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(...muted);
+        doc.text(`PUBLICARTEL — Análisis de Horas`, margin, pageH - 4);
+        doc.setTextColor(...white);
+        doc.text(`Pág. ${p} / ${totalPages}`, pageW - margin - 14, pageH - 4);
+    }
+
+    doc.save(`Analisis_Horas_OP_${order.opNumber}_${order.client.replace(/\s+/g, '_')}.pdf`);
+    sileo.success({ title: 'Reporte de horas generado', description: `OP #${order.opNumber}` });
+};

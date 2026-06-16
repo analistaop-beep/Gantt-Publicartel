@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic, Filter, Check } from 'lucide-react';
+import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic, Filter, Check, BarChart2 } from 'lucide-react';
 import { sileo } from 'sileo';
 import { convertToWebP } from '../utils/fileUtils';
-import { printOrderSummaryPDF } from '../utils/reportUtils';
+import { printOrderSummaryPDF, printHoursAnalysisPDF } from '../utils/reportUtils';
 
 const MultiSelect = ({
     options,
@@ -119,6 +119,7 @@ export const OrdersPage: React.FC = () => {
         lonasTasks,
         pinturaTasks,
         addTask,
+        updateTask,
         deleteTask,
         members,
         vehicles,
@@ -130,11 +131,13 @@ export const OrdersPage: React.FC = () => {
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [isPrinting, setIsPrinting] = useState(false);
+    const [isPrintingAnalysis, setIsPrintingAnalysis] = useState(false);
     const categories = ['Proyectos', 'Outdoor', 'Digital', 'Mantenimiento', 'Otros'];
     const statuses = [
         'En Proceso', 'En Diseño', 'Detenido Comercial', 'En Herrería',
         'En Pintura', 'En Corpóreas', 'En Impresión', 'Para Relevar',
-        'Para Instalar', 'Para Facturar', 'Terminada'
+        'Para Instalar', 'Para Facturar', 'Terminada', 'En muestras de color', 
+        'Soldando lona'
     ];
     const sellers = ["W. Maciel", "P. Goicoechea", "N. Mannise", "F. Cruz", "P. Lizuain", "V. Castellucci", "Otro"];
 
@@ -145,6 +148,7 @@ export const OrdersPage: React.FC = () => {
 
     // State for associated task creation modal
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+    const [isEditingTask, setIsEditingTask] = useState<string | null>(null);
     const [taskMemberSearch, setTaskMemberSearch] = useState('');
     const [taskFormData, setTaskFormData] = useState({
         opNumber: '',
@@ -152,6 +156,7 @@ export const OrdersPage: React.FC = () => {
         client: '',
         address: '',
         totalHours: 8,
+        realHours: 0,
         duration: 8,
         vehicles: [] as string[],
         members: [] as Array<{ id: string, hours: number }>,
@@ -447,6 +452,17 @@ export const OrdersPage: React.FC = () => {
         }
     };
 
+    const handlePrintAnalysis = async (order: any) => {
+        setIsPrintingAnalysis(true);
+        try {
+            await printHoursAnalysisPDF(order, allTasks);
+        } catch (err: any) {
+            sileo.error({ title: 'Error al generar Análisis', description: err.message });
+        } finally {
+            setIsPrintingAnalysis(false);
+        }
+    };
+
     // Associated Tasks Calculations & Handlers
     const allTasks = React.useMemo(() => {
         return [
@@ -465,12 +481,14 @@ export const OrdersPage: React.FC = () => {
 
     const handleOpenRegisterTask = () => {
         if (!viewingOrder) return;
+        setIsEditingTask(null);
         setTaskFormData({
             opNumber: viewingOrder.opNumber || '',
             name: '',
             client: viewingOrder.client || '',
             address: viewingOrder.address || '',
             totalHours: 8,
+            realHours: 0,
             duration: 8,
             vehicles: [],
             members: [],
@@ -479,6 +497,27 @@ export const OrdersPage: React.FC = () => {
             section: 'Instalaciones',
             blockedBy: null
         });
+        setTaskMemberSearch('');
+        setIsTaskModalOpen(true);
+    };
+
+    const handleEditTask = (task: any) => {
+        setTaskFormData({
+            opNumber: task.opNumber || viewingOrder?.opNumber || '',
+            name: task.name || '',
+            client: task.client || '',
+            address: task.address || '',
+            totalHours: task.totalHours || task.estimatedHours || 8,
+            realHours: task.realHours || 0,
+            duration: task.duration || task.totalHours || 8,
+            vehicles: task.vehicles || [],
+            members: task.members || [],
+            date: task.date || '',
+            teamId: task.teamId || null,
+            section: task.section || 'Instalaciones',
+            blockedBy: task.blockedBy || null
+        });
+        setIsEditingTask(task.id);
         setTaskMemberSearch('');
         setIsTaskModalOpen(true);
     };
@@ -494,18 +533,26 @@ export const OrdersPage: React.FC = () => {
                 'Pintura': 'pintura'
             };
             
-            await addTask({
+            const taskPayload = {
                 ...taskFormData,
                 type: sectionToType[taskFormData.section] as any,
                 blockedBy: taskFormData.blockedBy || null
-            });
+            };
 
-            sileo.success({ title: 'Tarea registrada con éxito' });
+            if (isEditingTask) {
+                await updateTask({ ...taskPayload, id: isEditingTask });
+                sileo.success({ title: 'Tarea actualizada con éxito' });
+            } else {
+                await addTask(taskPayload);
+                sileo.success({ title: 'Tarea registrada con éxito' });
+            }
+
             setIsTaskModalOpen(false);
+            setIsEditingTask(null);
         } catch (err: any) {
             sileo.error({
-                title: 'Error al registrar tarea',
-                description: err.message || 'No se pudo crear la tarea'
+                title: isEditingTask ? 'Error al actualizar tarea' : 'Error al registrar tarea',
+                description: err.message || 'No se pudo guardar la tarea'
             });
         }
     };
@@ -642,6 +689,8 @@ export const OrdersPage: React.FC = () => {
                                                     if (s === 'En Impresión') color = 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
                                                     if (s === 'Para Relevar') color = 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
                                                     if (s === 'Para Instalar') color = 'text-lime-400 bg-lime-400/10 border-lime-400/20';
+                                                    if (s === 'En muestras de color') color = 'text-amber-400 bg-amber-400/10 border-amber-400/20';
+                                                    if (s === 'Soldando lona') color = 'text-slate-300 bg-slate-400/10 border-slate-400/20';
 
                                                     return (
                                                         <div className="relative inline-block group/select">
@@ -1166,6 +1215,8 @@ export const OrdersPage: React.FC = () => {
                                             if (s === 'En Proceso') color = 'text-blue-700 bg-blue-500/10 border-blue-500/20 dark:text-blue-400 dark:bg-blue-400/10 dark:border-blue-400/20';
                                             if (s === 'Para Facturar') color = 'text-emerald-700 bg-emerald-500/10 border-emerald-500/20 dark:text-emerald-400 dark:bg-emerald-400/10 dark:border-emerald-400/20';
                                             if (s === 'Terminada') color = 'text-slate-500 bg-slate-100 border-slate-200 dark:text-slate-500 dark:bg-white/5 dark:border-white/10';
+                                            if (s === 'En muestras de color') color = 'text-amber-700 bg-amber-500/10 border-amber-500/20 dark:text-amber-400 dark:bg-amber-400/10 dark:border-amber-400/20';
+                                            if (s === 'Soldando lona') color = 'text-slate-700 bg-slate-500/10 border-slate-500/20 dark:text-slate-400 dark:bg-slate-400/10 dark:border-slate-400/20';
                                             return (
                                                 <span className={`text-xs font-bold uppercase tracking-wider block px-3 py-1 rounded-sm border w-fit ${color}`}>
                                                     {s}
@@ -1235,14 +1286,24 @@ export const OrdersPage: React.FC = () => {
                                                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-wider ${badgeColor}`}>
                                                                 {task.section}
                                                             </span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleDeleteTask(task.id)}
-                                                                className="opacity-0 group-hover/task-card:opacity-100 p-1 hover:bg-red-500/10 text-slate-400 hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400 rounded-lg transition-all"
-                                                                title="Eliminar tarea"
-                                                            >
-                                                                <Trash2 size={12} />
-                                                            </button>
+                                                            <div className="flex gap-1 opacity-0 group-hover/task-card:opacity-100 transition-all">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleEditTask(task)}
+                                                                    className="p-1 hover:bg-blue-500/10 text-slate-400 hover:text-blue-600 dark:text-slate-500 dark:hover:text-blue-400 rounded-lg transition-all"
+                                                                    title="Editar tarea"
+                                                                >
+                                                                    <Edit2 size={12} />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteTask(task.id)}
+                                                                    className="p-1 hover:bg-red-500/10 text-slate-400 hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400 rounded-lg transition-all"
+                                                                    title="Eliminar tarea"
+                                                                >
+                                                                    <Trash2 size={12} />
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                         <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{task.name}</h4>
                                                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-slate-500">
@@ -1380,6 +1441,19 @@ export const OrdersPage: React.FC = () => {
 
                         {/* Footer */}
                         <div className="px-8 py-5 border-t border-slate-200 dark:border-white/8 flex-shrink-0 flex justify-end gap-3 bg-slate-50/80 dark:bg-[#0f172a]/80">
+                            {viewingOrder.status === 'Terminada' && (
+                                <button
+                                    onClick={() => handlePrintAnalysis(viewingOrder)}
+                                    disabled={isPrintingAnalysis}
+                                    className="px-7 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all border border-emerald-500/30 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed rounded-xl text-sm mr-auto shadow-lg shadow-emerald-600/20"
+                                >
+                                    {isPrintingAnalysis ? (
+                                        <><Loader2 size={15} className="animate-spin" /> GENERANDO...</>
+                                    ) : (
+                                        <><BarChart2 size={15} /> ANÁLISIS DE HORAS</>
+                                    )}
+                                </button>
+                            )}
                             <button
                                 onClick={() => handlePrintSummary(viewingOrder)}
                                 disabled={isPrinting}
@@ -1440,7 +1514,7 @@ export const OrdersPage: React.FC = () => {
                         <div className="flex items-center justify-between px-8 py-5 border-b border-white/10 flex-shrink-0 bg-[#0f172a]/80 backdrop-blur-sm">
                             <div>
                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-1 block">
-                                    REGISTRAR TAREA
+                                    {isEditingTask ? 'EDITAR TAREA' : 'REGISTRAR TAREA'}
                                 </span>
                                 <h3 className="text-2xl font-black text-white flex items-center gap-2">
                                     OP <span className="text-blue-400">#{taskFormData.opNumber}</span>
@@ -1553,19 +1627,36 @@ export const OrdersPage: React.FC = () => {
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {/* Hours */}
-                                            <div className="bg-blue-500/[0.02] border border-blue-500/10 p-5 rounded-xl space-y-3">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 block">TOTAL HORAS PREVISTAS</label>
-                                                <input
-                                                    type="number"
-                                                    step="0.5"
-                                                    className="input w-full font-mono font-bold text-emerald-400 text-xl"
-                                                    value={taskFormData.totalHours}
-                                                    onChange={(e) => {
-                                                        const total = parseFloat(e.target.value) || 0;
-                                                        setTaskFormData({ ...taskFormData, totalHours: total, duration: total });
-                                                    }}
-                                                    required
-                                                />
+                                            <div className="bg-blue-500/[0.02] border border-blue-500/10 p-5 rounded-xl space-y-4">
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 block">TOTAL HORAS PREVISTAS</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.5"
+                                                        className="input w-full font-mono font-bold text-blue-400 text-xl"
+                                                        value={taskFormData.totalHours}
+                                                        onChange={(e) => {
+                                                            const total = parseFloat(e.target.value) || 0;
+                                                            setTaskFormData({ ...taskFormData, totalHours: total, duration: total });
+                                                        }}
+                                                        required
+                                                    />
+                                                </div>
+                                                {isEditingTask && (
+                                                    <div className="space-y-3 pt-3 border-t border-blue-500/10">
+                                                        <label className="text-[10px] font-black uppercase tracking-widest text-amber-400 block">HORAS FINALES (MANUALES)</label>
+                                                        <input
+                                                            type="number"
+                                                            step="0.5"
+                                                            className="input w-full font-mono font-bold text-amber-400 text-xl"
+                                                            value={taskFormData.realHours}
+                                                            onChange={(e) => {
+                                                                const real = parseFloat(e.target.value) || 0;
+                                                                setTaskFormData({ ...taskFormData, realHours: real });
+                                                            }}
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Vehicles */}
@@ -1676,7 +1767,10 @@ export const OrdersPage: React.FC = () => {
                             <div className="px-8 py-5 border-t border-white/10 flex-shrink-0 flex justify-end gap-3 bg-[#0f172a]/80">
                                 <button
                                     type="button"
-                                    onClick={() => setIsTaskModalOpen(false)}
+                                    onClick={() => {
+                                        setIsTaskModalOpen(false);
+                                        setIsEditingTask(null);
+                                    }}
                                     className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white font-bold transition-all border border-white/10 rounded-xl text-sm uppercase tracking-wider"
                                 >
                                     CANCELAR
@@ -1685,7 +1779,7 @@ export const OrdersPage: React.FC = () => {
                                     type="submit"
                                     className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg shadow-blue-600/20 rounded-xl text-sm uppercase tracking-wider"
                                 >
-                                    REGISTRAR TAREA
+                                    {isEditingTask ? 'GUARDAR CAMBIOS' : 'REGISTRAR TAREA'}
                                 </button>
                             </div>
                         </form>
