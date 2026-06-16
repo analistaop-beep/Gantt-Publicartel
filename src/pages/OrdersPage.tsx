@@ -188,6 +188,7 @@ export const OrdersPage: React.FC = () => {
         opNumber: '',
         client: '',
         seller: '',
+        subject: '',
         price: 0,
         currency: 'UYU' as 'UYU' | 'USD',
         description: '',
@@ -240,6 +241,7 @@ export const OrdersPage: React.FC = () => {
                 opNumber: order.opNumber,
                 client: order.client,
                 seller: order.seller,
+                subject: order.subject || '',
                 price: order.price,
                 currency: order.currency || 'UYU',
                 description: order.description || '',
@@ -255,6 +257,7 @@ export const OrdersPage: React.FC = () => {
                 opNumber: '',
                 client: '',
                 seller: '',
+                subject: '',
                 price: 0,
                 currency: 'UYU',
                 description: '',
@@ -276,6 +279,7 @@ export const OrdersPage: React.FC = () => {
             opNumber: '',
             client: '',
             seller: '',
+            subject: '',
             price: 0,
             currency: 'UYU',
             description: '',
@@ -798,6 +802,20 @@ export const OrdersPage: React.FC = () => {
                                 </div>
                             </div>
 
+                            <div className="space-y-2">
+                                <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Asunto</label>
+                                <div className="relative group">
+                                    <AlignLeft size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                                    <input
+                                        className="input w-full pl-12"
+                                        placeholder="Ej: Instalación de cartel luminoso en local..."
+                                        value={formData.subject}
+                                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                                        maxLength={200}
+                                    />
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Dirección</label>
@@ -1073,6 +1091,12 @@ export const OrdersPage: React.FC = () => {
                                         <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">VENDEDOR</label>
                                         <p className="text-lg text-slate-700 dark:text-slate-300 font-medium">{viewingOrder.seller}</p>
                                     </div>
+                                    {viewingOrder.subject && (
+                                        <div>
+                                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">ASUNTO</label>
+                                            <p className="text-base text-slate-700 dark:text-slate-300 italic">{viewingOrder.subject}</p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-8">

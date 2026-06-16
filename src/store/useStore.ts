@@ -310,6 +310,7 @@ export const useStore = create<AppState>((set, get) => ({
                 opNumber: order.opNumber,
                 client: order.client,
                 seller: order.seller,
+                subject: order.subject ?? null,
                 price: order.price,
                 currency: order.currency,
                 description: order.description,

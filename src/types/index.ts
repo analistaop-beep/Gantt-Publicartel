@@ -31,6 +31,8 @@ export interface Task {
     vehicleId?: string;
     members?: string[];
     blockedBy?: string | null;
+    completed?: boolean;
+    realHours?: number;
 }
 
 export interface ProductionOrder {
@@ -38,6 +40,7 @@ export interface ProductionOrder {
     opNumber: string;
     client: string;
     seller: string;
+    subject?: string;
     price: number;
     description: string;
     address: string;

@@ -86,6 +86,7 @@ export const LonasVinilosPage: React.FC = () => {
     const [pendingSearch, setPendingSearch] = useState('');
     const [pendingTasksHeight, setPendingTasksHeight] = useState(300);
     const [isResizing, setIsResizing] = useState(false);
+    const [manualHours, setManualHours] = useState('');
 
     const startResizing = (e: React.MouseEvent) => {
         setIsResizing(true);
@@ -131,7 +132,7 @@ export const LonasVinilosPage: React.FC = () => {
 
     // Filter pending tasks (tasks with no date)
     const pendingTasks = useMemo(() => {
-        let pts = tasks.filter(t => !t.date || t.date === '');
+        let pts = tasks.filter(t => (!t.date || t.date === '') && !t.completed);
         
         // A blocked task only appears in Pendientes when its blocker has been
         // scheduled on a date strictly BEFORE today (already executed).
@@ -175,8 +176,10 @@ export const LonasVinilosPage: React.FC = () => {
             if (e.key === 'Escape') {
                 if (isTaskModalOpen) {
                     setIsTaskModalOpen(false);
-                    setEditingTask(null);
                     setSelectedContext(null);
+                    setEditingTask(null);
+                    setMemberSearch('');
+                    setManualHours('');
                 } else if (isFragmentModalOpen) {
                     setIsFragmentModalOpen(false);
                     setFragmentTargetTask(null);
@@ -299,6 +302,7 @@ export const LonasVinilosPage: React.FC = () => {
             setIsTaskModalOpen(false);
             setEditingTask(null);
             setSelectedContext(null);
+            setManualHours('');
             setFormData({
                 opNumber: '',
                 name: '',
@@ -1158,6 +1162,7 @@ export const LonasVinilosPage: React.FC = () => {
                                         setSelectedContext(null);
                                         setEditingTask(null);
                                         setMemberSearch('');
+                                        setManualHours('');
                                     }}
                                     className="p-2 hover:bg-white/10 rounded-full text-slate-400 transition-all"
                                 >
@@ -1462,6 +1467,51 @@ export const LonasVinilosPage: React.FC = () => {
 
                                 </div>
 
+                                {/* Manual Hours + Tarea Realizada (solo para tareas pendientes) */}
+                                {editingTask && !editingTask.date && (
+                                    <div className="p-4 bg-emerald-500/5 rounded-[1rem] border border-emerald-500/20 space-y-3">
+                                        <h4 className="text-xs font-black uppercase tracking-widest text-emerald-400">Registrar como Realizada</h4>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Ingresar horas de forma manual</label>
+                                            <input
+                                                type="number"
+                                                step="0.5"
+                                                min="0"
+                                                className="input w-full font-mono font-bold text-emerald-400 text-xl"
+                                                placeholder="Ej: 8.5"
+                                                value={manualHours}
+                                                onChange={(e) => setManualHours(e.target.value)}
+                                            />
+                                            <p className="text-[9px] text-slate-500 ml-1">Este valor reemplaza la suma de horas asignadas en el calendario.</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            disabled={!manualHours || parseFloat(manualHours) <= 0}
+                                            onClick={async () => {
+                                                if (!editingTask || !manualHours || parseFloat(manualHours) <= 0) return;
+                                                if (!confirm(`¿Marcar esta tarea como realizada con ${manualHours}h reales?`)) return;
+                                                try {
+                                                    await updateTask({
+                                                        ...editingTask,
+                                                        totalHours: parseFloat(manualHours),
+                                                        realHours: parseFloat(manualHours),
+                                                        completed: true
+                                                    });
+                                                    sileo.success({ title: 'Tarea marcada como realizada' });
+                                                    setIsTaskModalOpen(false);
+                                                    setEditingTask(null);
+                                                    setManualHours('');
+                                                } catch (err) {
+                                                    sileo.error({ title: 'Error al marcar la tarea' });
+                                                }
+                                            }}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black uppercase tracking-wider rounded-lg transition-all shadow-lg shadow-emerald-600/20 text-sm"
+                                        >
+                                            ✓ Tarea Realizada
+                                        </button>
+                                    </div>
+                                )}
+
                                 <div className="flex gap-4 pt-4 border-t border-white/5">
                                     <button
                                         type="button"
@@ -1469,6 +1519,7 @@ export const LonasVinilosPage: React.FC = () => {
                                             setIsTaskModalOpen(false);
                                             setSelectedContext(null);
                                             setEditingTask(null);
+                                            setManualHours('');
                                         }}
                                         className="btn btn-secondary flex-1 rounded-lg"
                                     >
