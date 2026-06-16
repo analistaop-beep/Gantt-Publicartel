@@ -1321,6 +1321,52 @@ export const LonasVinilosPage: React.FC = () => {
                                                             required
                                                         />
                                                     </div>
+
+                                                    {/* Manual Hours + Tarea Realizada (solo para tareas pendientes) */}
+                                                    {editingTask && (!editingTask.date || editingTask.date === '') && (
+                                                        <div className="mt-4 pt-4 border-t border-blue-500/10 space-y-2">
+                                                            <div className="space-y-1">
+                                                                <label className="text-[10px] uppercase font-bold text-emerald-500 ml-1">Ingresar horas manual</label>
+                                                                <div className="flex gap-2">
+                                                                    <input
+                                                                        type="number"
+                                                                        step="0.5"
+                                                                        min="0"
+                                                                        className="input w-1/3 font-mono font-bold text-emerald-400 text-sm py-2 px-3"
+                                                                        placeholder="Ej: 8.5"
+                                                                        value={manualHours}
+                                                                        onChange={(e) => setManualHours(e.target.value)}
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={!manualHours || parseFloat(manualHours) <= 0}
+                                                                        onClick={async () => {
+                                                                            if (!editingTask || !manualHours || parseFloat(manualHours) <= 0) return;
+                                                                            if (!confirm(`¿Marcar esta tarea como realizada con ${manualHours}h reales?`)) return;
+                                                                            try {
+                                                                                await updateTask({
+                                                                                    ...editingTask,
+                                                                                    totalHours: parseFloat(manualHours),
+                                                                                    realHours: parseFloat(manualHours),
+                                                                                    completed: true
+                                                                                });
+                                                                                sileo.success({ title: 'Tarea marcada como realizada' });
+                                                                                setIsTaskModalOpen(false);
+                                                                                setEditingTask(null);
+                                                                                setManualHours('');
+                                                                            } catch (err) {
+                                                                                sileo.error({ title: 'Error al marcar la tarea' });
+                                                                            }
+                                                                        }}
+                                                                        className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black uppercase tracking-wider rounded-lg transition-all shadow-lg shadow-emerald-600/20 text-[10px]"
+                                                                    >
+                                                                        ✓ Realizada
+                                                                    </button>
+                                                                </div>
+                                                                <p className="text-[9px] text-slate-500 ml-1 mt-1">Sustituye la suma de horas asignadas en el calendario.</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 <div className="p-4 bg-orange-500/5 rounded-[1rem] border border-orange-500/10 space-y-4">
@@ -1466,51 +1512,6 @@ export const LonasVinilosPage: React.FC = () => {
                                     </div>
 
                                 </div>
-
-                                {/* Manual Hours + Tarea Realizada (solo para tareas pendientes) */}
-                                {editingTask && !editingTask.date && (
-                                    <div className="p-4 bg-emerald-500/5 rounded-[1rem] border border-emerald-500/20 space-y-3">
-                                        <h4 className="text-xs font-black uppercase tracking-widest text-emerald-400">Registrar como Realizada</h4>
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Ingresar horas de forma manual</label>
-                                            <input
-                                                type="number"
-                                                step="0.5"
-                                                min="0"
-                                                className="input w-full font-mono font-bold text-emerald-400 text-xl"
-                                                placeholder="Ej: 8.5"
-                                                value={manualHours}
-                                                onChange={(e) => setManualHours(e.target.value)}
-                                            />
-                                            <p className="text-[9px] text-slate-500 ml-1">Este valor reemplaza la suma de horas asignadas en el calendario.</p>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            disabled={!manualHours || parseFloat(manualHours) <= 0}
-                                            onClick={async () => {
-                                                if (!editingTask || !manualHours || parseFloat(manualHours) <= 0) return;
-                                                if (!confirm(`¿Marcar esta tarea como realizada con ${manualHours}h reales?`)) return;
-                                                try {
-                                                    await updateTask({
-                                                        ...editingTask,
-                                                        totalHours: parseFloat(manualHours),
-                                                        realHours: parseFloat(manualHours),
-                                                        completed: true
-                                                    });
-                                                    sileo.success({ title: 'Tarea marcada como realizada' });
-                                                    setIsTaskModalOpen(false);
-                                                    setEditingTask(null);
-                                                    setManualHours('');
-                                                } catch (err) {
-                                                    sileo.error({ title: 'Error al marcar la tarea' });
-                                                }
-                                            }}
-                                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black uppercase tracking-wider rounded-lg transition-all shadow-lg shadow-emerald-600/20 text-sm"
-                                        >
-                                            ✓ Tarea Realizada
-                                        </button>
-                                    </div>
-                                )}
 
                                 <div className="flex gap-4 pt-4 border-t border-white/5">
                                     <button
