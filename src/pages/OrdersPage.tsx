@@ -134,7 +134,7 @@ export const OrdersPage: React.FC = () => {
     const [isPrintingAnalysis, setIsPrintingAnalysis] = useState(false);
     const categories = ['Proyectos', 'Outdoor', 'Digital', 'Mantenimiento', 'Otros'];
     const statuses = [
-        'En Proceso', 'En Diseño', 'Detenido Comercial', 'En Herrería',
+        'En Proceso', 'En Diseño', 'Detenido Comercial', 'Detenido SST', 'En Herrería',
         'En Pintura', 'En Corpóreas', 'En Impresión', 'Para Relevar',
         'Para Instalar', 'Para Facturar', 'Terminada', 'En muestras de color', 
         'Soldando lona'
@@ -163,7 +163,8 @@ export const OrdersPage: React.FC = () => {
         date: '',
         teamId: null as string | null,
         section: 'Instalaciones',
-        blockedBy: null as string | null
+        blockedBy: null as string | null,
+        completed: false
     });
 
     const isImageFile = (url: string) => {
@@ -507,7 +508,8 @@ export const OrdersPage: React.FC = () => {
             date: '',
             teamId: null,
             section: 'Instalaciones',
-            blockedBy: null
+            blockedBy: null,
+            completed: false
         });
         setTaskMemberSearch('');
         setIsTaskModalOpen(true);
@@ -527,7 +529,8 @@ export const OrdersPage: React.FC = () => {
             date: task.date || '',
             teamId: task.teamId || null,
             section: task.section || 'Instalaciones',
-            blockedBy: task.blockedBy || null
+            blockedBy: task.blockedBy || null,
+            completed: task.completed || false
         });
         setIsEditingTask(task.id);
         setTaskMemberSearch('');
@@ -652,7 +655,6 @@ export const OrdersPage: React.FC = () => {
                                     <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Estado</th>
                                     <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Vendedor</th>
                                     <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Precio Venta</th>
-                                    <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Archivos</th>
                                     <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Tareas</th>
                                     <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Acciones</th>
                                 </tr>
@@ -660,7 +662,7 @@ export const OrdersPage: React.FC = () => {
                             <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                                 {filteredOrders.length === 0 ? (
                                     <tr>
-                                        <td colSpan={9} className="px-8 py-20 text-center text-slate-500 italic">
+                                        <td colSpan={8} className="px-8 py-20 text-center text-slate-500 italic">
                                             {searchQuery ? 'No se encontraron órdenes que coincidan con la búsqueda.' : 'No hay órdenes registradas.'}
                                         </td>
                                     </tr>
@@ -696,7 +698,7 @@ export const OrdersPage: React.FC = () => {
                                                     if (s === 'Para Facturar') color = 'text-emerald-600 dark:text-emerald-400 bg-emerald-600/10 dark:bg-emerald-400/10 border-emerald-600/20 dark:border-emerald-400/20';
                                                     if (s === 'Terminada') color = 'text-slate-500 bg-white/5 border-white/10';
                                                     if (s === 'En Diseño') color = 'text-purple-400 bg-purple-400/10 border-purple-400/20';
-                                                    if (s === 'Detenido Comercial') color = 'text-red-400 bg-red-400/10 border-red-400/20';
+                                                    if (s === 'Detenido Comercial' || s === 'Detenido SST') color = 'text-red-400 bg-red-400/10 border-red-400/20';
                                                     if (s === 'En Herrería') color = 'text-orange-400 bg-orange-400/10 border-orange-400/20';
                                                     if (s === 'En Corpóreas') color = 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20';
                                                     if (s === 'En Impresión') color = 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
@@ -727,28 +729,7 @@ export const OrdersPage: React.FC = () => {
                                             <td className="px-8 py-4 font-mono text-emerald-600 dark:text-emerald-400 font-bold text-center">
                                                 {order.currency === 'USD' ? 'U$D' : '$U'} {(order.price || 0).toLocaleString('es-UY')}
                                             </td>
-                                            <td className="px-8 py-4">
-                                                <div className="flex -space-x-2">
-                                                    {(order.files || []).slice(0, 3).map((file: string, i: number) => (
-                                                        <a
-                                                            key={i}
-                                                            href={file}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-blue-600/20 hover:border-blue-500/50 transition-all cursor-pointer"
-                                                            title={file.split('/').pop()}
-                                                        >
-                                                            <FileText size={14} />
-                                                        </a>
-                                                    ))}
-                                                    {(order.files || []).length > 3 && (
-                                                        <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-slate-500">
-                                                            +{(order.files || []).length - 3}
-                                                        </div>
-                                                    )}
-                                                    {(order.files || []).length === 0 && <span className="text-[10px] text-slate-600 italic">Sin archivos</span>}
-                                                </div>
-                                            </td>
+
                                             <td className="px-8 py-4 text-center">
                                                 <div className="flex gap-1 justify-center flex-wrap max-w-[80px] mx-auto">
                                                     {(() => {
@@ -1702,6 +1683,17 @@ export const OrdersPage: React.FC = () => {
                                                                 setTaskFormData({ ...taskFormData, realHours: real });
                                                             }}
                                                         />
+                                                        <div className="pt-2">
+                                                            <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-white/5 transition-colors border border-white/5">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="w-4 h-4 rounded border-white/20 bg-white/5 text-emerald-500"
+                                                                    checked={taskFormData.completed}
+                                                                    onChange={(e) => setTaskFormData({ ...taskFormData, completed: e.target.checked })}
+                                                                />
+                                                                <span className="text-xs font-bold text-slate-300 uppercase">Marcar Tarea como Terminada</span>
+                                                            </label>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>

@@ -35,6 +35,8 @@ function App() {
   const subscribeToChanges = useStore(state => state.subscribeToChanges);
   const hasPendingChanges = useStore(state => state.hasPendingChanges);
   const saveAllChanges = useStore(state => state.saveAllChanges);
+  const isLoading = useStore(state => state.isLoading);
+  const isSaving = useStore(state => state.isSaving);
 
   useEffect(() => {
     initAuth();
@@ -103,6 +105,14 @@ function App() {
       <div className="fixed inset-0 pointer-events-none z-[9999]">
         <Toaster />
       </div>
+      {(isLoading || isSaving) && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] bg-gray-900/90 text-blue-400 px-4 py-2 rounded-full border border-blue-500/30 flex items-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.2)] backdrop-blur-md pointer-events-none">
+          <Loader2 className="animate-spin" size={16} />
+          <span className="text-xs font-bold uppercase tracking-wider">
+            {isSaving ? 'Guardando...' : 'Sincronizando...'}
+          </span>
+        </div>
+      )}
       {!user ? (
         <LoginPage />
       ) : (
