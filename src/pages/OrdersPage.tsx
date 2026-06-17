@@ -486,9 +486,10 @@ export const OrdersPage: React.FC = () => {
     }, [tasks, herreriaTasks, corporeasTasks, lonasTasks, pinturaTasks]);
 
     const linkedTasks = React.useMemo(() => {
-        if (!viewingOrder) return [];
-        return allTasks.filter(t => t.opNumber?.toString().trim() === viewingOrder.opNumber?.toString().trim());
-    }, [allTasks, viewingOrder]);
+        const opNum = viewingOrder?.opNumber || taskFormData.opNumber;
+        if (!opNum) return [];
+        return allTasks.filter(t => t.opNumber?.toString().trim() === opNum.toString().trim());
+    }, [allTasks, viewingOrder, taskFormData.opNumber]);
 
     const handleOpenRegisterTask = () => {
         if (!viewingOrder) return;
