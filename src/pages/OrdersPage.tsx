@@ -652,13 +652,14 @@ export const OrdersPage: React.FC = () => {
                                     <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Vendedor</th>
                                     <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Precio Venta</th>
                                     <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Archivos</th>
+                                    <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Tareas</th>
                                     <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                                 {filteredOrders.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="px-8 py-20 text-center text-slate-500 italic">
+                                        <td colSpan={9} className="px-8 py-20 text-center text-slate-500 italic">
                                             {searchQuery ? 'No se encontraron órdenes que coincidan con la búsqueda.' : 'No hay órdenes registradas.'}
                                         </td>
                                     </tr>
@@ -675,7 +676,7 @@ export const OrdersPage: React.FC = () => {
                                                 >
                                                     <span className="font-bold text-white text-sm group-hover/client:text-blue-400 transition-colors underline decoration-blue-500/30 underline-offset-4">{order.client}</span>
                                                     {order.subject && (
-                                                        <span className="text-[10px] text-slate-500 truncate max-w-[200px]">{order.subject}</span>
+                                                        <span className="text-[10px] text-white truncate max-w-[200px]">{order.subject}</span>
                                                     )}
                                                     <span className="text-[10px] text-slate-500 truncate max-w-[200px]">{order.address || 'Sin dirección'}</span>
                                                 </button>
@@ -691,7 +692,7 @@ export const OrdersPage: React.FC = () => {
                                                     let color = 'text-slate-400 bg-white/5 border-white/10';
                                                     if (s === 'En Pintura') color = 'text-pink-400 bg-pink-400/10 border-pink-400/20';
                                                     if (s === 'En Proceso') color = 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-                                                    if (s === 'Para Facturar') color = 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+                                                    if (s === 'Para Facturar') color = 'text-emerald-600 dark:text-emerald-400 bg-emerald-600/10 dark:bg-emerald-400/10 border-emerald-600/20 dark:border-emerald-400/20';
                                                     if (s === 'Terminada') color = 'text-slate-500 bg-white/5 border-white/10';
                                                     if (s === 'En Diseño') color = 'text-purple-400 bg-purple-400/10 border-purple-400/20';
                                                     if (s === 'Detenido Comercial') color = 'text-red-400 bg-red-400/10 border-red-400/20';
@@ -699,7 +700,7 @@ export const OrdersPage: React.FC = () => {
                                                     if (s === 'En Corpóreas') color = 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20';
                                                     if (s === 'En Impresión') color = 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
                                                     if (s === 'Para Relevar') color = 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
-                                                    if (s === 'Para Instalar') color = 'text-lime-400 bg-lime-400/10 border-lime-400/20';
+                                                    if (s === 'Para Instalar') color = 'text-emerald-600 dark:text-emerald-400 bg-emerald-600/10 dark:bg-emerald-400/10 border-emerald-600/20 dark:border-emerald-400/20';
                                                     if (s === 'En muestras de color') color = 'text-amber-400 bg-amber-400/10 border-amber-400/20';
                                                     if (s === 'Soldando lona') color = 'text-slate-300 bg-slate-400/10 border-slate-400/20';
 
@@ -722,7 +723,7 @@ export const OrdersPage: React.FC = () => {
                                             <td className="px-8 py-4 text-slate-300 text-sm">
                                                 {order.seller}
                                             </td>
-                                            <td className="px-8 py-4 font-mono text-emerald-400 font-bold text-center">
+                                            <td className="px-8 py-4 font-mono text-emerald-600 dark:text-emerald-400 font-bold text-center">
                                                 {order.currency === 'USD' ? 'U$D' : '$U'} {(order.price || 0).toLocaleString('es-UY')}
                                             </td>
                                             <td className="px-8 py-4">
@@ -745,6 +746,40 @@ export const OrdersPage: React.FC = () => {
                                                         </div>
                                                     )}
                                                     {(order.files || []).length === 0 && <span className="text-[10px] text-slate-600 italic">Sin archivos</span>}
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-4 text-center">
+                                                <div className="flex gap-1 justify-center flex-wrap max-w-[80px] mx-auto">
+                                                    {(() => {
+                                                        const orderTasks = allTasks.filter(t => t.opNumber?.toString().trim() === order.opNumber?.toString().trim());
+                                                        if (orderTasks.length === 0) return <span className="text-[10px] text-slate-600 italic"></span>;
+                                                        
+                                                        return orderTasks.map((task, idx) => {
+                                                            const section = task.section || 'Instalaciones';
+                                                            let letter = section.charAt(0).toUpperCase();
+                                                            let colorClass = 'bg-slate-400/10 text-slate-400 border-slate-400/20 hover:bg-slate-400/20';
+                                                            
+                                                            if (section === 'Instalaciones') { letter = 'I'; colorClass = 'bg-emerald-600/10 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 border-emerald-600/20 dark:border-emerald-400/20 hover:bg-emerald-600/20 dark:hover:bg-emerald-400/20'; }
+                                                            else if (section === 'Herrería') { letter = 'H'; colorClass = 'bg-orange-400/10 text-orange-400 border-orange-400/20 hover:bg-orange-400/20'; }
+                                                            else if (section === 'Corpóreas') { letter = 'C'; colorClass = 'bg-indigo-400/10 text-indigo-400 border-indigo-400/20 hover:bg-indigo-400/20'; }
+                                                            else if (section === 'Lonas') { letter = 'L'; colorClass = 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20 hover:bg-cyan-400/20'; }
+                                                            else if (section === 'Pintura') { letter = 'P'; colorClass = 'bg-pink-400/10 text-pink-400 border-pink-400/20 hover:bg-pink-400/20'; }
+                                                            
+                                                            const isCompleted = task.completed;
+                                                            const stateClass = isCompleted ? 'opacity-40 grayscale hover:opacity-60 hover:grayscale-[50%]' : '';
+                                                            
+                                                            return (
+                                                                <button
+                                                                    key={task.id || idx}
+                                                                    onClick={() => handleEditTask(task)}
+                                                                    className={`w-6 h-6 rounded flex items-center justify-center text-[11px] font-black border transition-all cursor-pointer ${colorClass} ${stateClass}`}
+                                                                    title={`${section}: ${task.name}${isCompleted ? ' (Terminada)' : ''}`}
+                                                                >
+                                                                    {letter}
+                                                                </button>
+                                                            );
+                                                        });
+                                                    })()}
                                                 </div>
                                             </td>
                                             <td className="px-8 py-4 text-right">
