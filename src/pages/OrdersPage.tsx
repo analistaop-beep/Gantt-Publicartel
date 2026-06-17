@@ -220,6 +220,17 @@ export const OrdersPage: React.FC = () => {
         const matchesCategory = categoryFilter.includes(order.category || 'Proyectos');
         
         return matchesSearch && matchesStatus && matchesSeller && matchesCategory;
+    }).sort((a, b) => {
+        const isATerminada = a.status === 'Terminada';
+        const isBTerminada = b.status === 'Terminada';
+
+        if (isATerminada && !isBTerminada) return 1;
+        if (!isATerminada && isBTerminada) return -1;
+
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+        return dateB - dateA;
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
