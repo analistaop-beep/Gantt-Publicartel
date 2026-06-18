@@ -1532,38 +1532,38 @@ export const OrdersPage: React.FC = () => {
             {/* Task Creation Modal */}
             {isTaskModalOpen && (
                 <div className="fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center z-[60] p-4">
-                    <div className="bg-[#0f172a] w-full max-w-4xl shadow-2xl border border-white/10 rounded-2xl h-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div className="bg-[#0f172a] w-full max-w-4xl shadow-2xl border border-white/10 rounded-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         {/* Header */}
-                        <div className="flex items-center justify-between px-8 py-5 border-b border-white/10 flex-shrink-0 bg-[#0f172a]/80 backdrop-blur-sm">
+                        <div className="flex items-center justify-between px-6 py-3 border-b border-white/10 flex-shrink-0 bg-[#0f172a]/80 backdrop-blur-sm">
                             <div>
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-1 block">
+                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-400 mb-0.5 block">
                                     {isEditingTask ? 'EDITAR TAREA' : 'REGISTRAR TAREA'}
                                 </span>
-                                <h3 className="text-2xl font-black text-white flex items-center gap-2">
+                                <h3 className="text-xl font-black text-white flex items-center gap-2">
                                     OP <span className="text-blue-400">#{taskFormData.opNumber}</span>
                                 </h3>
                             </div>
                             <button
                                 onClick={() => setIsTaskModalOpen(false)}
-                                className="p-2.5 hover:bg-white/8 transition-colors text-slate-400 hover:text-white rounded-xl"
+                                className="p-2 hover:bg-white/8 transition-colors text-slate-400 hover:text-white rounded-xl"
                             >
-                                <X size={20} />
+                                <X size={18} />
                             </button>
                         </div>
 
                         {/* Form */}
-                        <form onSubmit={handleTaskSubmit} className="flex-1 min-h-0 flex flex-col">
-                            <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
-                                <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
+                        <form onSubmit={handleTaskSubmit} className="flex flex-col">
+                            <div className="p-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-4">
                                     
                                     {/* Left: General Task Details */}
-                                    <div className="space-y-6">
-                                        <div className="bg-white/[0.015] border border-white/5 p-6 rounded-xl space-y-6">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="space-y-1">
-                                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">SECCIÓN</label>
+                                    <div className="space-y-3">
+                                        <div className="bg-white/[0.015] border border-white/5 p-3 rounded-xl space-y-2">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div className="space-y-0.5">
+                                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">SECCIÓN</label>
                                                     <select
-                                                        className="input w-full"
+                                                        className="input w-full text-sm py-1.5"
                                                         value={taskFormData.section}
                                                         onChange={(e) => setTaskFormData({ ...taskFormData, section: e.target.value })}
                                                         required
@@ -1575,22 +1575,22 @@ export const OrdersPage: React.FC = () => {
                                                         <option value="Pintura">Pintura</option>
                                                     </select>
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">FECHA</label>
+                                                <div className="space-y-0.5">
+                                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">FECHA</label>
                                                     <input
                                                         type="date"
-                                                        className="input w-full font-bold text-slate-200"
+                                                        className="input w-full text-sm py-1.5 font-bold text-slate-200"
                                                         value={taskFormData.date}
                                                         onChange={(e) => setTaskFormData({ ...taskFormData, date: e.target.value })}
                                                     />
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">DESCRIPCIÓN / TAREA</label>
+                                            <div className="space-y-0.5">
+                                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">DESCRIPCIÓN / TAREA</label>
                                                 <input
                                                     type="text"
-                                                    className="input w-full"
+                                                    className="input w-full text-sm py-1.5"
                                                     placeholder="Ej: Colocar vinilo impreso..."
                                                     value={taskFormData.name}
                                                     onChange={(e) => setTaskFormData({ ...taskFormData, name: e.target.value })}
@@ -1598,22 +1598,22 @@ export const OrdersPage: React.FC = () => {
                                                 />
                                             </div>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="space-y-1">
-                                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">CLIENTE</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div className="space-y-0.5">
+                                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">CLIENTE</label>
                                                     <input
                                                         type="text"
-                                                        className="input w-full"
+                                                        className="input w-full text-sm py-1.5"
                                                         value={taskFormData.client}
                                                         onChange={(e) => setTaskFormData({ ...taskFormData, client: e.target.value })}
                                                         required
                                                     />
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">DIRECCIÓN</label>
+                                                <div className="space-y-0.5">
+                                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">DIRECCIÓN</label>
                                                     <input
                                                         type="text"
-                                                        className="input w-full"
+                                                        className="input w-full text-sm py-1.5"
                                                         value={taskFormData.address}
                                                         onChange={(e) => setTaskFormData({ ...taskFormData, address: e.target.value })}
                                                         required
@@ -1621,10 +1621,10 @@ export const OrdersPage: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">Bloqueada por (Tarea previa)</label>
+                                            <div className="space-y-0.5">
+                                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">BLOQUEADA POR (TAREA PREVIA)</label>
                                                 <select
-                                                    className="input w-full text-xs"
+                                                    className="input w-full text-xs py-1.5"
                                                     value={taskFormData.blockedBy || ''}
                                                     onChange={(e) => setTaskFormData({ ...taskFormData, blockedBy: e.target.value || null })}
                                                 >
@@ -1648,15 +1648,15 @@ export const OrdersPage: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-2 gap-3">
                                             {/* Hours */}
-                                            <div className="bg-blue-500/[0.02] border border-blue-500/10 p-5 rounded-xl space-y-4">
-                                                <div className="space-y-3">
-                                                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 block">TOTAL HORAS PREVISTAS</label>
+                                            <div className="bg-blue-500/[0.02] border border-blue-500/10 p-3 rounded-xl space-y-2">
+                                                <div className="space-y-0.5">
+                                                    <label className="text-[9px] font-black uppercase tracking-widest text-blue-400 block">HORAS PREVISTAS</label>
                                                     <input
                                                         type="number"
                                                         step="0.5"
-                                                        className="input w-full font-mono font-bold text-blue-400 text-xl"
+                                                        className="input w-full font-mono font-bold text-blue-400 text-lg py-1.5"
                                                         value={taskFormData.totalHours}
                                                         onChange={(e) => {
                                                             const total = parseFloat(e.target.value) || 0;
@@ -1666,38 +1666,38 @@ export const OrdersPage: React.FC = () => {
                                                     />
                                                 </div>
                                                 {isEditingTask && (
-                                                    <div className="space-y-3 pt-3 border-t border-blue-500/10">
-                                                        <label className="text-[10px] font-black uppercase tracking-widest text-amber-400 block">HORAS FINALES (MANUALES)</label>
-                                                        <input
-                                                            type="number"
-                                                            step="0.5"
-                                                            className="input w-full font-mono font-bold text-amber-400 text-xl"
-                                                            value={taskFormData.realHours}
-                                                            onChange={(e) => {
-                                                                const real = parseFloat(e.target.value) || 0;
-                                                                setTaskFormData({ ...taskFormData, realHours: real });
-                                                            }}
-                                                        />
-                                                        <div className="pt-2">
-                                                            <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-white/5 transition-colors border border-white/5">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    className="w-4 h-4 rounded border-white/20 bg-white/5 text-emerald-500"
-                                                                    checked={taskFormData.completed}
-                                                                    onChange={(e) => setTaskFormData({ ...taskFormData, completed: e.target.checked })}
-                                                                />
-                                                                <span className="text-xs font-bold text-slate-300 uppercase">Marcar Tarea como Terminada</span>
-                                                            </label>
+                                                    <div className="space-y-2 pt-2 border-t border-blue-500/10">
+                                                        <div className="space-y-0.5">
+                                                            <label className="text-[9px] font-black uppercase tracking-widest text-amber-400 block">HORAS FINALES</label>
+                                                            <input
+                                                                type="number"
+                                                                step="0.5"
+                                                                className="input w-full font-mono font-bold text-amber-400 text-lg py-1.5"
+                                                                value={taskFormData.realHours}
+                                                                onChange={(e) => {
+                                                                    const real = parseFloat(e.target.value) || 0;
+                                                                    setTaskFormData({ ...taskFormData, realHours: real });
+                                                                }}
+                                                            />
                                                         </div>
+                                                        <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded hover:bg-white/5 transition-colors border border-white/5">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 text-emerald-500"
+                                                                checked={taskFormData.completed}
+                                                                onChange={(e) => setTaskFormData({ ...taskFormData, completed: e.target.checked })}
+                                                            />
+                                                            <span className="text-[10px] font-bold text-slate-300 uppercase">Terminada</span>
+                                                        </label>
                                                     </div>
                                                 )}
                                             </div>
 
                                             {/* Vehicles */}
-                                            <div className="bg-orange-500/[0.02] border border-orange-500/10 p-5 rounded-xl space-y-3">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-orange-400 block">VEHÍCULOS ASIGNADOS</label>
+                                            <div className="bg-orange-500/[0.02] border border-orange-500/10 p-3 rounded-xl space-y-2">
+                                                <label className="text-[9px] font-black uppercase tracking-widest text-orange-400 block">VEHÍCULOS ASIGNADOS</label>
                                                 <select
-                                                    className="input w-full text-xs"
+                                                    className="input w-full text-xs py-1.5"
                                                     value=""
                                                     onChange={(e) => {
                                                         const vehicleId = e.target.value;
@@ -1706,19 +1706,19 @@ export const OrdersPage: React.FC = () => {
                                                         }
                                                     }}
                                                 >
-                                                    <option value="">SELECCIONAR VEHÍCULO...</option>
+                                                    <option value="">SELECCIONAR...</option>
                                                     {(vehicles || []).map(v => (
                                                         <option key={v.id} value={v.id} disabled={taskFormData.vehicles.includes(v.id)}>
                                                             {v.name}
                                                         </option>
                                                     ))}
                                                 </select>
-                                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                                <div className="flex flex-wrap gap-1">
                                                     {taskFormData.vehicles.map(vId => {
                                                         const vehicle = vehicles.find(v => v.id === vId);
                                                         if (!vehicle) return null;
                                                         return (
-                                                            <span key={vId} className="flex items-center gap-1.5 px-2 py-0.5 bg-white/5 border border-white/10 rounded text-[9px] font-black text-slate-300 uppercase">
+                                                            <span key={vId} className="flex items-center gap-1 px-2 py-0.5 bg-white/5 border border-white/10 rounded text-[9px] font-black text-slate-300 uppercase">
                                                                 {vehicle.name}
                                                                 <button
                                                                     type="button"
@@ -1736,9 +1736,9 @@ export const OrdersPage: React.FC = () => {
                                     </div>
 
                                     {/* Right: Personal */}
-                                    <div className="bg-white/[0.015] border border-white/5 p-5 rounded-xl flex flex-col min-h-[350px]">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-purple-400 block mb-3">PERSONAL ASIGNADO</label>
-                                        <div className="relative mb-3 flex-shrink-0">
+                                    <div className="bg-white/[0.015] border border-white/5 p-3 rounded-xl flex flex-col">
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-purple-400 block mb-2">PERSONAL ASIGNADO</label>
+                                        <div className="relative mb-2 flex-shrink-0">
                                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={12} />
                                             <input
                                                 type="text"
@@ -1749,18 +1749,19 @@ export const OrdersPage: React.FC = () => {
                                             />
                                         </div>
                                         
-                                        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-1 bg-slate-950/40 p-2 border border-white/5 rounded-lg">
+                                        <div className="overflow-y-auto custom-scrollbar bg-slate-950/40 p-1.5 border border-white/5 rounded-lg max-h-[340px]">
+                                            <div className="grid grid-cols-2 gap-x-1 gap-y-0">
                                             {(members || [])
                                                 .filter(m => m.sector === taskFormData.section && m.name.toLowerCase().includes(taskMemberSearch.toLowerCase()))
                                                 .map(m => {
                                                     const assignedMember = taskFormData.members.find(am => am.id === m.id);
                                                     const isChecked = !!assignedMember;
                                                     return (
-                                                        <div key={m.id} className="flex items-center justify-between gap-2 p-2 border border-transparent hover:border-white/5 hover:bg-white/5 transition-all rounded-lg">
-                                                            <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                                                        <div key={m.id} className="flex items-center justify-between gap-1 p-1.5 border border-transparent hover:border-white/5 hover:bg-white/5 transition-all rounded-lg">
+                                                            <label className="flex items-center gap-1.5 cursor-pointer flex-1 min-w-0">
                                                                 <input
                                                                     type="checkbox"
-                                                                    className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 text-blue-500"
+                                                                    className="w-3 h-3 rounded border-white/20 bg-white/5 text-blue-500 flex-shrink-0"
                                                                     checked={isChecked}
                                                                     onChange={(e) => {
                                                                         const newMembers = e.target.checked
@@ -1769,13 +1770,13 @@ export const OrdersPage: React.FC = () => {
                                                                         setTaskFormData({ ...taskFormData, members: newMembers });
                                                                     }}
                                                                 />
-                                                                <span className="text-xs font-black text-slate-300 uppercase truncate">{m.name}</span>
+                                                                <span className="text-[10px] font-medium text-slate-300 uppercase truncate">{m.name}</span>
                                                             </label>
                                                             {isChecked && (
                                                                 <input
                                                                     type="number"
                                                                     step="0.5"
-                                                                    className="w-12 h-6 bg-blue-500/10 border border-blue-500/30 rounded text-[10px] text-center font-bold text-blue-400 focus:outline-none"
+                                                                    className="w-9 h-5 bg-blue-500/10 border border-blue-500/30 rounded text-[9px] text-center font-bold text-blue-400 focus:outline-none flex-shrink-0"
                                                                     value={assignedMember.hours}
                                                                     onChange={(e) => {
                                                                         const hours = parseFloat(e.target.value) || 0;
@@ -1789,8 +1790,9 @@ export const OrdersPage: React.FC = () => {
                                                         </div>
                                                     );
                                                 })}
+                                            </div>
                                             {!(members || []).some(m => m.sector === taskFormData.section) && (
-                                                <span className="text-[10px] text-slate-500 italic block text-center pt-8">Sin integrantes en esta sección</span>
+                                                <span className="text-[10px] text-slate-500 italic block text-center py-6">Sin integrantes en esta sección</span>
                                             )}
                                         </div>
                                     </div>
@@ -1798,20 +1800,20 @@ export const OrdersPage: React.FC = () => {
                             </div>
 
                             {/* Footer */}
-                            <div className="px-8 py-5 border-t border-white/10 flex-shrink-0 flex justify-end gap-3 bg-[#0f172a]/80">
+                            <div className="px-4 py-3 border-t border-white/10 flex-shrink-0 flex justify-end gap-3 bg-[#0f172a]/80">
                                 <button
                                     type="button"
                                     onClick={() => {
                                         setIsTaskModalOpen(false);
                                         setIsEditingTask(null);
                                     }}
-                                    className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white font-bold transition-all border border-white/10 rounded-xl text-sm uppercase tracking-wider"
+                                    className="px-5 py-2 bg-white/5 hover:bg-white/10 text-white font-bold transition-all border border-white/10 rounded-xl text-xs uppercase tracking-wider"
                                 >
                                     CANCELAR
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg shadow-blue-600/20 rounded-xl text-sm uppercase tracking-wider"
+                                    className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg shadow-blue-600/20 rounded-xl text-xs uppercase tracking-wider"
                                 >
                                     {isEditingTask ? 'GUARDAR CAMBIOS' : 'REGISTRAR TAREA'}
                                 </button>

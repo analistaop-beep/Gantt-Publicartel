@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../utils/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
-import type { ProductionOrder } from '../types';
+import type { ProductionOrder, Notification } from '../types';
 
 // Track which tasks have been locally modified but not yet saved to the database
 interface PendingChanges {
@@ -27,6 +27,9 @@ interface AppState {
     pinturaTasks: any[];
     reminders: any[];
     productionOrders: any[];
+    notifications: Notification[];
+    readNotifications: string[];
+    notificationPreferences: { notifyNewOP: boolean; pushEnabled: boolean };
     isLoading: boolean;
     isSaving: boolean;
     error: string | null;
@@ -60,6 +63,11 @@ interface AppState {
     
     // Files
     uploadFile: (file: File | Blob, fileName: string) => Promise<string>;
+
+    // Notifications
+    markNotificationAsRead: (id: string) => void;
+    markAllNotificationsAsRead: () => void;
+    updateNotificationPreferences: (prefs: { notifyNewOP: boolean; pushEnabled: boolean }) => void;
 
     // Teams
     addTeam: (team: { name: string }) => Promise<void>;
@@ -129,6 +137,9 @@ export const useStore = create<AppState>((set, get) => ({
     pinturaTasks: [],
     reminders: [],
     productionOrders: [],
+    notifications: [],
+    readNotifications: JSON.parse(localStorage.getItem('readNotifications') || '[]'),
+    notificationPreferences: JSON.parse(localStorage.getItem('notificationPreferences') || '{"notifyNewOP":true, "pushEnabled":false}'),
     isLoading: false,
     isSaving: false,
     error: null,
@@ -161,7 +172,8 @@ export const useStore = create<AppState>((set, get) => ({
                 { data: teams },
                 { data: allTasks },
                 { data: reminders },
-                { data: productionOrders }
+                { data: productionOrders },
+                { data: notifications }
             ] = await Promise.all([
                 supabase.from('members').select('*').order('name'),
                 supabase.from('vehicles').select('*').order('name'),
@@ -169,6 +181,7 @@ export const useStore = create<AppState>((set, get) => ({
                 supabase.from('tasks').select('*, task_members(memberId, hours), task_vehicles(vehicleId)').order('date'),
                 supabase.from('reminders').select('*').order('opNumber'),
                 supabase.from('production_orders').select('*').order('createdAt', { ascending: false }),
+                supabase.from('notifications').select('*').order('createdAt', { ascending: false }).limit(50),
             ]);
 
             const mappedTasks = (allTasks || []).map(task => ({
@@ -193,6 +206,7 @@ export const useStore = create<AppState>((set, get) => ({
                     files: typeof o.files === 'string' ? JSON.parse(o.files) : (o.files || []),
                     comments: typeof o.comments === 'string' ? JSON.parse(o.comments) : (o.comments || [])
                 })),
+                notifications: notifications || [],
                 isLoading: false
             });
         } catch (err: any) {
@@ -300,6 +314,14 @@ export const useStore = create<AppState>((set, get) => ({
             comments: JSON.stringify(order.comments || [])
         }]);
         if (error) throw error;
+        
+        // Disparar notificación
+        await supabase.from('notifications').insert([{
+            title: `Nueva OP #${order.opNumber}`,
+            message: `Se ha creado una nueva Orden de Producción para el cliente ${order.client} - ${order.category}`,
+            type: 'new_op'
+        }]);
+
         await get().fetchData();
     },
     updateProductionOrder: async (order) => {
@@ -358,6 +380,30 @@ export const useStore = create<AppState>((set, get) => ({
             .getPublicUrl(path);
 
         return data.publicUrl;
+    },
+
+    markNotificationAsRead: (id) => {
+        set((state) => {
+            const updatedReads = [...state.readNotifications, id];
+            localStorage.setItem('readNotifications', JSON.stringify(updatedReads));
+            return { readNotifications: updatedReads };
+        });
+    },
+
+    markAllNotificationsAsRead: () => {
+        set((state) => {
+            const allIds = state.notifications.map(n => n.id);
+            const updatedReads = Array.from(new Set([...state.readNotifications, ...allIds]));
+            localStorage.setItem('readNotifications', JSON.stringify(updatedReads));
+            return { readNotifications: updatedReads };
+        });
+    },
+
+    updateNotificationPreferences: (prefs) => {
+        set(() => {
+            localStorage.setItem('notificationPreferences', JSON.stringify(prefs));
+            return { notificationPreferences: prefs };
+        });
     },
 
     addTask: async (task) => {

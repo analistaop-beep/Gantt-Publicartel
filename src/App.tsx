@@ -1,8 +1,8 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { Toaster } from 'sileo';
 import { Sidebar } from './components/Sidebar';
-import { MembersSidebar } from './components/MembersSidebar';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { NotificationsSidebar } from './components/NotificationsSidebar';
+import { ChevronLeft, ChevronRight, Loader2, Bell } from 'lucide-react';
 import { LoginPage } from './pages/LoginPage';
 import { useStore } from './store/useStore';
 
@@ -37,6 +37,10 @@ function App() {
   const saveAllChanges = useStore(state => state.saveAllChanges);
   const isLoading = useStore(state => state.isLoading);
   const isSaving = useStore(state => state.isSaving);
+  
+  const notifications = useStore(state => state.notifications);
+  const readNotifications = useStore(state => state.readNotifications);
+  const unreadCount = notifications.filter(n => !readNotifications.includes(n.id)).length;
 
   useEffect(() => {
     initAuth();
@@ -152,9 +156,9 @@ function App() {
         </div>
       </main>
 
-      {/* Right Sidebar */}
+      {/* Right Sidebar (Notifications) */}
       <div className={`transition-all duration-300 ease-in-out fixed lg:relative inset-y-0 right-0 ${isRightSidebarOpen ? 'w-64 translate-x-0' : 'w-64 translate-x-full lg:w-0 lg:translate-x-0'} overflow-hidden h-full flex-shrink-0 z-[60] lg:z-40 shadow-2xl shadow-black/50`}>
-        <MembersSidebar />
+        <NotificationsSidebar />
       </div>
 
       {/* Backdrop for Right Sidebar on Mobile */}
@@ -168,14 +172,18 @@ function App() {
       {/* Elegant Right Sidebar Handle */}
       <button
         onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
-        className={`absolute top-1/2 -translate-y-1/2 z-[45] w-5 h-16 glass rounded-l-lg border-r-0 flex items-center justify-center hover:bg-white/10 transition-all duration-300 group shadow-2xl backdrop-blur-2xl border border-white/10 ${isRightSidebarOpen ? 'right-64 hidden lg:flex' : 'right-0'}`}
-        title={isRightSidebarOpen ? "Ocultar Integrantes" : "Mostrar Integrantes"}
+        className={`absolute top-1/2 -translate-y-1/2 z-[45] w-6 h-20 glass rounded-l-lg border-r-0 flex flex-col items-center justify-center gap-2 hover:bg-white/10 transition-all duration-300 group shadow-2xl backdrop-blur-2xl border border-white/10 ${isRightSidebarOpen ? 'right-64 hidden lg:flex' : 'right-0'}`}
+        title={isRightSidebarOpen ? "Ocultar Notificaciones" : "Mostrar Notificaciones"}
       >
+        {unreadCount > 0 && !isRightSidebarOpen && (
+          <div className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-slate-900 animate-pulse shadow-lg shadow-red-500/50" />
+        )}
         {isRightSidebarOpen ? (
           <ChevronRight size={14} className="text-slate-500 group-hover:text-white transition-colors" />
         ) : (
-          <ChevronLeft size={14} className="text-blue-400 group-hover:text-blue-300 transition-colors" />
+          <ChevronLeft size={14} className={unreadCount > 0 ? "text-red-400" : "text-blue-400 group-hover:text-blue-300 transition-colors"} />
         )}
+        <Bell size={12} className={`opacity-50 ${unreadCount > 0 && !isRightSidebarOpen ? 'text-red-400 animate-[wiggle_1s_ease-in-out_infinite] opacity-100' : 'text-slate-500'}`} />
       </button>
     </div>
       )}
