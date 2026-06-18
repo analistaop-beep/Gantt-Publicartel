@@ -1169,90 +1169,85 @@ export const OrdersPage: React.FC = () => {
                     <div className="bg-white dark:bg-[#0f172a] w-full max-w-[98vw] 2xl:max-w-[1800px] shadow-2xl border border-slate-200 dark:border-white/10 rounded-2xl h-full max-h-[96vh] flex flex-col overflow-hidden relative">
 
                         {/* Header */}
-                        <div className="flex items-center justify-between px-10 py-7 border-b border-slate-200 dark:border-white/8 flex-shrink-0 bg-slate-50/80 dark:bg-[#0f172a]/80 backdrop-blur-sm">
-                            <div>
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 mb-1 block">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/8 flex-shrink-0 bg-slate-50/80 dark:bg-[#0f172a]/80 backdrop-blur-sm">
+                            <div className="flex-1">
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 mb-0.5 block">
                                     ORDEN DE PRODUCCIÓN
                                 </span>
-                                <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+                                <h3 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
                                     OP <span className="text-blue-600 dark:text-blue-400">#{viewingOrder.opNumber}</span>
                                 </h3>
                             </div>
-                            <button
-                                onClick={() => setViewingOrder(null)}
-                                className="p-2.5 hover:bg-slate-100 dark:hover:bg-white/8 transition-colors text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl"
-                            >
-                                <X size={22} />
-                            </button>
+                            
+                            <div className="flex items-center gap-6">
+                                <div className="text-right hidden sm:block">
+                                    <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-0.5">CLIENTE</label>
+                                    <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white leading-none">{viewingOrder.client}</span>
+                                </div>
+                                <div className="text-right hidden sm:block">
+                                    <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-1">CATEGORÍA</label>
+                                    <span className="text-slate-700 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider block bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded-sm border border-slate-200 dark:border-white/5 w-fit ml-auto">
+                                        {viewingOrder.category}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => setViewingOrder(null)}
+                                    className="p-2 hover:bg-slate-200 dark:hover:bg-white/8 transition-colors text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl ml-2"
+                                >
+                                    <X size={22} />
+                                </button>
+                            </div>
                         </div>
 
-                        {/* Info Grid (original style) */}
-                        <div className="px-10 py-8 border-b border-slate-100 dark:border-white/5 flex-shrink-0 bg-sky-50/30 dark:bg-white/[0.025]">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                                <div className="space-y-8">
-                                    <div>
-                                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">CLIENTE</label>
-                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{viewingOrder.client}</p>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">VENDEDOR</label>
-                                        <p className="text-lg text-slate-700 dark:text-slate-300 font-medium">{viewingOrder.seller}</p>
-                                    </div>
-                                    {viewingOrder.subject && (
-                                        <div>
-                                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">ASUNTO</label>
-                                            <p className="text-base text-slate-700 dark:text-slate-300 italic">{viewingOrder.subject}</p>
-                                        </div>
-                                    )}
+                        {/* Info Grid (compressed style) */}
+                        <div className="px-6 py-4 border-b border-slate-100 dark:border-white/5 flex-shrink-0 bg-sky-50/30 dark:bg-white/[0.015]">
+                            <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+                                <div>
+                                    <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-0.5">DIRECCIÓN</label>
+                                    <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{viewingOrder.address || 'No especificada'}</p>
                                 </div>
-
-                                <div className="space-y-8">
+                                <div>
+                                    <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-0.5">ESTADO</label>
+                                    {(() => {
+                                        const s = viewingOrder.status === 'Gestión de Acopio' ? 'En Proceso' : (viewingOrder.status || '');
+                                        let color = 'text-slate-600 bg-slate-100 border-slate-200 dark:text-slate-400 dark:bg-white/5 dark:border-white/10';
+                                        if (s === 'En Pintura') color = 'text-pink-700 bg-pink-500/10 border-pink-500/20 dark:text-pink-400 dark:bg-pink-400/10 dark:border-pink-400/20';
+                                        if (s === 'En Proceso') color = 'text-blue-700 bg-blue-500/10 border-blue-500/20 dark:text-blue-400 dark:bg-blue-400/10 dark:border-blue-400/20';
+                                        if (s === 'Para Facturar') color = 'text-emerald-700 bg-emerald-500/10 border-emerald-500/20 dark:text-emerald-400 dark:bg-emerald-400/10 dark:border-emerald-400/20';
+                                        if (s === 'Terminada') color = 'text-slate-500 bg-slate-100 border-slate-200 dark:text-slate-500 dark:bg-white/5 dark:border-white/10';
+                                        if (s === 'En muestras de color') color = 'text-amber-700 bg-amber-500/10 border-amber-500/20 dark:text-amber-400 dark:bg-amber-400/10 dark:border-amber-400/20';
+                                        if (s === 'Soldando lona') color = 'text-slate-700 bg-slate-500/10 border-slate-500/20 dark:text-slate-400 dark:bg-slate-400/10 dark:border-slate-400/20';
+                                        return (
+                                            <span className={`text-[10px] font-bold uppercase tracking-wider block px-2 py-0.5 rounded-sm border w-fit ${color}`}>
+                                                {s}
+                                            </span>
+                                        );
+                                    })()}
+                                </div>
+                                <div>
+                                    <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-0.5">VENDEDOR</label>
+                                    <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{viewingOrder.seller}</p>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-0.5">PRECIO VENTA</label>
+                                    <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 leading-none">
+                                        {viewingOrder.currency === 'USD' ? 'U$D' : '$U'} {viewingOrder.price?.toLocaleString('es-UY')}
+                                    </p>
+                                </div>
+                                {viewingOrder.category === 'Outdoor' && viewingOrder.soporte && (
                                     <div>
-                                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">DIRECCIÓN</label>
-                                        <p className="text-lg text-slate-700 dark:text-slate-300">{viewingOrder.address || 'No especificada'}</p>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">PRECIO VENTA</label>
-                                        <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
-                                            {viewingOrder.currency === 'USD' ? 'U$D' : '$U'} {viewingOrder.price?.toLocaleString('es-UY')}
+                                        <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-0.5">SOPORTE</label>
+                                        <p className="text-sm font-mono font-bold text-slate-700 dark:text-slate-300">
+                                            {viewingOrder.soporte}
                                         </p>
                                     </div>
-                                </div>
-
-                                <div className="space-y-8">
-                                    <div>
-                                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">CATEGORÍA</label>
-                                        <span className="text-slate-700 dark:text-slate-400 text-xs font-bold uppercase tracking-wider block bg-slate-100 dark:bg-white/5 px-3 py-1 rounded-sm border border-slate-200 dark:border-white/5 w-fit">
-                                            {viewingOrder.category}
-                                        </span>
+                                )}
+                                {viewingOrder.subject && (
+                                    <div className="flex-1 min-w-[200px]">
+                                        <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-0.5">ASUNTO</label>
+                                        <p className="text-sm text-slate-700 dark:text-slate-300 italic truncate">{viewingOrder.subject}</p>
                                     </div>
-                                    {viewingOrder.category === 'Outdoor' && viewingOrder.soporte && (
-                                        <div>
-                                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">SOPORTE</label>
-                                            <p className="text-lg font-mono font-bold text-slate-700 dark:text-slate-300">
-                                                {viewingOrder.soporte}
-                                            </p>
-                                        </div>
-                                    )}
-                                    <div>
-                                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-1">ESTADO</label>
-                                        {(() => {
-                                            const s = viewingOrder.status === 'Gestión de Acopio' ? 'En Proceso' : (viewingOrder.status || '');
-                                            let color = 'text-slate-600 bg-slate-100 border-slate-200 dark:text-slate-400 dark:bg-white/5 dark:border-white/10';
-                                            if (s === 'En Pintura') color = 'text-pink-700 bg-pink-500/10 border-pink-500/20 dark:text-pink-400 dark:bg-pink-400/10 dark:border-pink-400/20';
-                                            if (s === 'En Proceso') color = 'text-blue-700 bg-blue-500/10 border-blue-500/20 dark:text-blue-400 dark:bg-blue-400/10 dark:border-blue-400/20';
-                                            if (s === 'Para Facturar') color = 'text-emerald-700 bg-emerald-500/10 border-emerald-500/20 dark:text-emerald-400 dark:bg-emerald-400/10 dark:border-emerald-400/20';
-                                            if (s === 'Terminada') color = 'text-slate-500 bg-slate-100 border-slate-200 dark:text-slate-500 dark:bg-white/5 dark:border-white/10';
-                                            if (s === 'En muestras de color') color = 'text-amber-700 bg-amber-500/10 border-amber-500/20 dark:text-amber-400 dark:bg-amber-400/10 dark:border-amber-400/20';
-                                            if (s === 'Soldando lona') color = 'text-slate-700 bg-slate-500/10 border-slate-500/20 dark:text-slate-400 dark:bg-slate-400/10 dark:border-slate-400/20';
-                                            return (
-                                                <span className={`text-xs font-bold uppercase tracking-wider block px-3 py-1 rounded-sm border w-fit ${color}`}>
-                                                    {s}
-                                                </span>
-                                            );
-                                        })()}
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         </div>
 
