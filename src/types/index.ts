@@ -1,3 +1,10 @@
+export interface Profile {
+    id: string;
+    email: string;
+    name: string;
+    created_at: string;
+}
+
 export interface Member {
     id: string;
     name: string;
@@ -48,9 +55,11 @@ export interface ProductionOrder {
     status: string;
     currency: 'UYU' | 'USD';
     files: string[]; // JSON string in DB, parsed to array in store
-    comments?: Array<{ text: string, date: string }>;
+    comments?: Array<{ text: string, date: string, author?: string }>;
     createdAt?: string;
+    updatedAt?: string;
     soporte?: string;
+    followers?: string[]; // Array of emails of the followers
 }
 
 export interface DailyStats {
@@ -63,6 +72,7 @@ export interface Notification {
     id: string;
     title: string;
     message: string;
-    type: string;
+    type: 'new_op' | 'status_change' | 'comment';
     createdAt: string;
+    targetUsers?: string[] | null; // null if broadcast, array of emails if targeted
 }

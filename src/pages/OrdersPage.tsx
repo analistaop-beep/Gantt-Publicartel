@@ -123,6 +123,7 @@ export const OrdersPage: React.FC = () => {
         deleteTask,
         members,
         vehicles,
+        profiles,
         user
     } = useStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -132,6 +133,8 @@ export const OrdersPage: React.FC = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [isPrinting, setIsPrinting] = useState(false);
     const [isPrintingAnalysis, setIsPrintingAnalysis] = useState(false);
+    const [isTaggingOrder, setIsTaggingOrder] = useState<any | null>(null);
+    const [taggingSelection, setTaggingSelection] = useState<string[]>([]);
     const categories = ['Proyectos', 'Outdoor', 'Digital', 'Mantenimiento', 'Otros'];
     const statuses = [
         'En Proceso', 'En Diseño', 'Detenido Comercial', 'Detenido SST', 'En Herrería',
@@ -177,6 +180,8 @@ export const OrdersPage: React.FC = () => {
             if (e.key === 'Escape') {
                 if (isTaskModalOpen) {
                     setIsTaskModalOpen(false);
+                } else if (isTaggingOrder) {
+                    setIsTaggingOrder(null);
                 } else if (lightboxImage) {
                     setLightboxImage(null);
                 } else if (viewingOrder) {
@@ -188,7 +193,7 @@ export const OrdersPage: React.FC = () => {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [lightboxImage, viewingOrder, isModalOpen, isTaskModalOpen]);
+    }, [lightboxImage, viewingOrder, isModalOpen, isTaskModalOpen, isTaggingOrder]);
 
     const [formData, setFormData] = useState({
         opNumber: '',
@@ -766,6 +771,16 @@ export const OrdersPage: React.FC = () => {
                                             </td>
                                             <td className="px-8 py-4 text-right">
                                                 <div className="flex gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                    <button
+                                                        onClick={() => {
+                                                            setIsTaggingOrder(order);
+                                                            setTaggingSelection(order.followers || []);
+                                                        }}
+                                                        className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-blue-400 transition-all hover:scale-110"
+                                                        title="Etiquetar usuarios"
+                                                    >
+                                                        <User size={14} />
+                                                    </button>
                                                     <button
                                                         onClick={() => openModal(order)}
                                                         className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all hover:scale-110"
@@ -1819,6 +1834,93 @@ export const OrdersPage: React.FC = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de Etiquetado */}
+            {isTaggingOrder && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#1e293b] rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl border border-white/10 flex flex-col max-h-[80vh]">
+                        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
+                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                <User size={16} className="text-blue-400" />
+                                Etiquetar Usuarios — OP {isTaggingOrder.opNumber}
+                            </h3>
+                            <button onClick={() => setIsTaggingOrder(null)} className="text-slate-400 hover:text-white transition-colors">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        
+                        <div className="p-4 overflow-y-auto custom-scrollbar flex-1">
+                            <p className="text-xs text-slate-400 mb-4">
+                                Los usuarios seleccionados recibirán notificaciones cuando esta OP cambie de estado o se agregue un comentario.
+                            </p>
+                            
+                            <div className="space-y-2">
+                                {profiles.length === 0 ? (
+                                    <p className="text-xs text-slate-500 italic text-center py-4">No hay usuarios registrados</p>
+                                ) : (
+                                    profiles.map(profile => {
+                                        const isSelected = taggingSelection.includes(profile.email);
+                                        return (
+                                            <button
+                                                key={profile.id}
+                                                onClick={() => {
+                                                    setTaggingSelection(isSelected
+                                                        ? taggingSelection.filter(e => e !== profile.email)
+                                                        : [...taggingSelection, profile.email]
+                                                    );
+                                                }}
+                                                className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left ${
+                                                    isSelected ? 'bg-blue-500/10 border-blue-500/30' : 'bg-white/5 border-white/10 hover:bg-white/10'
+                                                }`}
+                                            >
+                                                <div className={`w-4 h-4 rounded flex items-center justify-center border shrink-0 ${
+                                                    isSelected ? 'bg-blue-500 border-blue-500' : 'border-white/20'
+                                                }`}>
+                                                    {isSelected && <Check size={12} className="text-white" />}
+                                                </div>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className={`text-sm font-bold truncate ${isSelected ? 'text-white' : 'text-slate-300'}`}>
+                                                        {profile.name || profile.email}
+                                                    </span>
+                                                    {profile.name && <span className="text-[10px] text-slate-500 truncate">{profile.email}</span>}
+                                                </div>
+                                            </button>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="p-4 border-t border-white/10 bg-white/[0.02] flex justify-between items-center gap-3">
+                            <span className="text-xs text-slate-500">
+                                {taggingSelection.length} usuario{taggingSelection.length !== 1 ? 's' : ''} seleccionado{taggingSelection.length !== 1 ? 's' : ''}
+                            </span>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setIsTaggingOrder(null)}
+                                    className="px-4 py-2 text-sm font-bold text-slate-300 hover:text-white transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            await updateProductionOrder({ ...isTaggingOrder, followers: taggingSelection });
+                                            sileo.success({ title: 'Etiquetas guardadas' });
+                                            setIsTaggingOrder(null);
+                                        } catch (err: any) {
+                                            sileo.error({ title: 'Error al guardar', description: err.message });
+                                        }
+                                    }}
+                                    className="btn btn-primary px-6 text-sm"
+                                >
+                                    Guardar
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

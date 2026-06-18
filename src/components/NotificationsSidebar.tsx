@@ -8,7 +8,7 @@ import { sileo } from 'sileo';
 export const NotificationsSidebar: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'list' | 'settings'>('list');
 
-    const notifications = useStore(state => state.notifications);
+    const allNotifications = useStore(state => state.notifications);
     const readNotifications = useStore(state => state.readNotifications);
     const markNotificationAsRead = useStore(state => state.markNotificationAsRead);
     const markAllNotificationsAsRead = useStore(state => state.markAllNotificationsAsRead);
@@ -16,6 +16,12 @@ export const NotificationsSidebar: React.FC = () => {
     const updatePrefs = useStore(state => state.updateNotificationPreferences);
     const user = useStore(state => state.user);
     const signOut = useStore(state => state.signOut);
+
+    // Solo mostrar notificaciones globales (targetUsers null/vacío) o las dirigidas al usuario actual
+    const userEmail = user?.email;
+    const notifications = allNotifications.filter(n => 
+        !n.targetUsers || n.targetUsers.length === 0 || (userEmail && n.targetUsers.includes(userEmail))
+    );
 
     const unreadCount = notifications.filter(n => !readNotifications.includes(n.id)).length;
 

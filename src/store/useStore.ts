@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { supabase } from '../utils/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
-import type { ProductionOrder, Notification } from '../types';
+import type { Team, ProductionOrder, Notification, Profile } from '../types';
+
 
 // Track which tasks have been locally modified but not yet saved to the database
 interface PendingChanges {
@@ -19,7 +20,7 @@ interface AppState {
 
     members: any[];
     vehicles: any[];
-    teams: any[];
+    teams: Team[];
     tasks: any[];
     herreriaTasks: any[];
     corporeasTasks: any[];
@@ -27,6 +28,7 @@ interface AppState {
     pinturaTasks: any[];
     reminders: any[];
     productionOrders: any[];
+    profiles: Profile[];
     notifications: Notification[];
     readNotifications: string[];
     notificationPreferences: { notifyNewOP: boolean; pushEnabled: boolean };
@@ -137,6 +139,7 @@ export const useStore = create<AppState>((set, get) => ({
     pinturaTasks: [],
     reminders: [],
     productionOrders: [],
+    profiles: [],
     notifications: [],
     readNotifications: JSON.parse(localStorage.getItem('readNotifications') || '[]'),
     notificationPreferences: JSON.parse(localStorage.getItem('notificationPreferences') || '{"notifyNewOP":true, "pushEnabled":false}'),
@@ -166,15 +169,7 @@ export const useStore = create<AppState>((set, get) => ({
     fetchData: async () => {
         set({ isLoading: true });
         try {
-            const [
-                { data: members },
-                { data: vehicles },
-                { data: teams },
-                { data: allTasks },
-                { data: reminders },
-                { data: productionOrders },
-                { data: notifications }
-            ] = await Promise.all([
+            const results = await Promise.all([
                 supabase.from('members').select('*').order('name'),
                 supabase.from('vehicles').select('*').order('name'),
                 supabase.from('teams').select('*').order('id'),
@@ -182,9 +177,12 @@ export const useStore = create<AppState>((set, get) => ({
                 supabase.from('reminders').select('*').order('opNumber'),
                 supabase.from('production_orders').select('*').order('createdAt', { ascending: false }),
                 supabase.from('notifications').select('*').order('createdAt', { ascending: false }).limit(50),
+                supabase.from('profiles').select('*')
             ]);
 
-            const mappedTasks = (allTasks || []).map(task => ({
+            const [membersRes, vehiclesRes, teamsRes, tasksRes, remindersRes, ordersRes, notificationsRes, profilesRes] = results;
+
+            const mappedTasks = (tasksRes.data || []).map(task => ({
                 ...task,
                 members: task.task_members.map((tm: any) => ({ id: tm.memberId, hours: tm.hours })),
                 vehicles: task.task_vehicles.map((tv: any) => tv.vehicleId),
@@ -192,21 +190,26 @@ export const useStore = create<AppState>((set, get) => ({
             }));
 
             set({
-                members: members || [],
-                vehicles: vehicles || [],
-                teams: teams || [],
+                members: membersRes.data || [],
+                vehicles: vehiclesRes.data || [],
+                teams: teamsRes.data || [],
                 tasks: mappedTasks.filter(t => t.type === 'instalacion'),
                 herreriaTasks: mappedTasks.filter(t => t.type === 'herreria'),
                 corporeasTasks: mappedTasks.filter(t => t.type === 'corporeas'),
                 lonasTasks: mappedTasks.filter(t => t.type === 'lonas'),
                 pinturaTasks: mappedTasks.filter(t => t.type === 'pintura'),
-                reminders: reminders || [],
-                productionOrders: (productionOrders || []).map(o => ({
+                reminders: remindersRes.data || [],
+                productionOrders: (ordersRes.data || []).map(o => ({
                     ...o,
                     files: typeof o.files === 'string' ? JSON.parse(o.files) : (o.files || []),
-                    comments: typeof o.comments === 'string' ? JSON.parse(o.comments) : (o.comments || [])
+                    comments: typeof o.comments === 'string' ? JSON.parse(o.comments) : (o.comments || []),
+                    followers: typeof o.followers === 'string' ? JSON.parse(o.followers) : (o.followers || [])
                 })),
-                notifications: notifications || [],
+                profiles: profilesRes.data || [],
+                notifications: (notificationsRes.data || []).map(n => ({
+                    ...n,
+                    targetUsers: typeof n.targetUsers === 'string' ? JSON.parse(n.targetUsers) : (n.targetUsers || null)
+                })),
                 isLoading: false
             });
         } catch (err: any) {
@@ -310,16 +313,18 @@ export const useStore = create<AppState>((set, get) => ({
         const { error } = await supabase.from('production_orders').insert([{ 
             id: uuidv4(), 
             ...order,
-            files: JSON.stringify(order.files || []),
-            comments: JSON.stringify(order.comments || [])
+            files: order.files ? JSON.stringify(order.files) : '[]',
+            comments: order.comments ? JSON.stringify(order.comments) : '[]',
+            followers: order.followers ? JSON.stringify(order.followers) : '[]'
         }]);
         if (error) throw error;
         
-        // Disparar notificación
         await supabase.from('notifications').insert([{
-            title: `Nueva OP #${order.opNumber}`,
-            message: `Se ha creado una nueva Orden de Producción para el cliente ${order.client} - ${order.category}`,
-            type: 'new_op'
+            id: uuidv4(),
+            title: `Nueva OP #${order.opNumber} — ${order.client}`,
+            message: `Se registró una nueva orden de producción.`,
+            type: 'new_op',
+            targetUsers: null
         }]);
 
         await get().fetchData();
@@ -327,28 +332,39 @@ export const useStore = create<AppState>((set, get) => ({
     updateProductionOrder: async (order) => {
         try {
             set({ error: null });
-            const { id } = order;
+            const { id, ...rest } = order;
             const payload = {
-                opNumber: order.opNumber,
-                client: order.client,
-                seller: order.seller,
-                subject: order.subject ?? null,
-                price: order.price,
-                currency: order.currency,
-                description: order.description,
-                address: order.address,
-                category: order.category,
-                status: order.status,
-                soporte: order.soporte ?? null,
-                files: JSON.stringify(order.files ?? []),
-                comments: JSON.stringify(order.comments ?? [])
+                ...rest,
+                files: rest.files ? JSON.stringify(rest.files) : '[]',
+                comments: rest.comments ? JSON.stringify(rest.comments) : '[]',
+                followers: rest.followers ? JSON.stringify(rest.followers) : '[]'
             };
-            console.log('[updateProductionOrder] payload:', payload);
+            
+            const previousOrder = get().productionOrders.find(o => o.id === id);
+
             const { error } = await supabase.from('production_orders').update(payload).eq('id', id);
-            if (error) {
-                console.error('[updateProductionOrder] Supabase error:', JSON.stringify(error));
-                throw error;
+            if (error) throw error;
+
+            if (previousOrder && order.followers && order.followers.length > 0) {
+                const statusChanged = previousOrder.status !== order.status;
+                const newCommentAdded = order.comments && previousOrder.comments && order.comments.length > previousOrder.comments.length;
+
+                if (statusChanged || newCommentAdded) {
+                    const title = `OP #${order.opNumber} — ${order.client}`;
+                    const message = statusChanged 
+                        ? `Estado actualizado a: ${order.status}` 
+                        : `Nuevo comentario de ${order.comments[order.comments.length - 1]?.author || 'un usuario'}`;
+                        
+                    await supabase.from('notifications').insert([{
+                        id: uuidv4(),
+                        title,
+                        message,
+                        type: statusChanged ? 'status_change' : 'comment',
+                        targetUsers: JSON.stringify(order.followers)
+                    }]);
+                }
             }
+
             await get().fetchData();
         } catch (err: any) {
             set({ error: err.message });
