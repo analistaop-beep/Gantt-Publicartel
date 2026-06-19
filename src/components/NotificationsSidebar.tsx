@@ -1,11 +1,34 @@
 import React, { useState } from 'react';
-import { Bell, Check, LogOut } from 'lucide-react';
+import { Bell, Check, LogOut, MessageSquare, Activity, ClipboardList } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { sileo } from 'sileo';
+import type { Notification } from '../types';
 
-export const NotificationsSidebar: React.FC = () => {
+interface NotificationsSidebarProps {
+    onNotificationClick?: (notification: Notification) => void;
+}
+
+const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
+    if (type === 'comment') return <MessageSquare size={13} className="text-purple-400 flex-shrink-0 mt-0.5" />;
+    if (type === 'status_change') return <Activity size={13} className="text-amber-400 flex-shrink-0 mt-0.5" />;
+    return <ClipboardList size={13} className="text-blue-400 flex-shrink-0 mt-0.5" />;
+};
+
+const notificationTypeLabel: Record<Notification['type'], string> = {
+    new_op: 'Nueva OP',
+    status_change: 'Estado',
+    comment: 'Comentario',
+};
+
+const notificationTypeBadgeClass: Record<Notification['type'], string> = {
+    new_op: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    status_change: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    comment: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+};
+
+export const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ onNotificationClick }) => {
     const [activeTab, setActiveTab] = useState<'list' | 'settings'>('list');
 
     const allNotifications = useStore(state => state.notifications);
@@ -25,9 +48,6 @@ export const NotificationsSidebar: React.FC = () => {
 
     const unreadCount = notifications.filter(n => !readNotifications.includes(n.id)).length;
 
-    // We don't need the toast useEffect here anymore if we want to handle it globally,
-    // but leaving it here works fine as long as this sidebar is mounted.
-    // However, App.tsx is mounting it, so it's always active.
     const prevCountRef = React.useRef(notifications.length);
 
     React.useEffect(() => {
@@ -71,6 +91,15 @@ export const NotificationsSidebar: React.FC = () => {
             }
         } else {
             updatePrefs({ ...prefs, pushEnabled: false });
+        }
+    };
+
+    const handleNotificationClick = (notification: Notification) => {
+        if (!readNotifications.includes(notification.id)) {
+            markNotificationAsRead(notification.id);
+        }
+        if (notification.opId && onNotificationClick) {
+            onNotificationClick(notification);
         }
     };
 
@@ -134,31 +163,47 @@ export const NotificationsSidebar: React.FC = () => {
                                 )}
                                 {notifications.map(notification => {
                                     const isRead = readNotifications.includes(notification.id);
+                                    const isClickable = !!notification.opId || /OP #\S+/.test(notification.title);
                                     return (
                                         <div 
                                             key={notification.id} 
-                                            className={`p-4 border-b border-white/5 transition-all relative group cursor-pointer ${
+                                            className={`p-4 border-b border-white/5 transition-all relative group ${
                                                 isRead ? 'opacity-60 hover:opacity-100 bg-transparent' : 'bg-blue-500/[0.03] hover:bg-blue-500/[0.06]'
-                                            }`}
-                                            onClick={() => !isRead && markNotificationAsRead(notification.id)}
+                                            } ${isClickable ? 'cursor-pointer' : 'cursor-default'}`}
+                                            onClick={() => handleNotificationClick(notification)}
                                         >
                                             {!isRead && (
                                                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
                                             )}
-                                            
-                                            <div className="flex justify-between items-start gap-4 mb-1">
-                                                <h4 className="text-sm font-bold text-slate-200 leading-tight">
-                                                    {notification.title}
-                                                </h4>
-                                            </div>
-                                            
-                                            <p className="text-xs text-slate-400 leading-relaxed mb-2">
-                                                {notification.message}
-                                            </p>
 
-                                            <span className="text-[9px] font-bold text-slate-500 whitespace-nowrap uppercase">
-                                                {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: es })}
-                                            </span>
+                                            <div className="flex items-start gap-2 mb-1">
+                                                <NotificationIcon type={notification.type} />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                                        <h4 className="text-xs font-bold text-slate-200 leading-tight flex-1 min-w-0 truncate">
+                                                            {notification.title}
+                                                        </h4>
+                                                        <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full border flex-shrink-0 ${notificationTypeBadgeClass[notification.type]}`}>
+                                                            {notificationTypeLabel[notification.type]}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <p className="text-xs text-slate-400 leading-relaxed mb-1.5">
+                                                        {notification.message}
+                                                    </p>
+
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-[9px] font-bold text-slate-500 whitespace-nowrap uppercase">
+                                                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: es })}
+                                                        </span>
+                                                        {isClickable && (
+                                                            <span className="text-[9px] font-bold text-blue-400/70 uppercase tracking-wider group-hover:text-blue-400 transition-colors">
+                                                                Ver OP →
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     );
                                 })}

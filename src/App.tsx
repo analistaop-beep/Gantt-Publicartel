@@ -31,6 +31,8 @@ function App() {
   const [activeTab, setActiveTab] = useState('gantt');
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth > 1024);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(() => window.innerWidth > 1024);
+  const [pendingOpenOrderId, setPendingOpenOrderId] = useState<string | null>(null);
+  const [pendingOpenOrderNumber, setPendingOpenOrderNumber] = useState<string | null>(null);
   const fetchData = useStore(state => state.fetchData);
   const subscribeToChanges = useStore(state => state.subscribeToChanges);
   const hasPendingChanges = useStore(state => state.hasPendingChanges);
@@ -41,6 +43,24 @@ function App() {
   const notifications = useStore(state => state.notifications);
   const readNotifications = useStore(state => state.readNotifications);
   const unreadCount = notifications.filter(n => !readNotifications.includes(n.id)).length;
+
+  const handleNotificationClick = (notification: any) => {
+    // Intentar por opId directo
+    const opId = notification.opId || null;
+    // Fallback: opNumber del campo, o extraído del título (ej: "Nueva OP #12345 — Cliente")
+    let opNumber = notification.opNumber || null;
+    if (!opNumber && notification.title) {
+      const match = notification.title.match(/OP #(\S+)/);
+      if (match) opNumber = match[1].replace(/—.*/, '').trim();
+    }
+
+    if (opId || opNumber) {
+      setActiveTab('orders');
+      setPendingOpenOrderId(opId);
+      setPendingOpenOrderNumber(opNumber);
+      if (window.innerWidth <= 1024) setIsRightSidebarOpen(false);
+    }
+  };
 
   useEffect(() => {
     initAuth();
@@ -92,7 +112,7 @@ function App() {
             case 'corporeas': return <CorporeasPage />;
             case 'lonas': return <LonasVinilosPage />;
             case 'pintura': return <PinturaPage />;
-            case 'orders': return <OrdersPage />;
+            case 'orders': return <OrdersPage openOrderId={pendingOpenOrderId} openOrderNumber={pendingOpenOrderNumber} onOpenOrderIdConsumed={() => { setPendingOpenOrderId(null); setPendingOpenOrderNumber(null); }} />;
             default: return <GanttPage />;
           }
         })()}
@@ -158,7 +178,7 @@ function App() {
 
       {/* Right Sidebar (Notifications) */}
       <div className={`transition-all duration-300 ease-in-out fixed lg:relative inset-y-0 right-0 ${isRightSidebarOpen ? 'w-64 translate-x-0' : 'w-64 translate-x-full lg:w-0 lg:translate-x-0'} overflow-hidden h-full flex-shrink-0 z-[60] lg:z-40 shadow-2xl shadow-black/50`}>
-        <NotificationsSidebar />
+        <NotificationsSidebar onNotificationClick={handleNotificationClick} />
       </div>
 
       {/* Backdrop for Right Sidebar on Mobile */}

@@ -310,8 +310,9 @@ export const useStore = create<AppState>((set, get) => ({
     },
     
     addProductionOrder: async (order) => {
+        const newId = uuidv4();
         const { error } = await supabase.from('production_orders').insert([{ 
-            id: uuidv4(), 
+            id: newId, 
             ...order,
             files: order.files ? JSON.stringify(order.files) : '[]',
             comments: order.comments ? JSON.stringify(order.comments) : '[]',
@@ -324,7 +325,9 @@ export const useStore = create<AppState>((set, get) => ({
             title: `Nueva OP #${order.opNumber} — ${order.client}`,
             message: `Se registró una nueva orden de producción.`,
             type: 'new_op',
-            targetUsers: null
+            targetUsers: null,
+            opId: newId,
+            opNumber: order.opNumber
         }]);
 
         await get().fetchData();
@@ -345,23 +348,50 @@ export const useStore = create<AppState>((set, get) => ({
             const { error } = await supabase.from('production_orders').update(payload).eq('id', id);
             if (error) throw error;
 
-            if (previousOrder && order.followers && order.followers.length > 0) {
+            if (previousOrder) {
                 const statusChanged = previousOrder.status !== order.status;
                 const newCommentAdded = order.comments && previousOrder.comments && order.comments.length > previousOrder.comments.length;
 
                 if (statusChanged || newCommentAdded) {
                     const title = `OP #${order.opNumber} — ${order.client}`;
+                    const lastComment = newCommentAdded ? order.comments[order.comments.length - 1] : null;
                     const message = statusChanged 
                         ? `Estado actualizado a: ${order.status}` 
-                        : `Nuevo comentario de ${order.comments[order.comments.length - 1]?.author || 'un usuario'}`;
-                        
-                    await supabase.from('notifications').insert([{
-                        id: uuidv4(),
-                        title,
-                        message,
-                        type: statusChanged ? 'status_change' : 'comment',
-                        targetUsers: JSON.stringify(order.followers)
-                    }]);
+                        : `Nuevo comentario de ${lastComment?.author || 'un usuario'}`;
+
+                    // Extraer @menciones del nuevo comentario
+                    let mentionedUsers: string[] = [];
+                    if (newCommentAdded && lastComment?.text) {
+                        const mentionRegex = /@([\w.+-]+@[\w-]+\.[\w.]+)/g;
+                        mentionedUsers = [...lastComment.text.matchAll(mentionRegex)].map((m: RegExpMatchArray) => m[1]);
+                    }
+
+                    // Unir followers + mencionados (sin duplicados)
+                    const followers = order.followers || [];
+                    const allTargets = Array.from(new Set([...followers, ...mentionedUsers]));
+
+                    if (allTargets.length > 0) {
+                        await supabase.from('notifications').insert([{
+                            id: uuidv4(),
+                            title,
+                            message,
+                            type: statusChanged ? 'status_change' : 'comment',
+                            targetUsers: JSON.stringify(allTargets),
+                            opId: id,
+                            opNumber: order.opNumber
+                        }]);
+                    } else if (statusChanged) {
+                        // Si cambia el estado pero no hay followers ni menciones, notificar igual (broadcast)
+                        await supabase.from('notifications').insert([{
+                            id: uuidv4(),
+                            title,
+                            message,
+                            type: 'status_change',
+                            targetUsers: null,
+                            opId: id,
+                            opNumber: order.opNumber
+                        }]);
+                    }
                 }
             }
 

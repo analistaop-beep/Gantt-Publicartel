@@ -75,4 +75,6 @@ export interface Notification {
     type: 'new_op' | 'status_change' | 'comment';
     createdAt: string;
     targetUsers?: string[] | null; // null if broadcast, array of emails if targeted
+    opId?: string | null;          // ID de la OP relacionada (para navegar al hacer click)
+    opNumber?: string | null;      // Número de OP legible
 }

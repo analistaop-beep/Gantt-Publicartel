@@ -106,7 +106,13 @@ const MultiSelect = ({
     );
 };
 
-export const OrdersPage: React.FC = () => {
+interface OrdersPageProps {
+    openOrderId?: string | null;
+    openOrderNumber?: string | null;
+    onOpenOrderIdConsumed?: () => void;
+}
+
+export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNumber, onOpenOrderIdConsumed }) => {
     const { 
         productionOrders, 
         addProductionOrder, 
@@ -133,6 +139,21 @@ export const OrdersPage: React.FC = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [isPrinting, setIsPrinting] = useState(false);
     const [isPrintingAnalysis, setIsPrintingAnalysis] = useState(false);
+
+    // Abrir OP automáticamente al navegar desde una notificación
+    React.useEffect(() => {
+        if (!(openOrderId || openOrderNumber) || productionOrders.length === 0) return;
+        
+        // Buscar por ID exacto primero, luego por número de OP como fallback
+        const target = openOrderId
+            ? productionOrders.find(o => o.id === openOrderId)
+            : productionOrders.find(o => o.opNumber?.toString().trim() === openOrderNumber?.toString().trim());
+        
+        if (target) {
+            setViewingOrder(target);
+            onOpenOrderIdConsumed?.();
+        }
+    }, [openOrderId, openOrderNumber, productionOrders]);
     const [isTaggingOrder, setIsTaggingOrder] = useState<any | null>(null);
     const [taggingSelection, setTaggingSelection] = useState<string[]>([]);
     const categories = ['Proyectos', 'Outdoor', 'Digital', 'Mantenimiento', 'Otros'];
