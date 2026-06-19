@@ -156,7 +156,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
     }, [openOrderId, openOrderNumber, productionOrders]);
     const [isTaggingOrder, setIsTaggingOrder] = useState<any | null>(null);
     const [taggingSelection, setTaggingSelection] = useState<string[]>([]);
-    const categories = ['Proyectos', 'Outdoor', 'Digital', 'Mantenimiento', 'Otros'];
+    const categories = ['Proyectos', 'Outdoor', 'Digital', 'Mantenimiento', 'Petroleras', 'Reclamos', 'Otros'];
     const statuses = [
         'En Proceso', 'En Diseño', 'Detenido Comercial', 'Detenido SST', 'En Herrería',
         'En Pintura', 'En Corpóreas', 'En Impresión', 'Para Relevar',
@@ -229,6 +229,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
         status: 'En Proceso',
         files: [] as string[],
         comments: [] as Array<{ text: string, date: string, author?: string }>,
+        followers: [] as string[],
         soporte: ''
     });
     const [newComment, setNewComment] = useState('');
@@ -295,6 +296,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                 status: order.status || 'En Proceso',
                 files: order.files || [],
                 comments: order.comments || [],
+                followers: order.followers || [],
                 soporte: order.soporte || ''
             });
         } else {
@@ -312,6 +314,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                 status: 'En Proceso',
                 files: [],
                 comments: [],
+                followers: [],
                 soporte: ''
             });
         }
@@ -335,6 +338,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
             status: 'En Proceso',
             files: [],
             comments: [],
+            followers: [],
             soporte: ''
         });
         setNewComment('');
