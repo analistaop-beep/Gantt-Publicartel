@@ -44,7 +44,7 @@ interface AppState {
     fetchData: () => Promise<void>;
 
     // Members
-    addMember: (member: { name: string; role: string; sector?: string; ci?: string }) => Promise<void>;
+    addMember: (member: { name: string; role: string; sector?: string; ci?: string; files?: string[] }) => Promise<void>;
     updateMember: (member: any) => Promise<void>;
     deleteMember: (id: string) => Promise<void>;
 
@@ -65,6 +65,7 @@ interface AppState {
     
     // Files
     uploadFile: (file: File | Blob, fileName: string) => Promise<string>;
+    uploadMemberFile: (file: File | Blob, fileName: string) => Promise<string>;
 
     // Notifications
     markNotificationAsRead: (id: string) => void;
@@ -190,7 +191,10 @@ export const useStore = create<AppState>((set, get) => ({
             }));
 
             set({
-                members: membersRes.data || [],
+                members: (membersRes.data || []).map((m: any) => ({
+                    ...m,
+                    files: typeof m.files === 'string' ? JSON.parse(m.files) : (m.files || [])
+                })),
                 vehicles: vehiclesRes.data || [],
                 teams: teamsRes.data || [],
                 tasks: mappedTasks.filter(t => t.type === 'instalacion'),
@@ -218,7 +222,11 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     addMember: async (member) => {
-        const { error } = await supabase.from('members').insert([{ id: uuidv4(), ...member }]);
+        const payload = {
+            ...member,
+            files: member.files ? JSON.stringify(member.files) : '[]'
+        };
+        const { error } = await supabase.from('members').insert([{ id: uuidv4(), ...payload }]);
         if (error) throw error;
         await get().fetchData();
     },
@@ -226,7 +234,11 @@ export const useStore = create<AppState>((set, get) => ({
         try {
             set({ error: null });
             const { id, ...data } = member;
-            const { error } = await supabase.from('members').update(data).eq('id', id);
+            const payload = {
+                ...data,
+                files: data.files ? JSON.stringify(data.files) : '[]'
+            };
+            const { error } = await supabase.from('members').update(payload).eq('id', id);
             if (error) throw error;
             await get().fetchData();
         } catch (err: any) {
@@ -423,6 +435,27 @@ export const useStore = create<AppState>((set, get) => ({
 
         const { data } = supabase.storage
             .from('production-orders')
+            .getPublicUrl(path);
+
+        return data.publicUrl;
+    },
+
+    uploadMemberFile: async (file, fileName) => {
+        const fileExt = fileName.split('.').pop();
+        const path = `files/${uuidv4()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+            .from('members')
+            .upload(path, file, {
+                contentType: file instanceof File ? file.type : 'application/octet-stream',
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage
+            .from('members')
             .getPublicUrl(path);
 
         return data.publicUrl;

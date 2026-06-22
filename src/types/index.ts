@@ -11,6 +11,8 @@ export interface Member {
     role: string;
     sector?: string;
     code?: string;
+    ci?: string;
+    files?: string[];
 }
 
 export interface Vehicle {

@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Plus, Trash2, Edit2, User, Search, DollarSign } from 'lucide-react';
+import { Plus, Trash2, Edit2, User, Search, DollarSign, Printer, Paperclip, X, FileText, Loader2 } from 'lucide-react';
 import { getInitials } from '../utils/stringUtils';
 import { sileo } from 'sileo';
 import { useSectionRates, SECTIONS } from '../hooks/useSectionRates';
+import { generateWorkerPDF } from '../utils/pdfGenerator';
 
 export const MembersPage: React.FC = () => {
-    const { members, addMember, updateMember, deleteMember } = useStore();
+    const { members, addMember, updateMember, deleteMember, uploadMemberFile } = useStore();
     const [isEditing, setIsEditing] = useState<string | null>(null);
-    const [formData, setFormData] = useState({ name: '', role: '', sector: '', ci: '', code: '' });
+    const [formData, setFormData] = useState<{ name: string; role: string; sector: string; ci: string; code: string; files: string[] }>({ name: '', role: '', sector: '', ci: '', code: '', files: [] });
+    const [uploading, setUploading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const { rates, setRate } = useSectionRates();
 
@@ -40,19 +42,56 @@ export const MembersPage: React.FC = () => {
             const dataToSave = { ...formData, code: finalCode };
 
             if (isEditing) {
-                await updateMember({ id: isEditing, ...dataToSave });
+                await updateMember({ id: isEditing, ...dataToSave, files: formData.files });
                 setIsEditing(null);
                 sileo.success({ title: "Integrante actualizado" });
             } else {
-                await addMember(dataToSave);
+                await addMember({ ...dataToSave, files: formData.files });
                 sileo.success({ title: "Integrante agregado" });
             }
-            setFormData({ name: '', role: '', sector: '', ci: '', code: '' });
+            setFormData({ name: '', role: '', sector: '', ci: '', code: '', files: [] });
         } catch (err: any) {
             sileo.error({ 
                 title: "Error al guardar",
                 description: err.message || "No se pudo procesar la solicitud"
             });
+        }
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        setUploading(true);
+        try {
+            const uploadedUrls: string[] = [];
+            for (let i = 0; i < files.length; i++) {
+                const url = await uploadMemberFile(files[i], files[i].name);
+                uploadedUrls.push(url);
+            }
+            setFormData(prev => ({ ...prev, files: [...(prev.files || []), ...uploadedUrls] }));
+            sileo.success({ title: "Archivos subidos exitosamente" });
+        } catch (err: any) {
+            sileo.error({ title: "Error al subir", description: err.message });
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const removeFile = (index: number) => {
+        setFormData(prev => {
+            const newFiles = [...(prev.files || [])];
+            newFiles.splice(index, 1);
+            return { ...prev, files: newFiles };
+        });
+    };
+
+    const handlePrint = async (member: any) => {
+        try {
+            sileo.info({ title: "Generando Ficha..." });
+            await generateWorkerPDF(member);
+            sileo.success({ title: "Ficha generada exitosamente" });
+        } catch (err: any) {
+            sileo.error({ title: "Error", description: "No se pudo generar el PDF" });
         }
     };
 
@@ -183,9 +222,16 @@ export const MembersPage: React.FC = () => {
                                         <td className="px-8 py-1.5 text-right">
                                             <div className="flex gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                                 <button
+                                                    onClick={() => handlePrint(member)}
+                                                    className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all hover:scale-110"
+                                                    title="Imprimir Ficha"
+                                                >
+                                                    <Printer size={14} />
+                                                </button>
+                                                <button
                                                     onClick={() => {
                                                         setIsEditing(member.id);
-                                                        setFormData({ name: member.name, role: member.role, sector: member.sector || '', ci: member.ci || '', code: member.code || '' });
+                                                        setFormData({ name: member.name, role: member.role, sector: member.sector || '', ci: member.ci || '', code: member.code || '', files: member.files || [] });
                                                     }}
                                                     className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all hover:scale-110"
                                                     title="Editar integrante"
@@ -318,6 +364,54 @@ export const MembersPage: React.FC = () => {
                                     <option value="Corpóreas">Corpóreas</option>
                                 </select>
                             </div>
+
+                            <div className="space-y-2 pt-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Documentación (Fotos, PDFs)</label>
+                                
+                                {formData.files && formData.files.length > 0 && (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2">
+                                        {formData.files.map((fileUrl, index) => (
+                                            <div key={index} className="relative group bg-white/5 rounded-lg p-2 flex items-center gap-2 border border-white/10">
+                                                {fileUrl.toLowerCase().match(/\.(jpg|jpeg|png|webp|gif)$/) ? (
+                                                    <img src={fileUrl} alt="doc" className="w-8 h-8 object-cover rounded" />
+                                                ) : (
+                                                    <div className="w-8 h-8 bg-blue-500/20 rounded flex items-center justify-center text-blue-400">
+                                                        <FileText size={14} />
+                                                    </div>
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[10px] truncate text-slate-300">Adjunto {index + 1}</p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeFile(index)}
+                                                    className="p-1 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded transition-colors"
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                
+                                <div className="relative">
+                                    <input 
+                                        type="file" 
+                                        multiple 
+                                        onChange={handleFileUpload}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                        disabled={uploading}
+                                    />
+                                    <div className="flex items-center justify-center gap-2 w-full px-4 py-3 border border-dashed border-white/20 rounded-lg text-slate-400 hover:bg-white/5 hover:border-white/40 transition-all">
+                                        {uploading ? (
+                                            <><Loader2 size={16} className="animate-spin" /> Subiendo...</>
+                                        ) : (
+                                            <><Paperclip size={16} /> Seleccionar archivos</>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="flex gap-3 pt-6">
                                 <button
                                     type="button"
