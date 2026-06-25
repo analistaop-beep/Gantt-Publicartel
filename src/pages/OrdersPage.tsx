@@ -160,7 +160,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
     const statuses = [
         'En Proceso', 'En Diseño', 'Detenido Comercial', 'Detenido SST', 'En Herrería',
         'En Pintura', 'En Corpóreas', 'En Impresión', 'Para Relevar',
-        'Para Instalar', 'Para Facturar', 'Terminada', 'En muestras de color', 
+        'Para Instalar', 'Para Entregar', 'Para Facturar', 'Terminada', 'En muestras de color', 
         'Soldando lona'
     ];
     const sellers = ["W. Maciel", "P. Goicoechea", "N. Mannise", "F. Cruz", "P. Lizuain", "V. Castellucci", "Otro"];
@@ -616,6 +616,34 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
         }
     };
 
+    const handleAddCommentToOrder = async () => {
+        if (!newComment.trim() || !viewingOrder) return;
+        
+        try {
+            const comment = {
+                text: newComment.trim(),
+                date: new Date().toISOString(),
+                author: user?.user_metadata?.name || user?.email || 'Usuario'
+            };
+            
+            const updatedOrder = {
+                ...viewingOrder,
+                comments: [...(viewingOrder.comments || []), comment]
+            };
+            
+            await updateProductionOrder(updatedOrder);
+            
+            setViewingOrder(updatedOrder);
+            setNewComment('');
+            sileo.success({ title: "Comentario añadido" });
+        } catch (err: any) {
+            sileo.error({
+                title: "Error al añadir comentario",
+                description: err.message || "No se pudo procesar la solicitud"
+            });
+        }
+    };
+
     return (
         <div className="h-full flex flex-col">
             <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-4 py-4 md:px-10 md:py-6 border-b border-white/5 sticky-header-custom">
@@ -734,6 +762,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                     if (s === 'En Impresión') color = 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
                                                     if (s === 'Para Relevar') color = 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
                                                     if (s === 'Para Instalar') color = 'text-emerald-600 dark:text-emerald-400 bg-emerald-600/10 dark:bg-emerald-400/10 border-emerald-600/20 dark:border-emerald-400/20';
+                                                    if (s === 'Para Entregar') color = 'text-teal-600 dark:text-teal-400 bg-teal-600/10 dark:bg-teal-400/10 border-teal-600/20 dark:border-teal-400/20';
                                                     if (s === 'En muestras de color') color = 'text-amber-400 bg-amber-400/10 border-amber-400/20';
                                                     if (s === 'Soldando lona') color = 'text-slate-300 bg-slate-400/10 border-slate-400/20';
 
@@ -1254,6 +1283,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                         if (s === 'En Pintura') color = 'text-pink-700 bg-pink-500/10 border-pink-500/20 dark:text-pink-400 dark:bg-pink-400/10 dark:border-pink-400/20';
                                         if (s === 'En Proceso') color = 'text-blue-700 bg-blue-500/10 border-blue-500/20 dark:text-blue-400 dark:bg-blue-400/10 dark:border-blue-400/20';
                                         if (s === 'Para Facturar') color = 'text-emerald-700 bg-emerald-500/10 border-emerald-500/20 dark:text-emerald-400 dark:bg-emerald-400/10 dark:border-emerald-400/20';
+                                        if (s === 'Para Entregar') color = 'text-teal-700 bg-teal-500/10 border-teal-500/20 dark:text-teal-400 dark:bg-teal-400/10 dark:border-teal-400/20';
                                         if (s === 'Terminada') color = 'text-slate-500 bg-slate-100 border-slate-200 dark:text-slate-500 dark:bg-white/5 dark:border-white/10';
                                         if (s === 'En muestras de color') color = 'text-amber-700 bg-amber-500/10 border-amber-500/20 dark:text-amber-400 dark:bg-amber-400/10 dark:border-amber-400/20';
                                         if (s === 'Soldando lona') color = 'text-slate-700 bg-slate-500/10 border-slate-500/20 dark:text-slate-400 dark:bg-slate-400/10 dark:border-slate-400/20';
@@ -1403,6 +1433,30 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                             </span>
                                         )}
                                     </label>
+
+                                    <div className="flex gap-2 mb-4">
+                                        <input
+                                            className="input flex-1 text-sm bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10"
+                                            placeholder="Escribir un comentario..."
+                                            value={newComment}
+                                            onChange={(e) => setNewComment(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    handleAddCommentToOrder();
+                                                }
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleAddCommentToOrder}
+                                            disabled={!newComment.trim()}
+                                            className="btn btn-primary px-4 disabled:opacity-50 transition-opacity"
+                                        >
+                                            <Plus size={18} />
+                                        </button>
+                                    </div>
+
                                     {viewingOrder.comments?.length > 0 ? (
                                         <div className="space-y-3">
                                             {[...viewingOrder.comments].reverse().map((c: any, i: number) => (

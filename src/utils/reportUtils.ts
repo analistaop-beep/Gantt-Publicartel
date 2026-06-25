@@ -668,6 +668,7 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
     if (s === 'Gestión de Acopio') statusColor = [245, 158, 11];
     if (s === 'En Proceso') statusColor = [59, 130, 246];
     if (s === 'Para Facturar') statusColor = [16, 185, 129];
+    if (s === 'Para Entregar') statusColor = [13, 148, 136];
 
     doc.setFillColor(...statusColor);
     doc.roundedRect(margin, y - 4, 42, 8, 2, 2, 'F');
