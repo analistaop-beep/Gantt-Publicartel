@@ -14,7 +14,8 @@ import {
 import { es } from 'date-fns/locale';
 import { getCompactName } from '../utils/stringUtils';
 import { exportToExcel, exportTaskToPDF } from '../utils/reportUtils';
-import { FileDown, FileText, Printer } from 'lucide-react';
+import { FileDown, FileText, Printer, ToggleLeft, ToggleRight } from 'lucide-react';
+import { SimpleGanttView } from '../components/SimpleGanttView';
 
 export const GanttPage: React.FC = () => {
     const {
@@ -23,9 +24,12 @@ export const GanttPage: React.FC = () => {
         updateTaskLocal, deleteTaskLocal, addTaskLocal,
         saveAllChanges, hasPendingChanges, isSaving,
         clearTasksRange, error, clearError,
-        addReminder, updateReminder, deleteReminder
+        addReminder, updateReminder, deleteReminder,
+        viewPreferences, updateViewPreferences
     } = useStore();
     const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 })); // Monday
+
+    const viewMode = viewPreferences?.instalacionesViewMode || 'default';
 
     // Modals state
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -700,6 +704,17 @@ export const GanttPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-4">
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center gap-2 glass p-1.5 rounded-lg">
+                        <button
+                            onClick={() => updateViewPreferences({ ...viewPreferences, instalacionesViewMode: viewMode === 'default' ? 'gantt' : 'default' })}
+                            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-2 ${viewMode === 'gantt' ? 'bg-blue-600/20 text-blue-400' : 'text-slate-400 hover:bg-white/5'}`}
+                        >
+                            {viewMode === 'gantt' ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                            {viewMode === 'gantt' ? 'Gantt' : 'Normal'}
+                        </button>
+                    </div>
+
                     {/* Inner Week Navigation (Only when Zoomed) */}
                     {isZoomed && (
                         <div className="flex items-center gap-1 glass p-1.5 rounded-lg animate-in fade-in slide-in-from-right-4 duration-300">
@@ -778,6 +793,15 @@ export const GanttPage: React.FC = () => {
             </div>
 
             {/* Gantt Timeline */}
+            {viewMode === 'gantt' ? (
+                <SimpleGanttView 
+                    tasks={tasks}
+                    currentWeekStart={currentWeekStart}
+                    onDateChange={setCurrentWeekStart}
+                    onTaskClick={handleEditTask}
+                    isDragging={isDragging}
+                />
+            ) : (
             <div className="flex-1 min-h-0 bg-[#0f172a] flex flex-col overflow-hidden border-t sm:border border-white/5 mx-0 sm:mx-2 lg:mx-10 mb-0 sm:mb-2 rounded-none sm:rounded-[1rem] relative shadow-2xl">
                 <div className="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar flex flex-col" ref={timelineRef}>
                     <div className="w-full flex-1 flex flex-col">
@@ -1139,6 +1163,7 @@ export const GanttPage: React.FC = () => {
                     </div>
                 </div>
             </div>
+            )}
 
             {/* Modals */}
             {isTaskModalOpen && (

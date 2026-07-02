@@ -37,6 +37,8 @@ export const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ onNo
     const markAllNotificationsAsRead = useStore(state => state.markAllNotificationsAsRead);
     const prefs = useStore(state => state.notificationPreferences);
     const updatePrefs = useStore(state => state.updateNotificationPreferences);
+    const viewPrefs = useStore(state => state.viewPreferences);
+    const updateViewPrefs = useStore(state => state.updateViewPreferences);
     const user = useStore(state => state.user);
     const signOut = useStore(state => state.signOut);
 
@@ -246,6 +248,28 @@ export const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ onNo
                                         </div>
                                     </div>
                                     <span className="text-[10px] text-slate-400 leading-tight">Alertas nativas de Windows/Mac aunque la app esté en segundo plano.</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 mt-6">Preferencias de Vista</h4>
+                            
+                            <div className="space-y-3">
+                                <label className="flex flex-col gap-2 p-3 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-slate-200">Gantt Simplificado (Instalaciones)</span>
+                                        <div className="relative inline-flex items-center">
+                                            <input 
+                                                type="checkbox" 
+                                                className="sr-only peer"
+                                                checked={viewPrefs?.instalacionesViewMode === 'gantt'}
+                                                onChange={(e) => updateViewPrefs({ ...viewPrefs, instalacionesViewMode: e.target.checked ? 'gantt' : 'default' })}
+                                            />
+                                            <div className="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-500"></div>
+                                        </div>
+                                    </div>
+                                    <span className="text-[10px] text-slate-400 leading-tight">Mostrar gráfico Gantt simplificado por defecto en Instalaciones.</span>
                                 </label>
                             </div>
                         </div>

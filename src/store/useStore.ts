@@ -32,6 +32,7 @@ interface AppState {
     notifications: Notification[];
     readNotifications: string[];
     notificationPreferences: { notifyNewOP: boolean; pushEnabled: boolean };
+    viewPreferences: { instalacionesViewMode: 'default' | 'gantt' };
     isLoading: boolean;
     isSaving: boolean;
     error: string | null;
@@ -67,10 +68,11 @@ interface AppState {
     uploadFile: (file: File | Blob, fileName: string) => Promise<string>;
     uploadMemberFile: (file: File | Blob, fileName: string) => Promise<string>;
 
-    // Notifications
+    // Notifications & Views
     markNotificationAsRead: (id: string) => void;
     markAllNotificationsAsRead: () => void;
     updateNotificationPreferences: (prefs: { notifyNewOP: boolean; pushEnabled: boolean }) => void;
+    updateViewPreferences: (prefs: { instalacionesViewMode: 'default' | 'gantt' }) => void;
 
     // Teams
     addTeam: (team: { name: string }) => Promise<void>;
@@ -144,6 +146,7 @@ export const useStore = create<AppState>((set, get) => ({
     notifications: [],
     readNotifications: JSON.parse(localStorage.getItem('readNotifications') || '[]'),
     notificationPreferences: JSON.parse(localStorage.getItem('notificationPreferences') || '{"notifyNewOP":true, "pushEnabled":false}'),
+    viewPreferences: JSON.parse(localStorage.getItem('viewPreferences') || '{"instalacionesViewMode":"default"}'),
     isLoading: false,
     isSaving: false,
     error: null,
@@ -485,6 +488,13 @@ export const useStore = create<AppState>((set, get) => ({
         });
     },
 
+    updateViewPreferences: (prefs) => {
+        set(() => {
+            localStorage.setItem('viewPreferences', JSON.stringify(prefs));
+            return { viewPreferences: prefs };
+        });
+    },
+
     addTask: async (task) => {
         try {
             set({ error: null });
@@ -741,7 +751,7 @@ export const useStore = create<AppState>((set, get) => ({
                 if (error) throw error;
             }
 
-            // 2. Process updates
+            // 2. Process updates/inserts via upsert (handles both new local tasks and existing ones)
             for (const [, task] of updatedTasks) {
                 const { id, vehicles = [], members = [], additionalJobs = [], task_members, task_vehicles, ...taskData } = task;
 
@@ -750,10 +760,12 @@ export const useStore = create<AppState>((set, get) => ({
                     taskData.teamId = null;
                 }
 
-                const { error: taskError } = await supabase.from('tasks').update({
+                // upsert: INSERT if the row doesn't exist yet, UPDATE if it does
+                const { error: taskError } = await supabase.from('tasks').upsert({
+                    id,
                     ...taskData,
                     additionalJobs: JSON.stringify(additionalJobs)
-                }).eq('id', id);
+                }, { onConflict: 'id' });
 
                 if (taskError) throw taskError;
 
