@@ -16,17 +16,8 @@ const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
     return <ClipboardList size={13} className="text-blue-400 flex-shrink-0 mt-0.5" />;
 };
 
-const notificationTypeLabel: Record<Notification['type'], string> = {
-    new_op: 'Nueva OP',
-    status_change: 'Estado',
-    comment: 'Comentario',
-};
 
-const notificationTypeBadgeClass: Record<Notification['type'], string> = {
-    new_op: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    status_change: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    comment: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-};
+
 
 export const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ onNotificationClick }) => {
     const [activeTab, setActiveTab] = useState<'list' | 'settings'>('list');
@@ -166,45 +157,51 @@ export const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ onNo
                                 {notifications.map(notification => {
                                     const isRead = readNotifications.includes(notification.id);
                                     const isClickable = !!notification.opId || /OP #\S+/.test(notification.title);
+
+                                    // Color accent por tipo
+                                    const statusLabel = notification.type === 'status_change'
+                                        ? notification.message.replace(/^Estado actualizado a:\s*/i, '').trim() || 'Cambio'
+                                        : '';
+                                    const typeAccent = {
+                                        new_op:       { bar: 'bg-blue-500',   icon: 'text-blue-400',   bg: 'bg-blue-500/[0.04]',  hover: 'hover:bg-blue-500/[0.08]',  label: 'Nueva OP',    labelColor: 'text-blue-500 dark:text-blue-400' },
+                                        status_change:{ bar: 'bg-amber-500',  icon: 'text-amber-400',  bg: 'bg-amber-500/[0.04]', hover: 'hover:bg-amber-500/[0.08]', label: statusLabel,   labelColor: 'text-amber-600 dark:text-amber-400' },
+                                        comment:      { bar: 'bg-purple-500', icon: 'text-purple-400', bg: 'bg-purple-500/[0.04]',hover: 'hover:bg-purple-500/[0.08]',label: 'Comentario', labelColor: 'text-purple-600 dark:text-purple-400' },
+                                    }[notification.type];
+
+                                    // Extraer cliente del título: "OP #N — Cliente" → "Cliente"
+                                    const clientName = notification.title.includes('—')
+                                        ? notification.title.split('—').slice(1).join('—').trim()
+                                        : notification.title;
+                                    const opNum = notification.opNumber ? `#${notification.opNumber}` : '';
+
                                     return (
-                                        <div 
-                                            key={notification.id} 
-                                            className={`p-4 border-b border-slate-200/50 dark:border-white/5 transition-all relative group ${
-                                                isRead ? 'opacity-60 hover:opacity-100 bg-transparent' : 'bg-blue-500/[0.03] hover:bg-blue-500/[0.06]'
+                                        <div
+                                            key={notification.id}
+                                            className={`pl-3 pr-3 py-2.5 border-b border-slate-200/50 dark:border-white/5 transition-all relative flex items-center gap-2.5 ${
+                                                isRead ? 'opacity-55 hover:opacity-90' : `${typeAccent.bg} ${typeAccent.hover}`
                                             } ${isClickable ? 'cursor-pointer' : 'cursor-default'}`}
                                             onClick={() => handleNotificationClick(notification)}
                                         >
-                                            {!isRead && (
-                                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
-                                            )}
- 
-                                            <div className="flex items-start gap-2 mb-1">
-                                                <NotificationIcon type={notification.type} />
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                                                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight flex-1 min-w-0 truncate">
-                                                            {notification.title}
-                                                        </h4>
-                                                        <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full border flex-shrink-0 ${notificationTypeBadgeClass[notification.type]}`}>
-                                                            {notificationTypeLabel[notification.type]}
-                                                        </span>
-                                                    </div>
-                                                    
-                                                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-1.5">
-                                                        {notification.message}
-                                                    </p>
+                                            {/* Barra de color izquierda */}
+                                            <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${typeAccent.bar} ${isRead ? 'opacity-30' : 'opacity-100'}`} />
 
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <span className="text-[9px] font-bold text-slate-500 whitespace-nowrap uppercase">
-                                                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: es })}
-                                                        </span>
-                                                        {isClickable && (
-                                                            <span className="text-[9px] font-bold text-blue-400/70 uppercase tracking-wider group-hover:text-blue-400 transition-colors">
-                                                                Ver OP →
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                            {/* Icono tipo */}
+                                            <NotificationIcon type={notification.type} />
+
+                                            {/* Contenido */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-baseline justify-between gap-1 mb-0.5">
+                                                    <span className={`text-[10px] font-black uppercase tracking-wider flex-shrink-0 ${typeAccent.labelColor}`}>
+                                                        {typeAccent.label}
+                                                    </span>
+                                                    <span className="text-[9px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                                                        {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: es })}
+                                                    </span>
                                                 </div>
+                                                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">
+                                                    {opNum && <span className="font-black">{opNum} </span>}
+                                                    <span className="font-medium">{clientName}</span>
+                                                </p>
                                             </div>
                                         </div>
                                     );
