@@ -2,6 +2,7 @@ import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { format, addDays, startOfWeek, isWeekend, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useStore } from '../store/useStore';
+import { useTheme } from '../context/ThemeContext';
 import { sileo } from 'sileo';
 import { ChevronLeft, ChevronRight, CalendarRange } from 'lucide-react';
 
@@ -11,12 +12,14 @@ interface SimpleGanttViewProps {
     onDateChange: (date: Date) => void;
     onTaskClick?: (task: any) => void;
     isDragging?: boolean;
+    isZoomed?: boolean;
 }
 
 interface DragState {
     groupId: string;
     startDayIdx: number;
     currentDayIdx: number;
+    mode: 'move' | 'resize-start' | 'resize-end';
 }
 
 interface ContextMenu {
@@ -25,12 +28,15 @@ interface ContextMenu {
     group: any;
 }
 
-export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, currentWeekStart, onDateChange, onTaskClick, isDragging }) => {
+export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, currentWeekStart, onDateChange, onTaskClick, isDragging, isZoomed }) => {
     const updateTaskLocal = useStore(state => state.updateTaskLocal);
     const addTaskLocal    = useStore(state => state.addTaskLocal);
+    const deleteTaskLocal = useStore(state => state.deleteTaskLocal);
     const members         = useStore(state => state.members);
+    const { theme }       = useTheme();
+    const isLight         = theme === 'light';
 
-    const DAYS_TO_SHOW = 28;
+    const DAYS_TO_SHOW = isZoomed ? 14 : 28;
     const startDate = startOfWeek(currentWeekStart, { weekStartsOn: 1 });
 
     const gridBodyRef  = useRef<HTMLDivElement>(null);
@@ -48,7 +54,7 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
 
     const days = useMemo(() => {
         return Array.from({ length: DAYS_TO_SHOW }).map((_, i) => addDays(startDate, i));
-    }, [startDate]);
+    }, [startDate, DAYS_TO_SHOW]);
 
     const groupedTasks = useMemo(() => {
         const groups: Record<string, any> = {};
@@ -70,7 +76,7 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
         return Object.values(groups)
             .filter(g => g.maxDate >= minVisible && g.minDate <= maxVisible)
             .sort((a, b) => a.minDate.localeCompare(b.minDate));
-    }, [tasks, days]);
+    }, [tasks, days, DAYS_TO_SHOW]);
 
     // Cierra el context menu al click fuera
     useEffect(() => {
@@ -98,14 +104,27 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
         return Math.max(0, Math.min(DAYS_TO_SHOW - 1, Math.floor((clientX - rect.left) / dayWidth)));
     };
 
+    const getWorkingDaysBetween = (startStr: string, endStr: string): string[] => {
+        const list: string[] = [];
+        let curr = new Date(startStr + 'T12:00:00');
+        const end = new Date(endStr + 'T12:00:00');
+        while (curr <= end) {
+            if (!isWeekend(curr)) {
+                list.push(format(curr, 'yyyy-MM-dd'));
+            }
+            curr = addDays(curr, 1);
+        }
+        return list;
+    };
+
     // --- Drag (mouse events) ---
-    const handleBarMouseDown = (e: React.MouseEvent, group: any) => {
+    const handleBarMouseDown = (e: React.MouseEvent, group: any, mode: 'move' | 'resize-start' | 'resize-end' = 'move') => {
         if (e.button !== 0) return;
         e.preventDefault();
         e.stopPropagation();
         wasDraggingRef.current = false;
         const dayIdx = xToDayIdx(e.clientX);
-        setDragState({ groupId: group.id, startDayIdx: dayIdx, currentDayIdx: dayIdx });
+        setDragState({ groupId: group.id, startDayIdx: dayIdx, currentDayIdx: dayIdx, mode });
     };
 
     useEffect(() => {
@@ -119,14 +138,65 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
             if (!dragState) { setDragState(null); return; }
             const group = groupedTasks.find(g => g.id === dragState.groupId);
             if (group) {
-                const daysDiff = dragState.currentDayIdx - dragState.startDayIdx;
-                if (daysDiff !== 0) {
-                    group.originalTasks.forEach((task: any) => {
-                        const newDate = addDays(new Date(task.date + 'T12:00:00'), daysDiff);
-                        updateTaskLocal({ ...task, date: format(newDate, 'yyyy-MM-dd') });
-                    });
-                    const newStart = addDays(new Date(group.minDate + 'T12:00:00'), daysDiff);
-                    sileo.success({ title: `Tarea reprogramada al ${format(newStart, 'dd/MM', { locale: es })}` });
+                const diff = dragState.currentDayIdx - dragState.startDayIdx;
+                if (diff !== 0) {
+                    if (dragState.mode === 'move') {
+                        group.originalTasks.forEach((task: any) => {
+                            const newDate = addDays(new Date(task.date + 'T12:00:00'), diff);
+                            updateTaskLocal({ ...task, date: format(newDate, 'yyyy-MM-dd') });
+                        });
+                        const newStart = addDays(new Date(group.minDate + 'T12:00:00'), diff);
+                        sileo.success({ title: `Tarea reprogramada al ${format(newStart, 'dd/MM', { locale: es })}` });
+                    } else {
+                        // Resizing start or end
+                        const rawStart = days.findIndex(d => format(d, 'yyyy-MM-dd') === group.minDate);
+                        const rawEnd = days.findIndex(d => format(d, 'yyyy-MM-dd') === group.maxDate);
+                        
+                        let newStartIdx = rawStart;
+                        let newEndIdx = rawEnd;
+                        
+                        if (dragState.mode === 'resize-start') {
+                            newStartIdx = Math.min(rawEnd, rawStart + diff);
+                        } else if (dragState.mode === 'resize-end') {
+                            newEndIdx = Math.max(rawStart, rawEnd + diff);
+                        }
+                        
+                        const newStartStr = format(days[Math.max(0, Math.min(DAYS_TO_SHOW - 1, newStartIdx))], 'yyyy-MM-dd');
+                        const newEndStr = format(days[Math.max(0, Math.min(DAYS_TO_SHOW - 1, newEndIdx))], 'yyyy-MM-dd');
+                        
+                        const targetDates = getWorkingDaysBetween(newStartStr, newEndStr);
+                        
+                        // Tasks to delete
+                        const tasksToDelete = group.originalTasks.filter((t: any) => !targetDates.includes(t.date));
+                        
+                        // Dates to add
+                        const existingDates = group.originalTasks.map((t: any) => t.date);
+                        const datesToAdd = targetDates.filter(d => !existingDates.includes(d));
+                        
+                        // Execute deletions
+                        tasksToDelete.forEach((t: any) => {
+                            deleteTaskLocal(t.id);
+                        });
+                        
+                        // Execute additions
+                        const template = group.originalTasks[0];
+                        const templateMembers = (template.members || []).map((m: any) => ({
+                            id: typeof m === 'string' ? m : m.id,
+                            hours: 8
+                        }));
+                        
+                        datesToAdd.forEach(d => {
+                            addTaskLocal({
+                                ...template,
+                                id: undefined,
+                                date: d,
+                                members: templateMembers,
+                                groupId: group.id
+                            });
+                        });
+                        
+                        sileo.success({ title: `Duración de tarea modificada` });
+                    }
                 }
             }
             setDragState(null);
@@ -138,7 +208,7 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [dragState, groupedTasks]);
+    }, [dragState, groupedTasks, days]);
 
     // --- Context menu ---
     const handleBarContextMenu = (e: React.MouseEvent, group: any) => {
@@ -223,34 +293,46 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
     };
 
     // Estilo de la barra con offset de arrastre
-    const getBarStyle = (minDateStr: string, maxDateStr: string, dayOffset = 0) => {
-        const rawStart = days.findIndex(d => format(d, 'yyyy-MM-dd') === minDateStr);
-        const rawEnd   = days.findIndex(d => format(d, 'yyyy-MM-dd') === maxDateStr);
-        const startIdx = (rawStart === -1 ? 0 : rawStart) + dayOffset;
-        const endIdx   = (rawEnd   === -1 ? DAYS_TO_SHOW - 1 : rawEnd) + dayOffset;
+    const getBarStyle = (group: any, dayOffsetStart = 0, dayOffsetEnd = 0) => {
+        const rawStart = days.findIndex(d => format(d, 'yyyy-MM-dd') === group.minDate);
+        const rawEnd   = days.findIndex(d => format(d, 'yyyy-MM-dd') === group.maxDate);
+        const startIdx = (rawStart === -1 ? 0 : rawStart) + dayOffsetStart;
+        const endIdx   = (rawEnd   === -1 ? DAYS_TO_SHOW - 1 : rawEnd) + dayOffsetEnd;
         const cs = Math.max(0, Math.min(DAYS_TO_SHOW - 1, startIdx));
         const ce = Math.max(cs, Math.min(DAYS_TO_SHOW - 1, endIdx));
         return { gridColumn: `${cs + 1} / span ${ce - cs + 1}` };
+    };
+
+    const cellBg = (day: Date) => {
+        if (isWeekend(day)) {
+            return isLight ? 'bg-slate-200/50' : 'bg-white/[0.02]';
+        }
+        return isLight ? 'bg-white' : 'bg-transparent';
     };
 
     const isDraggingAny = dragState !== null;
 
     return (
         <div
-            className="flex-1 min-h-0 bg-[#0f172a] flex flex-col overflow-hidden border-t sm:border border-white/5 mx-0 sm:mx-2 lg:mx-10 mb-0 sm:mb-2 rounded-none sm:rounded-[1rem] relative shadow-2xl animate-in fade-in zoom-in-95 duration-300"
-            style={{ userSelect: isDraggingAny ? 'none' : 'auto', cursor: isDraggingAny ? 'grabbing' : 'default' }}
+            className={`flex-1 min-h-0 flex flex-col overflow-hidden border-t sm:border mx-0 sm:mx-2 lg:mx-10 mb-0 sm:mb-2 rounded-none sm:rounded-[1rem] relative shadow-2xl animate-in fade-in zoom-in-95 duration-300 ${isLight ? 'bg-white border-slate-200 shadow-slate-200/50' : 'bg-[#0f172a] border-white/5'}`}
+            style={{ 
+                userSelect: isDraggingAny ? 'none' : 'auto', 
+                cursor: isDraggingAny 
+                    ? (dragState?.mode === 'move' ? 'grabbing' : 'ew-resize') 
+                    : 'default' 
+            }}
         >
             {/* Header */}
-            <div className="flex items-center justify-between p-3 border-b border-white/10 bg-[#1e293b]">
-                <div className="text-sm font-bold text-slate-300">Gantt Simplificado (4 Semanas)</div>
+            <div className={`flex items-center justify-between p-3 border-b ${isLight ? 'bg-slate-100 border-slate-200' : 'bg-[#1e293b] border-white/10'}`}>
+                <div className={`text-sm font-bold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Gantt Simplificado ({isZoomed ? '2 Semanas' : '4 Semanas'})</div>
                 <div className="flex items-center gap-2">
-                    <button onClick={() => onDateChange(addDays(startDate, -7))} className="p-1 hover:bg-white/10 rounded text-slate-400">
+                    <button onClick={() => onDateChange(addDays(startDate, -7))} className={`p-1 rounded transition-colors ${isLight ? 'hover:bg-slate-200 text-slate-600' : 'hover:bg-white/10 text-slate-400'}`}>
                         <ChevronLeft size={20} />
                     </button>
-                    <button onClick={() => onDateChange(new Date())} className="text-xs font-bold px-2 py-1 bg-blue-600/20 text-blue-400 rounded">
+                    <button onClick={() => onDateChange(new Date())} className={`text-xs font-bold px-2 py-1 rounded transition-colors ${isLight ? 'bg-blue-100 text-blue-600 hover:bg-blue-200/70' : 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30'}`}>
                         Hoy
                     </button>
-                    <button onClick={() => onDateChange(addDays(startDate, 7))} className="p-1 hover:bg-white/10 rounded text-slate-400">
+                    <button onClick={() => onDateChange(addDays(startDate, 7))} className={`p-1 rounded transition-colors ${isLight ? 'hover:bg-slate-200 text-slate-600' : 'hover:bg-white/10 text-slate-400'}`}>
                         <ChevronRight size={20} />
                     </button>
                 </div>
@@ -258,33 +340,40 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
 
             <div className="flex-1 overflow-auto custom-scrollbar flex">
                 {/* Left Column */}
-                <div className="w-64 flex-shrink-0 border-r border-white/10 bg-[#1e293b] flex flex-col sticky left-0 z-20">
-                    <div className="h-12 border-b border-white/10 flex items-center px-4 font-bold text-xs text-slate-400 uppercase tracking-widest sticky top-0 bg-[#1e293b] z-30">
+                <div className={`w-64 flex-shrink-0 border-r flex flex-col sticky left-0 z-20 ${isLight ? 'border-slate-200 bg-slate-100' : 'border-white/10 bg-[#1e293b]'}`}>
+                    <div className={`h-12 border-b flex items-center px-4 font-bold text-xs uppercase tracking-widest sticky top-0 z-30 ${isLight ? 'border-slate-200 bg-slate-100 text-slate-500' : 'border-white/10 bg-[#1e293b] text-slate-400'}`}>
                         Tareas
                     </div>
                     {groupedTasks.map(g => (
                         <div
                             key={g.id}
                             onClick={() => !isDraggingAny && onTaskClick?.(g.originalTasks[0])}
-                            className="h-12 border-b border-white/5 flex flex-col justify-center px-4 hover:bg-white/[0.04] transition-colors cursor-pointer group/row"
+                            className={`h-12 border-b flex flex-col justify-center px-4 transition-colors cursor-pointer group/row ${isLight ? 'border-slate-200/50 hover:bg-slate-200/40' : 'border-white/5 hover:bg-white/[0.04]'}`}
                         >
-                            <div className="text-xs font-bold text-slate-200 truncate group-hover/row:text-blue-300 transition-colors">{g.name}</div>
-                            <div className="text-[10px] text-slate-500 truncate">OP {g.opNumber} · {g.client}</div>
+                            <div className={`text-xs font-bold truncate transition-colors ${isLight ? 'text-slate-700 group-hover/row:text-blue-600' : 'text-slate-200 group-hover/row:text-blue-300'}`}>{g.name}</div>
+                            <div className={`text-[10px] truncate ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>OP {g.opNumber} · {g.client}</div>
                         </div>
                     ))}
                 </div>
 
                 {/* Timeline Grid */}
-                <div className="flex-1 flex flex-col" style={{ minWidth: `${DAYS_TO_SHOW * 40}px` }}>
+                <div className={`flex-1 flex flex-col ${isLight ? 'bg-slate-50/50' : ''}`} style={{ minWidth: `${DAYS_TO_SHOW * 40}px` }}>
                     {/* Header de días */}
                     <div
-                        className="h-12 border-b border-white/10 sticky top-0 z-10 bg-[#1e293b]"
+                        className={`h-12 border-b sticky top-0 z-10 ${isLight ? 'border-slate-200 bg-slate-100' : 'border-white/10 bg-[#1e293b]'}`}
                         style={{ display: 'grid', gridTemplateColumns: `repeat(${DAYS_TO_SHOW}, minmax(0, 1fr))` }}
                     >
                         {days.map((day, i) => (
-                            <div key={i} className={`border-r border-white/5 flex flex-col items-center justify-center ${isWeekend(day) ? 'bg-white/5' : ''} ${isToday(day) ? 'bg-blue-500/10' : ''}`}>
-                                <span className="text-[9px] uppercase font-bold text-slate-500">{format(day, 'EEE', { locale: es })}</span>
-                                <span className={`text-xs font-bold ${isToday(day) ? 'text-blue-400' : 'text-slate-300'}`}>{format(day, 'dd')}</span>
+                            <div 
+                                key={i} 
+                                className={`border-r flex flex-col items-center justify-center 
+                                    ${isLight ? 'border-slate-200/70' : 'border-white/5'} 
+                                    ${isWeekend(day) ? (isLight ? 'bg-slate-200/60' : 'bg-white/5') : ''} 
+                                    ${isToday(day) ? (isLight ? 'bg-blue-100/50' : 'bg-blue-500/10') : ''}
+                                `}
+                            >
+                                <span className={`text-[9px] uppercase font-bold ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>{format(day, 'EEE', { locale: es })}</span>
+                                <span className={`text-xs font-bold ${isToday(day) ? (isLight ? 'text-blue-600' : 'text-blue-400') : (isLight ? 'text-slate-700' : 'text-slate-300')}`}>{format(day, 'dd')}</span>
                             </div>
                         ))}
                     </div>
@@ -293,7 +382,34 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
                     <div className="flex-1 flex flex-col" ref={gridBodyRef}>
                         {groupedTasks.map(g => {
                             const isThisBeingDragged = dragState?.groupId === g.id;
-                            const dayOffset = isThisBeingDragged ? dragState!.currentDayIdx - dragState!.startDayIdx : 0;
+                            let dayOffsetStart = 0;
+                            let dayOffsetEnd = 0;
+
+                            if (isThisBeingDragged && dragState) {
+                                const diff = dragState.currentDayIdx - dragState.startDayIdx;
+                                if (dragState.mode === 'move') {
+                                    dayOffsetStart = diff;
+                                    dayOffsetEnd = diff;
+                                } else if (dragState.mode === 'resize-start') {
+                                    const rawStart = days.findIndex(d => format(d, 'yyyy-MM-dd') === g.minDate);
+                                    const rawEnd = days.findIndex(d => format(d, 'yyyy-MM-dd') === g.maxDate);
+                                    const newStartIdx = rawStart + diff;
+                                    if (newStartIdx <= rawEnd) {
+                                        dayOffsetStart = diff;
+                                    } else {
+                                        dayOffsetStart = rawEnd - rawStart;
+                                    }
+                                } else if (dragState.mode === 'resize-end') {
+                                    const rawStart = days.findIndex(d => format(d, 'yyyy-MM-dd') === g.minDate);
+                                    const rawEnd = days.findIndex(d => format(d, 'yyyy-MM-dd') === g.maxDate);
+                                    const newEndIdx = rawEnd + diff;
+                                    if (newEndIdx >= rawStart) {
+                                        dayOffsetEnd = diff;
+                                    } else {
+                                        dayOffsetEnd = rawStart - rawEnd;
+                                    }
+                                }
+                            }
 
                             // Integrantes únicos asignados en cualquier parte del grupo
                             const uniqueMemberIds = Array.from(new Set(
@@ -312,7 +428,7 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
                             return (
                                 <div
                                     key={g.id}
-                                    className="h-12 border-b border-white/5 relative"
+                                    className={`h-12 border-b relative ${isLight ? 'border-slate-200/50' : 'border-white/5'}`}
                                     style={{ display: 'grid', gridTemplateColumns: `repeat(${DAYS_TO_SHOW}, minmax(0, 1fr))` }}
                                 >
                                     {/* Celdas de fondo */}
@@ -335,12 +451,13 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
                                                     handleHtml5Drop(e, day);
                                                     setHtml5DragOverCell(null);
                                                 }}
-                                                className={`h-full border-r border-white/5 transition-all duration-150
-                                                    ${isWeekend(day) ? 'bg-white/[0.02]' : ''}
-                                                    ${isToday(day) ? 'bg-blue-500/[0.03]' : ''}
-                                                    ${isDropTarget ? 'bg-blue-500/20' : ''}
-                                                    ${isHtml5Hovered ? 'bg-emerald-500/20 border-emerald-400/30' : ''}
-                                                    ${isDragging && !isHtml5Hovered ? 'bg-emerald-500/[0.03] border-emerald-500/10 cursor-copy' : ''}
+                                                className={`h-full border-r transition-all duration-150
+                                                    ${isLight ? 'border-slate-200/70' : 'border-white/5'}
+                                                    ${cellBg(day)}
+                                                    ${isToday(day) ? (isLight ? 'bg-blue-50/70' : 'bg-blue-500/[0.03]') : ''}
+                                                    ${isDropTarget ? (isLight ? 'bg-blue-100' : 'bg-blue-500/20') : ''}
+                                                    ${isHtml5Hovered ? (isLight ? 'bg-emerald-100/70' : 'bg-emerald-500/20') : ''}
+                                                    ${isDragging && !isHtml5Hovered ? (isLight ? 'bg-emerald-50/30' : 'bg-emerald-500/[0.03]') : ''}
                                                 `}
                                             />
                                         );
@@ -349,14 +466,14 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
                                     {/* Barra draggable */}
                                     <div className="absolute inset-0 grid p-1.5 pointer-events-none" style={{ gridTemplateColumns: `repeat(${DAYS_TO_SHOW}, minmax(0, 1fr))` }}>
                                         <div
-                                            className={`h-full rounded-md shadow-sm border transition-all duration-75 flex items-center px-2 overflow-hidden pointer-events-auto
+                                            className={`h-full rounded-md shadow-sm border transition-all duration-75 flex items-center px-2 overflow-hidden pointer-events-auto relative group
                                                 ${isThisBeingDragged
                                                     ? 'bg-blue-400 border-blue-300 shadow-lg shadow-blue-500/30 scale-y-110 cursor-grabbing'
                                                     : 'bg-blue-500/80 border-blue-400/50 hover:bg-blue-400 cursor-grab'
                                                 }
                                             `}
-                                            style={getBarStyle(g.minDate, g.maxDate, dayOffset)}
-                                            onMouseDown={(e) => handleBarMouseDown(e, g)}
+                                            style={getBarStyle(g, dayOffsetStart, dayOffsetEnd)}
+                                            onMouseDown={(e) => handleBarMouseDown(e, g, 'move')}
                                             onContextMenu={(e) => handleBarContextMenu(e, g)}
                                             onClick={(e) => {
                                                 if (wasDraggingRef.current) return;
@@ -365,7 +482,7 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
                                             }}
                                             title={`${g.name} · OP ${g.opNumber} · Click derecho para opciones`}
                                         >
-                                            <div className="flex flex-col justify-center h-full gap-0 overflow-hidden select-none">
+                                            <div className="flex flex-col justify-center h-full gap-0 overflow-hidden select-none mr-2 ml-2">
                                                 <span className="text-[10px] font-bold text-white truncate leading-tight">
                                                     {g.parts.length > 1 ? `${g.parts.length} días · ${g.client}` : g.client}
                                                 </span>
@@ -385,6 +502,26 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
                                                     </div>
                                                 )}
                                             </div>
+
+                                            {/* Resize Handles (hidden during drag, visible on bar hover) */}
+                                            {!isDraggingAny && (
+                                                <>
+                                                    <div
+                                                        className="absolute left-0 top-0 bottom-0 w-2.5 cursor-ew-resize hover:bg-white/20 active:bg-white/40 transition-colors rounded-l-md"
+                                                        onMouseDown={(e) => {
+                                                            e.stopPropagation();
+                                                            handleBarMouseDown(e, g, 'resize-start');
+                                                        }}
+                                                    />
+                                                    <div
+                                                        className="absolute right-0 top-0 bottom-0 w-2.5 cursor-ew-resize hover:bg-white/20 active:bg-white/40 transition-colors rounded-r-md"
+                                                        onMouseDown={(e) => {
+                                                            e.stopPropagation();
+                                                            handleBarMouseDown(e, g, 'resize-end');
+                                                        }}
+                                                    />
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

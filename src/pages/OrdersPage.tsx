@@ -519,7 +519,89 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
     const linkedTasks = React.useMemo(() => {
         const opNum = viewingOrder?.opNumber || taskFormData.opNumber;
         if (!opNum) return [];
-        return allTasks.filter(t => t.opNumber?.toString().trim() === opNum.toString().trim());
+        const rawTasks = allTasks.filter(t => t.opNumber?.toString().trim() === opNum.toString().trim());
+
+        // Group scheduled tasks by name and section
+        const groups: { [key: string]: any[] } = {};
+        const pendingTasks: any[] = [];
+
+        rawTasks.forEach(task => {
+            if (task.date) {
+                const key = `${task.section}-${task.name.trim().toLowerCase()}`;
+                if (!groups[key]) {
+                    groups[key] = [];
+                }
+                groups[key].push(task);
+            } else {
+                pendingTasks.push(task);
+            }
+        });
+
+        // Convert groups to unified grouped task objects
+        const groupedScheduledTasks = Object.values(groups).map(groupTasks => {
+            const sorted = [...groupTasks].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+            const first = sorted[0];
+
+            // Collect all unique members
+            const allMembers: any[] = [];
+            const seenMembers = new Set<string>();
+            groupTasks.forEach(t => {
+                const membersList = t.members || [];
+                membersList.forEach((m: any) => {
+                    const mId = typeof m === 'object' ? m.id : m;
+                    if (!seenMembers.has(mId)) {
+                        seenMembers.add(mId);
+                        allMembers.push(m);
+                    }
+                });
+            });
+
+            // Collect all unique vehicles
+            const allVehicles: string[] = [];
+            const seenVehicles = new Set<string>();
+            groupTasks.forEach(t => {
+                const vehiclesList = t.vehicles || [];
+                vehiclesList.forEach((vId: string) => {
+                    if (!seenVehicles.has(vId)) {
+                        seenVehicles.add(vId);
+                        allVehicles.push(vId);
+                    }
+                });
+            });
+
+            // Sum real hours across all daily tasks in the group
+            const totalRealHours = groupTasks.reduce((sum, t) => {
+                const taskMembers = t.members || [];
+                const membersRealSum = taskMembers.reduce((mSum: number, m: any) => {
+                    const h = typeof m === 'object' ? (m.hours ?? 8) : 8;
+                    return mSum + h;
+                }, 0);
+                return sum + (t.realHours || membersRealSum || 0);
+            }, 0);
+
+            const estimatedHours = first.estimatedHours || first.totalHours || 0;
+            const minDate = sorted[0].date;
+            const maxDate = sorted[sorted.length - 1].date;
+            const allCompleted = groupTasks.every(t => t.completed);
+
+            return {
+                ...first,
+                id: first.id,
+                ids: groupTasks.map(t => t.id),
+                members: allMembers,
+                vehicles: allVehicles,
+                totalHours: estimatedHours,
+                realHours: totalRealHours,
+                completed: allCompleted,
+                date: minDate,
+                minDate,
+                maxDate,
+                isGroup: true,
+                originalTasks: groupTasks
+            };
+        });
+
+        return [...groupedScheduledTasks, ...pendingTasks];
     }, [allTasks, viewingOrder, taskFormData.opNumber]);
 
     const handleOpenRegisterTask = () => {
@@ -578,14 +660,38 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                 'Pintura': 'pintura'
             };
             
+            // Auto-compute realHours from the sum of assigned member hours
+            const computedRealHours = (taskFormData.members || []).reduce((sum: number, m: any) => {
+                const h = typeof m === 'object' ? (m.hours ?? 8) : 8;
+                return sum + h;
+            }, 0);
+
             const taskPayload = {
                 ...taskFormData,
+                realHours: computedRealHours,
                 type: sectionToType[taskFormData.section] as any,
                 blockedBy: taskFormData.blockedBy || null
             };
 
             if (isEditingTask) {
-                await updateTask({ ...taskPayload, id: isEditingTask });
+                const originalTask = allTasks.find(t => t.id === isEditingTask);
+                if (originalTask && originalTask.date) {
+                    const groupTasks = allTasks.filter(t => 
+                        t.date &&
+                        (originalTask.groupId ? t.groupId === originalTask.groupId : (t.name === originalTask.name && t.section === originalTask.section))
+                    );
+                    for (const gt of groupTasks) {
+                        await updateTask({
+                            ...gt,
+                            ...taskPayload,
+                            id: gt.id,
+                            date: gt.date,
+                            teamId: gt.teamId
+                        });
+                    }
+                } else {
+                    await updateTask({ ...taskPayload, id: isEditingTask });
+                }
                 sileo.success({ title: 'Tarea actualizada con éxito' });
             } else {
                 await addTask(taskPayload);
@@ -602,10 +708,18 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
         }
     };
 
-    const handleDeleteTask = async (taskId: string) => {
-        if (confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
+    const handleDeleteTask = async (task: any) => {
+        const ids = task.ids || [task.id || task];
+        const isGroup = task.ids && task.ids.length > 1;
+        const confirmMsg = isGroup 
+            ? `¿Estás seguro de que deseas eliminar esta tarea y sus ${task.ids.length} días programados?`
+            : '¿Estás seguro de que deseas eliminar esta tarea?';
+
+        if (confirm(confirmMsg)) {
             try {
-                await deleteTask(taskId);
+                for (const id of ids) {
+                    await deleteTask(id);
+                }
                 sileo.success({ title: 'Tarea eliminada con éxito' });
             } catch (err: any) {
                 sileo.error({
@@ -1373,6 +1487,15 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                 today.setHours(0, 0, 0, 0);
                                                 const isPastDate = task.date && new Date(task.date + 'T00:00:00') < today;
 
+                                                // Check if this is a group and date range
+                                                const dateText = task.date ? (
+                                                    task.isGroup && task.minDate !== task.maxDate ? (
+                                                        `${new Date(task.minDate + 'T12:00:00').toLocaleDateString('es-UY')} al ${new Date(task.maxDate + 'T12:00:00').toLocaleDateString('es-UY')}`
+                                                    ) : (
+                                                        new Date(task.date + 'T12:00:00').toLocaleDateString('es-UY')
+                                                    )
+                                                ) : 'Sin fecha';
+
                                                 return (
                                                     <div key={task.id} className={`p-4 border rounded-xl space-y-2 transition-colors relative group/task-card ${isPastDate ? 'bg-emerald-50 dark:bg-emerald-500/[0.07] border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100/70 dark:hover:bg-emerald-500/[0.12]' : 'bg-slate-50 dark:bg-white/[0.015] border-slate-200 dark:border-white/5 hover:bg-slate-100/50 dark:hover:bg-white/[0.03]'}`}>
                                                         <div className="flex justify-between items-start gap-2">
@@ -1390,7 +1513,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                                 </button>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => handleDeleteTask(task.id)}
+                                                                    onClick={() => handleDeleteTask(task)}
                                                                     className="p-1 hover:bg-red-500/10 text-slate-400 hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400 rounded-lg transition-all"
                                                                     title="Eliminar tarea"
                                                                 >
@@ -1402,14 +1525,18 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-slate-500">
                                                             <div className="flex items-center gap-1">
                                                                 <Calendar size={12} className="text-slate-400 dark:text-slate-500" />
-                                                                <span>{task.date ? new Date(task.date + 'T12:00:00').toLocaleDateString('es-UY') : 'Sin fecha'}</span>
+                                                                <span className="truncate max-w-[200px]" title={dateText}>{dateText}</span>
                                                             </div>
                                                             <div className="flex items-center gap-1">
                                                                 <Users size={12} className="text-slate-400 dark:text-slate-500" />
                                                                 <span>{(task.members || []).length} operarios</span>
                                                             </div>
                                                             <div className="flex items-center gap-1 font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                                                <span>{task.totalHours} hrs</span>
+                                                                {task.isGroup ? (
+                                                                    <span>Est: {task.totalHours}h / Real: {task.realHours}h</span>
+                                                                ) : (
+                                                                    <span>{task.totalHours} hrs</span>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1759,32 +1886,41 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                         required
                                                     />
                                                 </div>
-                                                {isEditingTask && (
-                                                    <div className="space-y-2 pt-2 border-t border-blue-500/10">
-                                                        <div className="space-y-0.5">
-                                                            <label className="text-[9px] font-black uppercase tracking-widest text-amber-400 block">HORAS FINALES</label>
-                                                            <input
-                                                                type="number"
-                                                                step="0.5"
-                                                                className="input w-full font-mono font-bold text-amber-400 text-lg py-1.5"
-                                                                value={taskFormData.realHours}
-                                                                onChange={(e) => {
-                                                                    const real = parseFloat(e.target.value) || 0;
-                                                                    setTaskFormData({ ...taskFormData, realHours: real });
-                                                                }}
-                                                            />
+                                                {isEditingTask && (() => {
+                                                    const realHoursComputed = (taskFormData.members || []).reduce((sum: number, m: any) => {
+                                                        const h = typeof m === 'object' ? (m.hours ?? 8) : 8;
+                                                        return sum + h;
+                                                    }, 0);
+                                                    const estimated = taskFormData.totalHours || 0;
+                                                    const isOver = realHoursComputed > estimated;
+                                                    const isUnder = estimated > 0 && realHoursComputed < estimated;
+                                                    return (
+                                                        <div className="space-y-2 pt-2 border-t border-blue-500/10">
+                                                            <div className="space-y-0.5">
+                                                                <label className="text-[9px] font-black uppercase tracking-widest text-amber-400 block">HORAS REALES ASIGNADAS</label>
+                                                                <div className={`flex items-baseline gap-2 font-mono font-bold text-lg ${isOver ? 'text-red-400' : isUnder ? 'text-amber-400' : 'text-sky-400'}`}>
+                                                                    {realHoursComputed.toFixed(1)}
+                                                                    <span className="text-xs font-normal text-slate-500">hs</span>
+                                                                    {estimated > 0 && (
+                                                                        <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${isOver ? 'bg-red-500/20 text-red-400' : isUnder ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                                                            {isOver ? `+${(realHoursComputed - estimated).toFixed(1)} sobre` : isUnder ? `-${(estimated - realHoursComputed).toFixed(1)} faltan` : '✓ OK'}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-[8px] text-slate-500 leading-tight">Suma automática de hs de operarios asignados.</p>
+                                                            </div>
+                                                            <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded hover:bg-white/5 transition-colors border border-white/5">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 text-emerald-500"
+                                                                    checked={taskFormData.completed}
+                                                                    onChange={(e) => setTaskFormData({ ...taskFormData, completed: e.target.checked })}
+                                                                />
+                                                                <span className="text-[10px] font-bold text-slate-300 uppercase">Terminada</span>
+                                                            </label>
                                                         </div>
-                                                        <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded hover:bg-white/5 transition-colors border border-white/5">
-                                                            <input
-                                                                type="checkbox"
-                                                                className="w-3.5 h-3.5 rounded border-white/20 bg-white/5 text-emerald-500"
-                                                                checked={taskFormData.completed}
-                                                                onChange={(e) => setTaskFormData({ ...taskFormData, completed: e.target.checked })}
-                                                            />
-                                                            <span className="text-[10px] font-bold text-slate-300 uppercase">Terminada</span>
-                                                        </label>
-                                                    </div>
-                                                )}
+                                                    );
+                                                })()}
                                             </div>
 
                                             {/* Vehicles */}

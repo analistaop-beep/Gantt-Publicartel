@@ -40,6 +40,7 @@ export const GanttPage: React.FC = () => {
     // Selected context for task addition/editing
     const [selectedContext, setSelectedContext] = useState<{ teamId: string; date: Date } | null>(null);
     const [editingTask, setEditingTask] = useState<any | null>(null);
+    const [propagateGroupChanges, setPropagateGroupChanges] = useState(true);
 
     const [formData, setFormData] = useState({
         opNumber: '',
@@ -278,14 +279,26 @@ export const GanttPage: React.FC = () => {
 
 
             if (editingTask) {
-                await updateTask({
-                    ...editingTask,
-                    ...formData,
-                    date: dateToUse,
-                    teamId: teamIdToUse,
-                    section: formData.section || 'Instalaciones',
-                    blockedBy: formData.blockedBy || null
-                });
+                if (formData.section === 'Instalaciones' && editingTask.groupId && propagateGroupChanges) {
+                    const groupTasks = tasks.filter((t: any) => t.groupId === editingTask.groupId && t.date);
+                    for (const gt of groupTasks) {
+                        await updateTask({
+                            ...gt,
+                            ...formData,
+                            date: gt.date, // keep original date
+                            teamId: gt.teamId // keep original teamId
+                        });
+                    }
+                } else {
+                    await updateTask({
+                        ...editingTask,
+                        ...formData,
+                        date: dateToUse,
+                        teamId: teamIdToUse,
+                        section: formData.section || 'Instalaciones',
+                        blockedBy: formData.blockedBy || null
+                    });
+                }
                 sileo.success({ title: 'Tarea actualizada con éxito' });
             } else {
                 await addTask({
@@ -328,6 +341,7 @@ export const GanttPage: React.FC = () => {
 
     const handleEditTask = (task: any) => {
         setEditingTask(task);
+        setPropagateGroupChanges(true);
         setFormData({
             opNumber: task.opNumber || '',
             name: task.name || '',
@@ -800,6 +814,7 @@ export const GanttPage: React.FC = () => {
                     onDateChange={setCurrentWeekStart}
                     onTaskClick={handleEditTask}
                     isDragging={isDragging}
+                    isZoomed={isZoomed}
                 />
             ) : (
             <div className="flex-1 min-h-0 bg-[#0f172a] flex flex-col overflow-hidden border-t sm:border border-white/5 mx-0 sm:mx-2 lg:mx-10 mb-0 sm:mb-2 rounded-none sm:rounded-[1rem] relative shadow-2xl">
@@ -1168,7 +1183,7 @@ export const GanttPage: React.FC = () => {
             {/* Modals */}
             {isTaskModalOpen && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-                    <div className="bg-[#1e293b] p-4 md:p-8 rounded-sm w-full max-w-[95vw] md:max-w-[80vw] max-h-[90vh] flex flex-col shadow-2xl border border-white/10">
+                    <div className="bg-[#1e293b] p-4 md:p-8 rounded-sm w-full max-w-[95vw] md:max-w-[80vw] h-[85vh] max-h-[90vh] flex flex-col shadow-2xl border border-white/10">
                         <div className="flex justify-between items-center mb-6">
                             <div>
                                 <h3 className="text-xl font-bold flex items-center gap-2">
@@ -1198,13 +1213,13 @@ export const GanttPage: React.FC = () => {
                             </button>
                         </div>
 
-                        <form onSubmit={handleTaskSubmit} className="flex flex-col h-full overflow-hidden">
-                            <div className="flex-1 pr-2 overflow-y-auto custom-scrollbar pb-1 space-y-6">
+                        <form onSubmit={handleTaskSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                            <div className="flex-1 min-h-0 overflow-hidden">
                                 {/* Top Section: Grid of 2 or 3 columns depending on context */}
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
                                     
-                                    {/* Column 1: Core Data */}
-                                    <div className="lg:col-span-2 space-y-6">
+                                    {/* Column 1: Core Data – independent scroll */}
+                                    <div className="lg:col-span-2 overflow-y-auto custom-scrollbar pr-2 space-y-6 pb-4">
                                         <div className="bg-white/5 p-6 border border-white/5 space-y-4">
                                             <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400">DATOS DE OBRA</h4>
                                             
@@ -1337,18 +1352,60 @@ export const GanttPage: React.FC = () => {
                                             <div className="bg-blue-500/5 p-6 border border-blue-500/10 space-y-4">
                                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400">CARGA DE HORAS</h4>
                                                 <div className="space-y-1">
-                                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">TOTAL HORAS PREVISTAS</label>
-                                                    <input
-                                                            type="number" step="0.1" 
-                                                            className="input w-full font-mono font-bold text-emerald-400 text-xl"
-                                                            value={formData.totalHours}
-                                                            onChange={(e) => {
-                                                                const total = parseFloat(e.target.value) || 0;
-                                                                setFormData({ ...formData, totalHours: total, duration: total });
-                                                            }}
-                                                            required
-                                                        />
-                                                    </div>
+                                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">HORAS ESTIMADAS</label>
+                                                     {editingTask ? (
+                                                         <div className="input w-full font-mono font-bold text-emerald-400 text-xl flex items-center bg-white/[0.02] cursor-not-allowed select-none">
+                                                             {formData.estimatedHours || formData.totalHours || 0} <span className="text-sm text-slate-500 ml-2 font-normal">hs</span>
+                                                         </div>
+                                                     ) : (
+                                                         <input
+                                                             type="number" step="0.1"
+                                                             className="input w-full font-mono font-bold text-emerald-400 text-xl"
+                                                             value={formData.totalHours}
+                                                             onChange={(e) => {
+                                                                 const total = parseFloat(e.target.value) || 0;
+                                                                 setFormData({ ...formData, totalHours: total, duration: total });
+                                                             }}
+                                                             required
+                                                         />
+                                                     )}
+                                                 </div>
+
+                                                 {/* HORAS REALES — computed live from assigned members across all group days */}
+                                                 {editingTask && (() => {
+                                                     const groupTasks = editingTask.groupId
+                                                         ? tasks.filter((t: any) => t.groupId === editingTask.groupId && t.date)
+                                                         : [editingTask];
+                                                     const realHours = groupTasks.reduce((total: number, t: any) => {
+                                                         const dayMembers: any[] = t.id === editingTask.id
+                                                             ? formData.members
+                                                             : (t.members || []);
+                                                         return total + dayMembers.reduce((sum: number, m: any) => {
+                                                             const h = typeof m === 'object' ? (m.hours ?? 8) : 8;
+                                                             return sum + h;
+                                                         }, 0);
+                                                     }, 0);
+                                                     const estimated = formData.estimatedHours || formData.totalHours || 0;
+                                                     const isOver = realHours > estimated;
+                                                     const isUnder = estimated > 0 && realHours < estimated;
+                                                     return (
+                                                         <div className="space-y-1 pt-3 border-t border-blue-500/10">
+                                                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">HORAS REALES ASIGNADAS</label>
+                                                             <div className={`flex items-baseline gap-2 font-mono font-bold text-xl ${isOver ? 'text-red-400' : isUnder ? 'text-amber-400' : 'text-sky-400'}`}>
+                                                                 {realHours.toFixed(1)}
+                                                                 <span className="text-sm font-normal text-slate-500">hs</span>
+                                                                 {estimated > 0 && (
+                                                                     <span className={`text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ml-1 ${isOver ? 'bg-red-500/20 text-red-400' : isUnder ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                                                         {isOver ? `+${(realHours - estimated).toFixed(1)} sobre` : isUnder ? `-${(estimated - realHours).toFixed(1)} faltan` : '✓ OK'}
+                                                                     </span>
+                                                                 )}
+                                                             </div>
+                                                             <p className="text-[9px] text-slate-500 leading-tight">
+                                                                 Suma de hs de todos los operarios en los {groupTasks.length} día{groupTasks.length !== 1 ? 's' : ''} programados.
+                                                             </p>
+                                                         </div>
+                                                     );
+                                                 })()}
 
                                                     {/* Manual Hours + Tarea Realizada (solo para tareas pendientes) */}
                                                     {editingTask && (!editingTask.date || editingTask.date === '') && (
@@ -1452,12 +1509,12 @@ export const GanttPage: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Column 2: Personnel */}
-                                    <div className="space-y-6">
-                                        <div className="bg-white/5 p-6 border border-white/5 space-y-4">
-                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-purple-400">PERSONAL ASIGNADO</h4>
-                                            <div className="space-y-2">
-                                                <div className="relative mb-2">
+                                    {/* Column 2: Personnel – stretches to fill height, list scrolls */}
+                                    <div className="flex flex-col h-full min-h-0">
+                                        <div className="bg-white/5 p-6 border border-white/5 flex flex-col flex-1 min-h-0">
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-4 flex-shrink-0">PERSONAL ASIGNADO</h4>
+                                            <div className="flex flex-col flex-1 min-h-0 space-y-2">
+                                                <div className="relative mb-2 flex-shrink-0">
                                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
                                                     <input 
                                                         type="text"
@@ -1467,7 +1524,7 @@ export const GanttPage: React.FC = () => {
                                                         onChange={(e) => setMemberSearch(e.target.value)}
                                                     />
                                                 </div>
-                                                <div className="bg-white/5 border border-white/5 p-2 h-[600px] overflow-y-auto custom-scrollbar space-y-1">
+                                                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-white/5 border border-white/5 p-2 space-y-1">
                                                     {members
                                                         .filter(m => m.sector === formData.section && m.name.toLowerCase().includes(memberSearch.toLowerCase()))
                                                         .filter(m => {
@@ -1525,12 +1582,30 @@ export const GanttPage: React.FC = () => {
                                                         })}
                                                 </div>
                                             </div>
+
+                                            {/* Propagate toggle – only visible when editing a multi-day group */}
+                                            {editingTask && editingTask.groupId && (
+                                                <label className="flex items-center gap-2.5 cursor-pointer mt-3 px-3 py-2.5 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/15 transition-colors select-none">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500 cursor-pointer flex-shrink-0"
+                                                        checked={propagateGroupChanges}
+                                                        onChange={(e) => setPropagateGroupChanges(e.target.checked)}
+                                                    />
+                                                    <span className="text-[10px] font-black uppercase tracking-wide text-blue-300 leading-tight">
+                                                        Aplicar a TODOS los días
+                                                        <span className="font-normal text-blue-400/70 ml-1 normal-case tracking-normal">
+                                                            ({tasks.filter((t: any) => t.groupId === editingTask.groupId && t.date).length} días en total)
+                                                        </span>
+                                                    </span>
+                                                </label>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                                <div className="flex gap-4 pt-6 border-t border-white/10">
+                            <div className="flex-shrink-0 flex gap-4 pt-6 border-t border-white/10 mt-4">
                                     <button
                                         type="button"
                                         onClick={() => {
