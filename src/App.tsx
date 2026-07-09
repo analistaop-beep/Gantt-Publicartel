@@ -127,7 +127,7 @@ function App() {
   return (
     <>
       <div className="fixed inset-0 pointer-events-none z-[9999]">
-        <Toaster />
+        <Toaster options={{ duration: 2000 }} />
       </div>
       {(isLoading || isSaving) && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] bg-gray-900/90 text-blue-400 px-4 py-2 rounded-full border border-blue-500/30 flex items-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.2)] backdrop-blur-md pointer-events-none">
