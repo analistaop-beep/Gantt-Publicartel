@@ -1195,13 +1195,14 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                 <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Comentarios del Usuario</label>
                                 <div className="space-y-3">
                                     <div className="flex gap-2">
-                                        <input
-                                            className="input flex-1 text-sm"
+                                        <textarea
+                                            className="input flex-1 text-sm py-2 px-3 min-h-[44px] resize-y"
+                                            rows={1}
                                             placeholder="Escribir un comentario..."
                                             value={newComment}
                                             onChange={(e) => setNewComment(e.target.value)}
                                             onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                                                     e.preventDefault();
                                                     if (newComment.trim()) {
                                                         const comment = {
@@ -1246,7 +1247,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                         ) : (
                                             [...formData.comments].reverse().map((c, i) => (
                                                 <div key={i} className="glass p-3 rounded-lg border-white/5 space-y-1">
-                                                    <p className="text-sm text-slate-200">{c.text}</p>
+                                                    <p className="text-sm text-slate-200 whitespace-pre-wrap">{c.text}</p>
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-[9px] font-bold text-slate-500 uppercase flex items-center gap-1">
                                                             {c.author && <span className="text-blue-500 dark:text-blue-400">{c.author} •</span>}
@@ -1562,13 +1563,14 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                     </label>
 
                                     <div className="flex gap-2 mb-4">
-                                        <input
-                                            className="input flex-1 text-sm bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10"
+                                        <textarea
+                                            className="input flex-1 text-sm bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 py-2 px-3 min-h-[44px] resize-y"
+                                            rows={1}
                                             placeholder="Escribir un comentario..."
                                             value={newComment}
                                             onChange={(e) => setNewComment(e.target.value)}
                                             onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                                                     e.preventDefault();
                                                     handleAddCommentToOrder();
                                                 }
@@ -1588,7 +1590,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                         <div className="space-y-3">
                                             {[...viewingOrder.comments].reverse().map((c: any, i: number) => (
                                                 <div key={i} className="p-4 bg-slate-50 dark:bg-white/[0.025] border border-slate-200 dark:border-white/5 rounded-xl space-y-1.5 hover:bg-slate-100/50 dark:hover:bg-white/[0.04] transition-colors">
-                                                    <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed">{c.text}</p>
+                                                    <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{c.text}</p>
                                                     <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
                                                         {c.author && <span className="text-blue-500 dark:text-blue-400">{c.author} •</span>}
                                                         {new Date(c.date).toLocaleString('es-UY', {
