@@ -760,9 +760,9 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
 
     return (
         <div className="h-full flex flex-col">
-            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-4 py-4 md:px-10 md:py-6 border-b border-white/5 sticky-header-custom">
-                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 xl:gap-6">
-                    <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 lg:gap-8 flex-1 w-full">
+            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-4 py-3 md:px-6 md:py-4 border-b border-white/5 sticky-header-custom">
+                <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3 xl:gap-4">
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 lg:gap-6 flex-1 w-full">
                         <h2 className="text-2xl font-bold whitespace-nowrap flex items-center gap-3">
                             <ClipboardList className="text-blue-400" />
                             Órdenes de Producción
@@ -808,60 +808,63 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
 
                     <button
                         onClick={() => openModal()}
-                        className="btn btn-primary flex items-center gap-2 w-full md:w-auto justify-center mt-4 md:mt-0"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-blue-600/20 active:scale-95 w-full md:w-auto justify-center whitespace-nowrap flex-shrink-0"
                     >
-                        <Plus size={18} /> Nueva Orden
+                        <Plus size={15} /> Nueva Orden
                     </button>
                 </div>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-auto custom-scrollbar p-4 md:p-10">
-                <div className="glass rounded-[1.25rem] overflow-hidden shadow-2xl border-white/10">
+            <div className="flex-1 min-h-0 overflow-auto custom-scrollbar p-2 md:p-6">
+                <div className="glass rounded-xl overflow-hidden shadow-2xl border-white/10">
                     <div className="overflow-x-auto custom-scrollbar">
                         <table className="w-full text-left border-collapse orders-table">
                             <thead>
                                 <tr className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10">
-                                    <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">N° OP</th>
-                                    <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Cliente</th>
-                                    <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Categoría</th>
-                                    <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Estado</th>
-                                    <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Vendedor</th>
-                                    <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Precio Venta</th>
-                                    <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Tareas</th>
-                                    <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Acciones</th>
+                                    <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500">N° OP</th>
+                                    <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500">Cliente</th>
+                                    <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500">Categoría</th>
+                                    <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Estado</th>
+                                    <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500">Vendedor</th>
+                                    <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Precio Venta</th>
+                                    <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Tareas</th>
+                                    <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                                 {filteredOrders.length === 0 ? (
                                     <tr>
-                                        <td colSpan={8} className="px-8 py-20 text-center text-slate-500 italic">
+                                        <td colSpan={8} className="px-4 py-12 text-center text-slate-500 italic">
                                             {searchQuery ? 'No se encontraron órdenes que coincidan con la búsqueda.' : 'No hay órdenes registradas.'}
                                         </td>
                                     </tr>
                                 ) : (
                                     filteredOrders.map((order) => (
                                         <tr key={order.id} className={`hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-all duration-300 group ${order.status === 'Terminada' ? 'opacity-40 grayscale-[20%] hover:opacity-100' : ''}`}>
-                                            <td className="px-8 py-4">
-                                                <span className="font-mono font-bold text-blue-400">{order.opNumber}</span>
+                                            <td className="px-4 py-2">
+                                                <span className="font-mono font-bold text-blue-400 text-xs">{order.opNumber}</span>
                                             </td>
-                                            <td className="px-8 py-4">
+                                            <td className="px-4 py-2">
                                                 <button
                                                     onClick={() => setViewingOrder(order)}
                                                     className="flex flex-col text-left group/client hover:opacity-80 transition-all"
                                                 >
-                                                    <span className="font-bold text-white text-sm group-hover/client:text-blue-400 transition-colors underline decoration-blue-500/30 underline-offset-4">{order.client}</span>
-                                                    {order.subject && (
-                                                        <span className="text-[10px] text-white truncate max-w-[200px]">{order.subject}</span>
+                                                    <span className="font-bold text-white text-xs group-hover/client:text-blue-400 transition-colors underline decoration-blue-500/30 underline-offset-4 leading-tight">{order.client}</span>
+                                                    {(order.subject || order.address) && (
+                                                        <span className="text-[10px] text-slate-400 truncate max-w-[280px] leading-tight">
+                                                            {order.subject}
+                                                            {order.subject && order.address ? ' • ' : ''}
+                                                            {order.address}
+                                                        </span>
                                                     )}
-                                                    <span className="text-[10px] text-slate-500 truncate max-w-[200px]">{order.address || 'Sin dirección'}</span>
                                                 </button>
                                             </td>
-                                            <td className="px-8 py-4">
-                                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/5 text-slate-400 border border-white/10">
+                                            <td className="px-4 py-2">
+                                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-white/5 text-slate-400 border border-white/10">
                                                     {order.category || 'Sin Cat.'}
                                                 </span>
                                             </td>
-                                            <td className="px-8 py-4 text-center">
+                                            <td className="px-4 py-2 text-center">
                                                 {(() => {
                                                     const s = order.status === 'Gestión de Acopio' ? 'En Proceso' : (order.status || 'En Proceso');
                                                     let color = 'text-slate-400 bg-white/5 border-white/10';
@@ -885,26 +888,26 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                             <select
                                                                 value={s}
                                                                 onChange={(e) => handleStatusChange(order, e.target.value)}
-                                                                className={`px-6 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border cursor-pointer outline-none transition-all hover:scale-105 appearance-none text-center pr-8 ${color}`}
+                                                                className={`px-4 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border cursor-pointer outline-none transition-all hover:scale-105 appearance-none text-center pr-6 ${color}`}
                                                             >
                                                                 {statuses.map(status => (
                                                                     <option key={status} value={status} className="bg-gray-900 text-white capitalize">{status}</option>
                                                                 ))}
                                                             </select>
-                                                            <ChevronDown size={12} className={`absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60 group-hover/select:opacity-100 transition-opacity ${color.split(' ')[0]}`} />
+                                                            <ChevronDown size={10} className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-60 group-hover/select:opacity-100 transition-opacity ${color.split(' ')[0]}`} />
                                                         </div>
                                                     );
                                                 })()}
                                             </td>
-                                            <td className="px-8 py-4 text-slate-300 text-sm">
+                                            <td className="px-4 py-2 text-slate-300 text-xs font-semibold">
                                                 {order.seller}
                                             </td>
-                                            <td className="px-8 py-4 font-mono text-emerald-600 dark:text-emerald-400 font-bold text-center">
+                                            <td className="px-4 py-2 font-mono text-emerald-600 dark:text-emerald-400 font-bold text-xs text-center">
                                                 {order.currency === 'USD' ? 'U$D' : '$U'} {(order.price || 0).toLocaleString('es-UY')}
                                             </td>
 
-                                            <td className="px-8 py-4 text-center">
-                                                <div className="flex gap-1 justify-center flex-wrap max-w-[80px] mx-auto">
+                                            <td className="px-4 py-2 text-center">
+                                                <div className="flex gap-1 justify-center flex-wrap max-w-[120px] mx-auto">
                                                     {(() => {
                                                         const orderTasks = allTasks.filter(t => t.opNumber?.toString().trim() === order.opNumber?.toString().trim());
                                                         if (orderTasks.length === 0) return <span className="text-[10px] text-slate-600 italic"></span>;
@@ -927,7 +930,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                                 <button
                                                                     key={task.id || idx}
                                                                     onClick={() => handleEditTask(task)}
-                                                                    className={`w-6 h-6 rounded flex items-center justify-center text-[11px] font-black border transition-all cursor-pointer ${colorClass} ${stateClass}`}
+                                                                    className={`w-5 h-5 rounded flex items-center justify-center text-[9px] font-black border transition-all cursor-pointer ${colorClass} ${stateClass}`}
                                                                     title={`${section}: ${task.name}${isCompleted ? ' (Terminada)' : ''}`}
                                                                 >
                                                                     {letter}
@@ -937,24 +940,24 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                     })()}
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-4 text-right">
+                                            <td className="px-4 py-2 text-right">
                                                 <div className="flex gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                                     <button
                                                         onClick={() => {
                                                             setIsTaggingOrder(order);
                                                             setTaggingSelection(order.followers || []);
                                                         }}
-                                                        className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-blue-400 transition-all hover:scale-110"
+                                                        className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-blue-400 transition-all hover:scale-110"
                                                         title="Etiquetar usuarios"
                                                     >
-                                                        <User size={14} />
+                                                        <User size={13} />
                                                     </button>
                                                     <button
                                                         onClick={() => openModal(order)}
-                                                        className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all hover:scale-110"
+                                                        className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-all hover:scale-110"
                                                         title="Editar orden"
                                                     >
-                                                        <Edit2 size={14} />
+                                                        <Edit2 size={13} />
                                                     </button>
                                                     <button
                                                         onClick={() => {
@@ -962,10 +965,10 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                                 deleteProductionOrder(order.id);
                                                             }
                                                         }}
-                                                        className="p-1.5 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-400 transition-all hover:scale-110"
+                                                        className="p-1 hover:bg-red-500/10 rounded text-slate-400 hover:text-red-400 transition-all hover:scale-110"
                                                         title="Eliminar orden"
                                                     >
-                                                        <Trash2 size={14} />
+                                                        <Trash2 size={13} />
                                                     </button>
                                                 </div>
                                             </td>
