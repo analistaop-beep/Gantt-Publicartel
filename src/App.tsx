@@ -112,7 +112,7 @@ function App() {
             case 'corporeas': return <CorporeasPage />;
             case 'lonas': return <LonasVinilosPage />;
             case 'pintura': return <PinturaPage />;
-            case 'orders': return <OrdersPage openOrderId={pendingOpenOrderId} openOrderNumber={pendingOpenOrderNumber} onOpenOrderIdConsumed={() => { setPendingOpenOrderId(null); setPendingOpenOrderNumber(null); }} />;
+            case 'orders': return <OrdersPage openOrderId={pendingOpenOrderId} openOrderNumber={pendingOpenOrderNumber} onOpenOrderIdConsumed={() => { setPendingOpenOrderId(null); setPendingOpenOrderNumber(null); }} bothSidebarsHidden={!isSidebarOpen && !isRightSidebarOpen} />;
             default: return <GanttPage />;
           }
         })()}

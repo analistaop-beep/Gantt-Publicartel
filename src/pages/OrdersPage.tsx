@@ -110,9 +110,10 @@ interface OrdersPageProps {
     openOrderId?: string | null;
     openOrderNumber?: string | null;
     onOpenOrderIdConsumed?: () => void;
+    bothSidebarsHidden?: boolean;
 }
 
-export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNumber, onOpenOrderIdConsumed }) => {
+export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNumber, onOpenOrderIdConsumed, bothSidebarsHidden = false }) => {
     const { 
         productionOrders, 
         addProductionOrder, 
@@ -763,10 +764,12 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
             <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-4 py-3 md:px-6 md:py-4 border-b border-white/5 sticky-header-custom">
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3 xl:gap-4">
                     <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 lg:gap-6 flex-1 w-full">
-                        <h2 className="text-2xl font-bold whitespace-nowrap flex items-center gap-3">
-                            <ClipboardList className="text-blue-400" />
-                            Órdenes de Producción
-                        </h2>
+                        {bothSidebarsHidden && (
+                            <h2 className="text-2xl font-bold whitespace-nowrap flex items-center gap-3">
+                                <ClipboardList className="text-blue-400" />
+                                Órdenes de Producción
+                            </h2>
+                        )}
 
                         <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 flex-1 w-full">
                             <div className="relative flex-1 min-w-[200px] w-full sm:w-auto group">
