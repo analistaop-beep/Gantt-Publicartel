@@ -138,6 +138,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
     const [viewingOrder, setViewingOrder] = useState<any | null>(null);
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [isUploadingDetail, setIsUploadingDetail] = useState(false);
     const [isPrinting, setIsPrinting] = useState(false);
     const [isPrintingAnalysis, setIsPrintingAnalysis] = useState(false);
 
@@ -235,6 +236,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
     });
     const [newComment, setNewComment] = useState('');
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const detailFileInputRef = React.useRef<HTMLInputElement>(null);
 
     const filteredOrders = productionOrders.filter(order => {
         const matchesSearch = order.opNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -380,6 +382,60 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
+    const handleDetailFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!viewingOrder) return;
+        const selectedFiles = e.target.files;
+        if (!selectedFiles || selectedFiles.length === 0) return;
+
+        setIsUploadingDetail(true);
+        try {
+            const uploadedUrls: string[] = [];
+            for (let i = 0; i < selectedFiles.length; i++) {
+                const file = selectedFiles[i];
+                let fileToUpload: File | Blob = file;
+                let fileName = file.name;
+
+                if (file.type.startsWith('image/')) {
+                    fileToUpload = await convertToWebP(file);
+                    fileName = fileName.replace(/\.[^/.]+$/, "") + ".webp";
+                }
+
+                const url = await uploadFile(fileToUpload, fileName);
+                uploadedUrls.push(url);
+            }
+
+            const updatedOrder = {
+                ...viewingOrder,
+                files: [...(viewingOrder.files || []), ...uploadedUrls]
+            };
+            await updateProductionOrder(updatedOrder);
+            setViewingOrder(updatedOrder);
+            sileo.success({ title: `${uploadedUrls.length} archivo(s) subido(s) correctamente` });
+        } catch (err: any) {
+            sileo.error({
+                title: "Error al subir archivos",
+                description: err.message
+            });
+        } finally {
+            setIsUploadingDetail(false);
+            if (detailFileInputRef.current) detailFileInputRef.current.value = '';
+        }
+    };
+
+    const handleDetailRemoveFile = async (index: number) => {
+        if (!viewingOrder) return;
+        const newFiles = [...(viewingOrder.files || [])];
+        newFiles.splice(index, 1);
+        const updatedOrder = { ...viewingOrder, files: newFiles };
+        try {
+            await updateProductionOrder(updatedOrder);
+            setViewingOrder(updatedOrder);
+            sileo.success({ title: "Archivo eliminado" });
+        } catch (err: any) {
+            sileo.error({ title: "Error al eliminar archivo", description: err.message });
         }
     };
 
@@ -1616,15 +1672,41 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                             </div>
 
                             {/* Right: File thumbnails */}
-                            <div className="overflow-y-auto custom-scrollbar p-6 bg-sky-50/50 dark:bg-[#0a1120]">
-                                <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-4">
-                                    ARCHIVOS ADJUNTOS
-                                    {viewingOrder.files?.length > 0 && (
-                                        <span className="ml-2 px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400 rounded text-[9px] font-black">
-                                            {viewingOrder.files.length}
-                                        </span>
-                                    )}
-                                </label>
+                            <div className="overflow-y-auto custom-scrollbar p-6 bg-sky-50/50 dark:bg-[#0a1120] flex flex-col gap-4">
+                                {/* Header + Upload button */}
+                                <div className="flex items-center justify-between gap-2">
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500">
+                                        ARCHIVOS ADJUNTOS
+                                        {viewingOrder.files?.length > 0 && (
+                                            <span className="ml-2 px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400 rounded text-[9px] font-black">
+                                                {viewingOrder.files.length}
+                                            </span>
+                                        )}
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => detailFileInputRef.current?.click()}
+                                        disabled={isUploadingDetail}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-600 dark:text-blue-400 font-bold border border-blue-500/20 rounded-lg text-[10px] uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                                        title="Subir archivos"
+                                    >
+                                        {isUploadingDetail ? (
+                                            <><Loader2 size={12} className="animate-spin" /> Subiendo...</>
+                                        ) : (
+                                            <><Upload size={12} /> Subir</>  
+                                        )}
+                                    </button>
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        ref={detailFileInputRef}
+                                        multiple
+                                        accept="image/*,application/pdf"
+                                        onChange={handleDetailFileUpload}
+                                    />
+                                </div>
+
+                                {/* Drop zone (visible when no files) or file grid */}
                                 {viewingOrder.files?.length > 0 ? (
                                     <div className="grid grid-cols-2 gap-3">
                                         {viewingOrder.files.map((file: string, i: number) => {
@@ -1675,6 +1757,13 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                                 >
                                                                     <ExternalLink size={12} />
                                                                 </a>
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); handleDetailRemoveFile(i); }}
+                                                                    className="p-1.5 bg-red-500/80 hover:bg-red-500 text-white rounded-lg flex items-center justify-center transition-colors"
+                                                                    title="Eliminar archivo"
+                                                                >
+                                                                    <Trash2 size={12} />
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1683,10 +1772,18 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                         })}
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center h-48 text-slate-400 dark:text-slate-600 border border-dashed border-slate-200 dark:border-white/5 rounded-xl">
-                                        <FileText size={36} className="mb-3 opacity-30" />
-                                        <span className="text-xs italic">Sin archivos adjuntos</span>
-                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => detailFileInputRef.current?.click()}
+                                        disabled={isUploadingDetail}
+                                        className="flex flex-col items-center justify-center h-48 w-full text-slate-400 dark:text-slate-600 border border-dashed border-slate-200 dark:border-white/5 rounded-xl hover:border-blue-500/40 hover:bg-blue-500/5 hover:text-blue-500 dark:hover:text-blue-400 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 group"
+                                    >
+                                        {isUploadingDetail ? (
+                                            <><Loader2 size={32} className="mb-3 animate-spin text-blue-400" /><span className="text-xs font-semibold">Subiendo archivos...</span></>
+                                        ) : (
+                                            <><Upload size={32} className="mb-3 opacity-30 group-hover:opacity-60 transition-opacity" /><span className="text-xs italic">Sin archivos adjuntos</span><span className="text-[10px] mt-1 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Clic para subir</span></>
+                                        )}
+                                    </button>
                                 )}
                             </div>
                         </div>
