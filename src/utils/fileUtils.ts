@@ -67,3 +67,49 @@ export const isImageFile = (file: string | OrderAttachment | null | undefined): 
     const extName = name.split('.').pop() || '';
     return imageExtensions.includes(extUrl) || imageExtensions.includes(extName);
 };
+
+export const printFile = (url: string) => {
+    const isImage = /\.(jpeg|jpg|gif|png|webp|svg|bmp)(?:\?.*)?$/i.test(url);
+    if (isImage) {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Imprimir</title>
+                        <style>
+                            body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+                            img { max-width: 100%; max-height: 100%; object-fit: contain; }
+                            @media print {
+                                @page { margin: 0; }
+                                body { margin: 0; display: block; }
+                                img { max-width: 100%; max-height: 100vh; width: auto; height: auto; display: block; margin: auto; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <img src="${url}" onload="setTimeout(() => { window.print(); window.close(); }, 500)" />
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+    } else {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        iframe.onload = () => {
+            try {
+                iframe.contentWindow?.focus();
+                iframe.contentWindow?.print();
+            } catch (e) {
+                console.error('Error al imprimir', e);
+                window.open(url, '_blank');
+            }
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+            }, 5000);
+        };
+    }
+};

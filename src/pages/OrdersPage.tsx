@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic, Filter, Check, BarChart2, Signpost } from 'lucide-react';
 import { sileo } from 'sileo';
-import { convertToWebP, getFileUrl, getFileName, isImageFile, type OrderAttachment } from '../utils/fileUtils';
+import { convertToWebP, getFileUrl, getFileName, isImageFile, printFile, type OrderAttachment } from '../utils/fileUtils';
 import { printOrderSummaryPDF, printHoursAnalysisPDF } from '../utils/reportUtils';
 
 const MultiSelect = ({
@@ -1869,6 +1869,14 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                                     <Eye size={12} />
                                                                 </div>
                                                             )}
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => { e.stopPropagation(); printFile(fileUrl); }}
+                                                                className="p-1.5 bg-emerald-500/80 hover:bg-emerald-500 text-white rounded-lg flex items-center justify-center transition-colors"
+                                                                title="Imprimir archivo"
+                                                            >
+                                                                <Printer size={12} />
+                                                            </button>
                                                             <a
                                                                 href={fileUrl}
                                                                 target="_blank"
