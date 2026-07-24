@@ -230,9 +230,6 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
             } else if (lightboxIndex !== null) {
                 if (e.key === 'ArrowLeft') lightboxPrev();
                 if (e.key === 'ArrowRight') lightboxNext();
-            } else if (viewingOrder && viewingOrderIndex !== null) {
-                if (e.key === 'ArrowLeft') navigateOrderRef.current(-1);
-                if (e.key === 'ArrowRight') navigateOrderRef.current(1);
             }
         };
         window.addEventListener('keydown', handleKeyDown);
