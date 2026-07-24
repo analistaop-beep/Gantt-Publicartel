@@ -9,6 +9,7 @@ const EMPTY_FORM: Omit<Soporte, 'id' | 'created_at'> = {
     numero: '',
     ubicacion: '',
     ruta: '',
+    localidad: '',
     ficha: '',
 };
 
@@ -84,7 +85,7 @@ export const SoportesPage: React.FC = () => {
 
     const handleEditStart = (s: Soporte) => {
         setIsEditing(s.id);
-        setFormData({ tipo: s.tipo, numero: s.numero, ubicacion: s.ubicacion || '', ruta: s.ruta || '', ficha: s.ficha || '' });
+        setFormData({ tipo: s.tipo, numero: s.numero, ubicacion: s.ubicacion || '', ruta: s.ruta || '', localidad: s.localidad || '', ficha: s.ficha || '' });
         setShowUrlInput(false);
     };
 
@@ -136,6 +137,7 @@ export const SoportesPage: React.FC = () => {
                                     <th className="px-4 py-3 text-left">Número</th>
                                     <th className="px-4 py-3 text-left">Ubicación</th>
                                     <th className="px-4 py-3 text-left">Ruta</th>
+                                    <th className="px-4 py-3 text-left">Localidad</th>
                                     <th className="px-4 py-3 text-left">Ficha (PDF)</th>
                                     <th className="px-4 py-3 text-right">Acciones</th>
                                 </tr>
@@ -151,6 +153,7 @@ export const SoportesPage: React.FC = () => {
                                         <td className="px-4 py-3 font-mono font-semibold text-slate-200">{s.numero}</td>
                                         <td className="px-4 py-3 text-slate-400">{s.ubicacion || <span className="text-slate-600 italic">—</span>}</td>
                                         <td className="px-4 py-3 text-slate-400">{s.ruta || <span className="text-slate-600 italic">—</span>}</td>
+                                        <td className="px-4 py-3 text-slate-400">{s.localidad || <span className="text-slate-600 italic">—</span>}</td>
                                         <td className="px-4 py-3 text-slate-400">
                                             {s.ficha ? (
                                                 s.ficha.startsWith('http') || s.ficha.startsWith('blob') || s.ficha.includes('/') ? (
@@ -246,16 +249,29 @@ export const SoportesPage: React.FC = () => {
                                     onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
-                                    <Route size={11} /> Ruta
-                                </label>
-                                <input
-                                    className="input w-full"
-                                    placeholder="ej: Ruta 5 km 12"
-                                    value={formData.ruta}
-                                    onChange={(e) => setFormData({ ...formData, ruta: e.target.value })}
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                                        <Route size={11} /> Ruta
+                                    </label>
+                                    <input
+                                        className="input w-full"
+                                        placeholder="ej: Ruta 5 km 12"
+                                        value={formData.ruta}
+                                        onChange={(e) => setFormData({ ...formData, ruta: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                                        <MapPin size={11} /> Localidad
+                                    </label>
+                                    <input
+                                        className="input w-full"
+                                        placeholder="ej: Montevideo, Las Piedras..."
+                                        value={formData.localidad}
+                                        onChange={(e) => setFormData({ ...formData, localidad: e.target.value })}
+                                    />
+                                </div>
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">

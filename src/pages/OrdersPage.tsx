@@ -1501,9 +1501,9 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                         {viewingOrder.soporte}
                                                         <ExternalLink size={11} className="opacity-50 group-hover:opacity-100 transition-opacity" />
                                                     </span>
-                                                    {(matchedSoporte?.tipo || matchedSoporte?.ubicacion) && (
-                                                        <span className="text-[9px] text-slate-500 dark:text-slate-500 truncate max-w-[150px]">
-                                                            {[matchedSoporte.tipo, matchedSoporte.ubicacion].filter(Boolean).join(' · ')}
+                                                    {(matchedSoporte?.tipo || matchedSoporte?.ubicacion || matchedSoporte?.localidad) && (
+                                                        <span className="text-[9px] text-slate-500 dark:text-slate-500 truncate max-w-[160px]">
+                                                            {[matchedSoporte.tipo, matchedSoporte.localidad || matchedSoporte.ubicacion].filter(Boolean).join(' · ')}
                                                         </span>
                                                     )}
                                                 </a>
@@ -1517,9 +1517,9 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                         <Signpost size={13} className="flex-shrink-0" />
                                                         {viewingOrder.soporte}
                                                     </span>
-                                                    {matchedSoporte && (matchedSoporte.tipo || matchedSoporte.ubicacion) && (
-                                                        <span className="text-[9px] text-slate-500 truncate max-w-[150px]">
-                                                            {[matchedSoporte.tipo, matchedSoporte.ubicacion].filter(Boolean).join(' · ')}
+                                                    {matchedSoporte && (matchedSoporte.tipo || matchedSoporte.ubicacion || matchedSoporte.localidad) && (
+                                                        <span className="text-[9px] text-slate-500 truncate max-w-[160px]">
+                                                            {[matchedSoporte.tipo, matchedSoporte.localidad || matchedSoporte.ubicacion].filter(Boolean).join(' · ')}
                                                         </span>
                                                     )}
                                                     {!matchedSoporte && (

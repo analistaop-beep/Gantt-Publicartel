@@ -28,6 +28,7 @@ export interface Soporte {
     numero: string;
     ubicacion?: string;
     ruta?: string;
+    localidad?: string;
     ficha?: string;
     created_at?: string;
 }
