@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic, Filter, Check, BarChart2 } from 'lucide-react';
+import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic, Filter, Check, BarChart2, Signpost } from 'lucide-react';
 import { sileo } from 'sileo';
 import { convertToWebP } from '../utils/fileUtils';
 import { printOrderSummaryPDF, printHoursAnalysisPDF } from '../utils/reportUtils';
@@ -131,6 +131,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
         members,
         vehicles,
         profiles,
+        soportes,
         user
     } = useStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -1481,14 +1482,54 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                         {viewingOrder.currency === 'USD' ? 'U$D' : '$U'} {viewingOrder.price?.toLocaleString('es-UY')}
                                     </p>
                                 </div>
-                                {viewingOrder.category === 'Outdoor' && viewingOrder.soporte && (
-                                    <div>
-                                        <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-0.5">SOPORTE</label>
-                                        <p className="text-sm font-mono font-bold text-slate-700 dark:text-slate-300">
-                                            {viewingOrder.soporte}
-                                        </p>
-                                    </div>
-                                )}
+                                {viewingOrder.category === 'Outdoor' && viewingOrder.soporte && (() => {
+                                    const matchedSoporte = soportes.find(s => s.numero === viewingOrder.soporte);
+                                    const hasFicha = matchedSoporte?.ficha && (matchedSoporte.ficha.startsWith('http') || matchedSoporte.ficha.includes('/'));
+                                    return (
+                                        <div>
+                                            <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-0.5">SOPORTE</label>
+                                            {hasFicha ? (
+                                                <a
+                                                    href={matchedSoporte!.ficha}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    title={`Abrir ficha PDF del soporte ${viewingOrder.soporte}${matchedSoporte?.tipo ? ` (${matchedSoporte.tipo})` : ''}`}
+                                                    className="group inline-flex flex-col gap-0.5"
+                                                >
+                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/30 hover:border-violet-400/50 text-violet-600 dark:text-violet-300 font-mono font-bold text-sm transition-all cursor-pointer">
+                                                        <Signpost size={13} className="flex-shrink-0" />
+                                                        {viewingOrder.soporte}
+                                                        <ExternalLink size={11} className="opacity-50 group-hover:opacity-100 transition-opacity" />
+                                                    </span>
+                                                    {(matchedSoporte?.tipo || matchedSoporte?.ubicacion) && (
+                                                        <span className="text-[9px] text-slate-500 dark:text-slate-500 truncate max-w-[150px]">
+                                                            {[matchedSoporte.tipo, matchedSoporte.ubicacion].filter(Boolean).join(' · ')}
+                                                        </span>
+                                                    )}
+                                                </a>
+                                            ) : (
+                                                <div className="inline-flex flex-col gap-0.5">
+                                                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-mono font-bold text-sm ${
+                                                        matchedSoporte
+                                                            ? 'bg-violet-500/10 border border-violet-500/20 text-violet-600 dark:text-violet-300'
+                                                            : 'bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'
+                                                    }`}>
+                                                        <Signpost size={13} className="flex-shrink-0" />
+                                                        {viewingOrder.soporte}
+                                                    </span>
+                                                    {matchedSoporte && (matchedSoporte.tipo || matchedSoporte.ubicacion) && (
+                                                        <span className="text-[9px] text-slate-500 truncate max-w-[150px]">
+                                                            {[matchedSoporte.tipo, matchedSoporte.ubicacion].filter(Boolean).join(' · ')}
+                                                        </span>
+                                                    )}
+                                                    {!matchedSoporte && (
+                                                        <span className="text-[9px] text-slate-500 italic">Sin ficha registrada</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                                 {viewingOrder.subject && (
                                     <div className="flex-1 min-w-[200px]">
                                         <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-0.5">ASUNTO</label>

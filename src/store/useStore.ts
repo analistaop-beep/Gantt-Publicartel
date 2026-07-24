@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../utils/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
-import type { Team, ProductionOrder, Notification, Profile } from '../types';
+import type { Team, ProductionOrder, Notification, Profile, Soporte } from '../types';
 
 
 // Track which tasks have been locally modified but not yet saved to the database
@@ -54,6 +54,12 @@ interface AppState {
     updateVehicle: (vehicle: any) => Promise<void>;
     deleteVehicle: (id: string) => Promise<void>;
 
+    // Soportes
+    soportes: Soporte[];
+    addSoporte: (soporte: Omit<Soporte, 'id' | 'created_at'>) => Promise<void>;
+    updateSoporte: (soporte: Soporte) => Promise<void>;
+    deleteSoporte: (id: string) => Promise<void>;
+
     // Reminders
     addReminder: (reminder: { opNumber: string; name: string; client: string; address: string; totalHours: number }) => Promise<void>;
     updateReminder: (reminder: any) => Promise<void>;
@@ -67,6 +73,7 @@ interface AppState {
     // Files
     uploadFile: (file: File | Blob, fileName: string) => Promise<string>;
     uploadMemberFile: (file: File | Blob, fileName: string) => Promise<string>;
+    uploadSoporteFile: (file: File | Blob, fileName: string) => Promise<string>;
 
     // Notifications & Views
     markNotificationAsRead: (id: string) => void;
@@ -136,6 +143,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     members: [],
     vehicles: [],
+    soportes: [],
     teams: [],
     tasks: [],
     herreriaTasks: [],
@@ -178,6 +186,7 @@ export const useStore = create<AppState>((set, get) => ({
             const results = await Promise.all([
                 supabase.from('members').select('*').order('name'),
                 supabase.from('vehicles').select('*').order('name'),
+                supabase.from('soportes').select('*').order('numero'),
                 supabase.from('teams').select('*').order('id'),
                 supabase.from('tasks').select('*, task_members(memberId, hours), task_vehicles(vehicleId)').order('date'),
                 supabase.from('reminders').select('*').order('opNumber'),
@@ -186,7 +195,7 @@ export const useStore = create<AppState>((set, get) => ({
                 supabase.from('profiles').select('*')
             ]);
 
-            const [membersRes, vehiclesRes, teamsRes, tasksRes, remindersRes, ordersRes, notificationsRes, profilesRes] = results;
+            const [membersRes, vehiclesRes, soportesRes, teamsRes, tasksRes, remindersRes, ordersRes, notificationsRes, profilesRes] = results;
 
             const mappedTasks = (tasksRes.data || []).map(task => ({
                 ...task,
@@ -201,6 +210,7 @@ export const useStore = create<AppState>((set, get) => ({
                     files: typeof m.files === 'string' ? JSON.parse(m.files) : (m.files || [])
                 })),
                 vehicles: vehiclesRes.data || [],
+                soportes: soportesRes.data || [],
                 teams: teamsRes.data || [],
                 tasks: mappedTasks.filter(t => t.type === 'instalacion'),
                 herreriaTasks: mappedTasks.filter(t => t.type === 'herreria'),
@@ -276,6 +286,29 @@ export const useStore = create<AppState>((set, get) => ({
     },
     deleteVehicle: async (id) => {
         const { error } = await supabase.from('vehicles').delete().eq('id', id);
+        if (error) throw error;
+        await get().fetchData();
+    },
+
+    addSoporte: async (soporte) => {
+        const { error } = await supabase.from('soportes').insert([{ id: uuidv4(), ...soporte }]);
+        if (error) throw error;
+        await get().fetchData();
+    },
+    updateSoporte: async (soporte) => {
+        try {
+            set({ error: null });
+            const { id, ...data } = soporte;
+            const { error } = await supabase.from('soportes').update(data).eq('id', id);
+            if (error) throw error;
+            await get().fetchData();
+        } catch (err: any) {
+            set({ error: err.message });
+            throw err;
+        }
+    },
+    deleteSoporte: async (id) => {
+        const { error } = await supabase.from('soportes').delete().eq('id', id);
         if (error) throw error;
         await get().fetchData();
     },
@@ -483,6 +516,39 @@ export const useStore = create<AppState>((set, get) => ({
         return data.publicUrl;
     },
 
+    uploadSoporteFile: async (file, fileName) => {
+        const fileExt = fileName.split('.').pop();
+        const path = `soportes/${uuidv4()}.${fileExt}`;
+        
+        let bucketName = 'soportes';
+        let { error: uploadError } = await supabase.storage
+            .from('soportes')
+            .upload(path, file, {
+                contentType: file instanceof File ? file.type : 'application/pdf',
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (uploadError) {
+            // Fallback to 'members' bucket if 'soportes' bucket does not exist
+            bucketName = 'members';
+            const fallbackRes = await supabase.storage
+                .from('members')
+                .upload(path, file, {
+                    contentType: file instanceof File ? file.type : 'application/pdf',
+                    cacheControl: '3600',
+                    upsert: false
+                });
+            if (fallbackRes.error) throw uploadError;
+        }
+
+        const { data } = supabase.storage
+            .from(bucketName)
+            .getPublicUrl(path);
+
+        return data.publicUrl;
+    },
+
     markNotificationAsRead: (id) => {
         set((state) => {
             const updatedReads = [...state.readNotifications, id];
@@ -599,32 +665,40 @@ export const useStore = create<AppState>((set, get) => ({
         const user = get().user;
         if (!user) return;
 
-        // Actualización optimista: reflejar el cambio en la UI inmediatamente
+        // Actualización optimista: la UI cambia inmediatamente
         set(state => ({
             profiles: state.profiles.map(p =>
                 p.email === user.email ? { ...p, email_notifications: enabled } : p
             )
         }));
 
-        try {
-            const { error } = await supabase
-                .from('profiles')
-                .update({ email_notifications: enabled })
-                .eq('id', user.id);
-            if (error) throw error;
+        const { data, error } = await supabase
+            .from('profiles')
+            .update({ email_notifications: enabled })
+            .eq('id', user.id)
+            .select();
 
-            // Sync solo los perfiles desde DB para confirmar el valor guardado
-            const { data: profilesData } = await supabase.from('profiles').select('*');
-            if (profilesData) set({ profiles: profilesData });
-        } catch (err: any) {
-            console.error('Error al actualizar preferencia de email:', err.message);
-            // Revertir el cambio optimista en caso de error
+        // Si hubo error o no se actualizó ninguna fila (RLS bloqueando silenciosamente)
+        if (error || !data || data.length === 0) {
+            const msg = error?.message || 'El update no afectó ninguna fila (revisar política RLS en Supabase)';
+            console.error('Error al actualizar preferencia de email:', msg);
+
+            // Revertir el cambio optimista
             set(state => ({
                 profiles: state.profiles.map(p =>
                     p.email === user.email ? { ...p, email_notifications: !enabled } : p
                 )
             }));
+
+            throw new Error(msg);
         }
+
+        // Actualizar solo este perfil en el estado local con el valor confirmado por DB
+        set(state => ({
+            profiles: state.profiles.map(p =>
+                p.email === user.email ? { ...p, ...data[0] } : p
+            )
+        }));
     },
 
     addTask: async (task) => {

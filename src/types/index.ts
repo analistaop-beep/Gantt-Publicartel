@@ -22,6 +22,16 @@ export interface Vehicle {
     plate: string;
 }
 
+export interface Soporte {
+    id: string;
+    tipo: string;
+    numero: string;
+    ubicacion?: string;
+    ruta?: string;
+    ficha?: string;
+    created_at?: string;
+}
+
 export interface Team {
     id: string;
     name: string;
