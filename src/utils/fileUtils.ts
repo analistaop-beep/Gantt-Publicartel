@@ -38,3 +38,32 @@ export const convertToWebP = (file: File, quality: number = 0.8): Promise<Blob> 
         reader.readAsDataURL(file);
     });
 };
+
+export interface OrderAttachment {
+    url: string;
+    name: string;
+}
+
+export const getFileUrl = (file: string | OrderAttachment | null | undefined): string => {
+    if (!file) return '';
+    return typeof file === 'string' ? file : file.url || '';
+};
+
+export const getFileName = (file: string | OrderAttachment | null | undefined): string => {
+    if (!file) return 'Archivo adjunto';
+    if (typeof file === 'string') {
+        const clean = file.split('?')[0];
+        const name = clean.split('/').pop();
+        return name || file;
+    }
+    return file.name || getFileUrl(file).split('/').pop() || 'Archivo adjunto';
+};
+
+export const isImageFile = (file: string | OrderAttachment | null | undefined): boolean => {
+    const url = getFileUrl(file).toLowerCase();
+    const name = getFileName(file).toLowerCase();
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
+    const extUrl = url.split('.').pop()?.split('?')[0] || '';
+    const extName = name.split('.').pop() || '';
+    return imageExtensions.includes(extUrl) || imageExtensions.includes(extName);
+};

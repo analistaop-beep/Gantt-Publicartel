@@ -771,7 +771,7 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
     }
 
     // ─── Attachments ─────────────────────────────────────────────────
-    const files: string[] = order.files || [];
+    const files = order.files || [];
     if (files.length > 0) {
         checkPage(16);
         doc.setDrawColor(...blue);
@@ -786,10 +786,11 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
         y += 7;
 
         for (let i = 0; i < files.length; i++) {
-            const fileUrl = files[i];
-            const fileName = fileUrl.split('/').pop()?.split('?')[0] || `Archivo ${i + 1}`;
+            const item = files[i];
+            const fileUrl = typeof item === 'string' ? item : item.url;
+            const fileName = typeof item === 'string' ? (item.split('/').pop()?.split('?')[0] || `Archivo ${i + 1}`) : (item.name || `Archivo ${i + 1}`);
 
-            if (isImageUrl(fileUrl)) {
+            if (isImageUrl(fileUrl) || isImageUrl(fileName)) {
                 // Try to embed image
                 checkPage(80);
                 try {

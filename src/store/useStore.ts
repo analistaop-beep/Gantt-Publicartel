@@ -186,7 +186,7 @@ export const useStore = create<AppState>((set, get) => ({
             const results = await Promise.all([
                 supabase.from('members').select('*').order('name'),
                 supabase.from('vehicles').select('*').order('name'),
-                supabase.from('soportes').select('*').order('numero'),
+                supabase.from('soportes').select('*').order('ruta', { nullsFirst: false }).order('numero'),
                 supabase.from('teams').select('*').order('id'),
                 supabase.from('tasks').select('*, task_members(memberId, hours), task_vehicles(vehicleId)').order('date'),
                 supabase.from('reminders').select('*').order('opNumber'),

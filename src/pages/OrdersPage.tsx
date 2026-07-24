@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic, Filter, Check, BarChart2, Signpost } from 'lucide-react';
 import { sileo } from 'sileo';
-import { convertToWebP } from '../utils/fileUtils';
+import { convertToWebP, getFileUrl, getFileName, isImageFile, type OrderAttachment } from '../utils/fileUtils';
 import { printOrderSummaryPDF, printHoursAnalysisPDF } from '../utils/reportUtils';
 
 const MultiSelect = ({
@@ -194,10 +194,10 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
         completed: false
     });
 
-    const isImageFile = (url: string) => {
-        const ext = url.split('.').pop()?.toLowerCase();
-        return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext || '');
-    };
+    const [editingFormFileIndex, setEditingFormFileIndex] = useState<number | null>(null);
+    const [editingFormFileName, setEditingFormFileName] = useState<string>('');
+    const [editingDetailFileIndex, setEditingDetailFileIndex] = useState<number | null>(null);
+    const [editingDetailFileName, setEditingDetailFileName] = useState<string>('');
 
     React.useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -230,7 +230,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
         address: '',
         category: 'Proyectos',
         status: 'En Proceso',
-        files: [] as string[],
+        files: [] as (string | OrderAttachment)[],
         comments: [] as Array<{ text: string, date: string, author?: string }>,
         followers: [] as string[],
         soporte: ''
@@ -354,25 +354,24 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
 
         setIsUploading(true);
         try {
-            const uploadedUrls: string[] = [];
+            const uploadedAttachments: OrderAttachment[] = [];
             for (let i = 0; i < selectedFiles.length; i++) {
                 const file = selectedFiles[i];
                 let fileToUpload: File | Blob = file;
-                let fileName = file.name;
+                const originalFileName = file.name;
 
-                // Check if it's an image
+                // Convert to WebP if image, but DO NOT rename originalFileName
                 if (file.type.startsWith('image/')) {
                     fileToUpload = await convertToWebP(file);
-                    fileName = fileName.replace(/\.[^/.]+$/, "") + ".webp";
                 }
 
-                const url = await uploadFile(fileToUpload, fileName);
-                uploadedUrls.push(url);
+                const url = await uploadFile(fileToUpload, originalFileName);
+                uploadedAttachments.push({ url, name: originalFileName });
             }
 
             setFormData(prev => ({
                 ...prev,
-                files: [...prev.files, ...uploadedUrls]
+                files: [...prev.files, ...uploadedAttachments]
             }));
             sileo.success({ title: "Archivos subidos correctamente" });
         } catch (err: any) {
@@ -393,28 +392,27 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
 
         setIsUploadingDetail(true);
         try {
-            const uploadedUrls: string[] = [];
+            const uploadedAttachments: OrderAttachment[] = [];
             for (let i = 0; i < selectedFiles.length; i++) {
                 const file = selectedFiles[i];
                 let fileToUpload: File | Blob = file;
-                let fileName = file.name;
+                const originalFileName = file.name;
 
                 if (file.type.startsWith('image/')) {
                     fileToUpload = await convertToWebP(file);
-                    fileName = fileName.replace(/\.[^/.]+$/, "") + ".webp";
                 }
 
-                const url = await uploadFile(fileToUpload, fileName);
-                uploadedUrls.push(url);
+                const url = await uploadFile(fileToUpload, originalFileName);
+                uploadedAttachments.push({ url, name: originalFileName });
             }
 
             const updatedOrder = {
                 ...viewingOrder,
-                files: [...(viewingOrder.files || []), ...uploadedUrls]
+                files: [...(viewingOrder.files || []), ...uploadedAttachments]
             };
             await updateProductionOrder(updatedOrder);
             setViewingOrder(updatedOrder);
-            sileo.success({ title: `${uploadedUrls.length} archivo(s) subido(s) correctamente` });
+            sileo.success({ title: `${uploadedAttachments.length} archivo(s) subido(s) correctamente` });
         } catch (err: any) {
             sileo.error({
                 title: "Error al subir archivos",
@@ -423,6 +421,31 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
         } finally {
             setIsUploadingDetail(false);
             if (detailFileInputRef.current) detailFileInputRef.current.value = '';
+        }
+    };
+
+    const saveFormFileName = (index: number) => {
+        if (!editingFormFileName.trim()) return;
+        const newFiles = [...formData.files];
+        const target = newFiles[index];
+        newFiles[index] = { url: getFileUrl(target), name: editingFormFileName.trim() };
+        setFormData({ ...formData, files: newFiles });
+        setEditingFormFileIndex(null);
+    };
+
+    const saveDetailFileName = async (index: number) => {
+        if (!viewingOrder || !editingDetailFileName.trim()) return;
+        const newFiles = [...(viewingOrder.files || [])];
+        const target = newFiles[index];
+        newFiles[index] = { url: getFileUrl(target), name: editingDetailFileName.trim() };
+        const updatedOrder = { ...viewingOrder, files: newFiles };
+        try {
+            await updateProductionOrder(updatedOrder);
+            setViewingOrder(updatedOrder);
+            setEditingDetailFileIndex(null);
+            sileo.success({ title: "Nombre del archivo actualizado" });
+        } catch (err: any) {
+            sileo.error({ title: "Error al actualizar nombre", description: err.message });
         }
     };
 
@@ -1369,21 +1392,77 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                     </button>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    {formData.files.map((file, index) => (
-                                        <div key={index} className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-md group hover:border-blue-500/30 transition-all">
-                                            <FileText size={14} className="text-blue-400" />
-                                            <a href={file} target="_blank" rel="noopener noreferrer" className="text-xs text-slate-300 hover:text-white truncate max-w-[150px]">
-                                                {file.split('/').pop()}
-                                            </a>
-                                            <button
-                                                type="button"
-                                                onClick={() => removeFile(index)}
-                                                className="text-slate-500 hover:text-red-400 transition-colors"
-                                            >
-                                                <X size={14} />
-                                            </button>
-                                        </div>
-                                    ))}
+                                    {formData.files.map((file, index) => {
+                                        const fileUrl = getFileUrl(file);
+                                        const fileName = getFileName(file);
+                                        const isEditingName = editingFormFileIndex === index;
+
+                                        return (
+                                            <div key={index} className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-md group hover:border-blue-500/30 transition-all">
+                                                <FileText size={14} className="text-blue-400 flex-shrink-0" />
+                                                {isEditingName ? (
+                                                    <div className="flex items-center gap-1">
+                                                        <input
+                                                            type="text"
+                                                            value={editingFormFileName}
+                                                            onChange={(e) => setEditingFormFileName(e.target.value)}
+                                                            className="bg-slate-900 text-xs text-white border border-blue-500 rounded px-1.5 py-0.5 w-40 outline-none"
+                                                            autoFocus
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    e.preventDefault();
+                                                                    saveFormFileName(index);
+                                                                } else if (e.key === 'Escape') {
+                                                                    setEditingFormFileIndex(null);
+                                                                }
+                                                            }}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => saveFormFileName(index)}
+                                                            className="text-green-400 hover:text-green-300 p-0.5"
+                                                            title="Guardar nombre"
+                                                        >
+                                                            <Check size={13} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setEditingFormFileIndex(null)}
+                                                            className="text-slate-400 hover:text-white p-0.5"
+                                                            title="Cancelar"
+                                                        >
+                                                            <X size={13} />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-slate-300 hover:text-white truncate max-w-[150px]" title={fileName}>
+                                                            {fileName}
+                                                        </a>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setEditingFormFileIndex(index);
+                                                                setEditingFormFileName(fileName);
+                                                            }}
+                                                            className="text-slate-500 hover:text-blue-400 transition-colors p-0.5 opacity-0 group-hover:opacity-100"
+                                                            title="Cambiar nombre"
+                                                        >
+                                                            <Edit2 size={13} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeFile(index)}
+                                                            className="text-slate-500 hover:text-red-400 transition-colors p-0.5"
+                                                            title="Eliminar"
+                                                        >
+                                                            <X size={14} />
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                     {formData.files.length === 0 && !isUploading && (
                                         <span className="text-xs text-slate-500 italic">No hay archivos adjuntos.</span>
                                     )}
@@ -1750,63 +1829,120 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                 {/* Drop zone (visible when no files) or file grid */}
                                 {viewingOrder.files?.length > 0 ? (
                                     <div className="grid grid-cols-2 gap-3">
-                                        {viewingOrder.files.map((file: string, i: number) => {
+                                        {viewingOrder.files.map((file: any, i: number) => {
+                                            const fileUrl = getFileUrl(file);
+                                            const fileName = getFileName(file);
                                             const isImg = isImageFile(file);
-                                            const fileName = file.split('/').pop() || `Archivo ${i + 1}`;
+                                            const isEditingName = editingDetailFileIndex === i;
+
                                             return (
                                                 <div
                                                     key={i}
-                                                    onClick={() => isImg ? setLightboxImage(file) : window.open(file, '_blank')}
+                                                    onClick={() => {
+                                                        if (!isEditingName) {
+                                                            isImg ? setLightboxImage(fileUrl) : window.open(fileUrl, '_blank');
+                                                        }
+                                                    }}
                                                     className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-white/8 hover:border-blue-500/60 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer"
                                                     title={fileName}
                                                 >
                                                     {isImg ? (
                                                         <img
-                                                            src={file}
-                                                            alt={`Adjunto ${i + 1}`}
-                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                            src={fileUrl}
+                                                            alt={fileName}
+                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pb-7"
                                                         />
                                                     ) : (
-                                                        <div className="w-full h-full flex flex-col items-center justify-center p-3 bg-slate-50 dark:bg-slate-900/30">
-                                                            <div className="w-14 h-14 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
-                                                                <FileText size={28} className="text-red-400" />
+                                                        <div className="w-full h-full flex flex-col items-center justify-center p-3 pb-8 bg-slate-50 dark:bg-slate-900/30">
+                                                            <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform duration-300">
+                                                                <FileText size={24} className="text-red-400" />
                                                             </div>
                                                             <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-white transition-colors uppercase tracking-wide">PDF</span>
-                                                            <span className="text-[8px] text-slate-500 dark:text-slate-600 truncate w-full text-center mt-1 px-1">{fileName}</span>
                                                         </div>
                                                     )}
 
-                                                    {/* Hover overlay */}
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
-                                                                {isImg ? `Img ${i + 1}` : `PDF ${i + 1}`}
-                                                            </span>
-                                                            <div className="flex gap-1.5">
-                                                                {isImg && (
-                                                                    <div className="p-1.5 bg-blue-600/90 text-white rounded-lg flex items-center justify-center">
-                                                                        <Eye size={12} />
-                                                                    </div>
-                                                                )}
-                                                                <a
-                                                                    href={file}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                    className="p-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg flex items-center justify-center transition-colors"
-                                                                    title="Abrir en nueva pestaña"
-                                                                >
-                                                                    <ExternalLink size={12} />
-                                                                </a>
+                                                    {/* Hover overlay for actions */}
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-2.5 z-20 pointer-events-none">
+                                                        <div className="flex justify-end gap-1.5 pointer-events-auto">
+                                                            {isImg && (
+                                                                <div className="p-1.5 bg-blue-600/90 text-white rounded-lg flex items-center justify-center">
+                                                                    <Eye size={12} />
+                                                                </div>
+                                                            )}
+                                                            <a
+                                                                href={fileUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="p-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg flex items-center justify-center transition-colors"
+                                                                title="Abrir en nueva pestaña"
+                                                            >
+                                                                <ExternalLink size={12} />
+                                                            </a>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleDetailRemoveFile(i); }}
+                                                                className="p-1.5 bg-red-500/80 hover:bg-red-500 text-white rounded-lg flex items-center justify-center transition-colors"
+                                                                title="Eliminar archivo"
+                                                            >
+                                                                <Trash2 size={12} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Always visible Footer with File Name and Edit Button */}
+                                                    <div className="absolute bottom-0 inset-x-0 bg-slate-950/85 backdrop-blur-md px-2.5 py-1.5 flex items-center justify-between gap-1 z-30" onClick={(e) => e.stopPropagation()}>
+                                                        {isEditingName ? (
+                                                            <div className="flex items-center gap-1 w-full">
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingDetailFileName}
+                                                                    onChange={(e) => setEditingDetailFileName(e.target.value)}
+                                                                    className="bg-slate-900 text-[10px] text-white border border-blue-500 rounded px-1.5 py-0.5 w-full outline-none"
+                                                                    autoFocus
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') {
+                                                                            e.preventDefault();
+                                                                            saveDetailFileName(i);
+                                                                        } else if (e.key === 'Escape') {
+                                                                            setEditingDetailFileIndex(null);
+                                                                        }
+                                                                    }}
+                                                                />
                                                                 <button
-                                                                    onClick={(e) => { e.stopPropagation(); handleDetailRemoveFile(i); }}
-                                                                    className="p-1.5 bg-red-500/80 hover:bg-red-500 text-white rounded-lg flex items-center justify-center transition-colors"
-                                                                    title="Eliminar archivo"
+                                                                    type="button"
+                                                                    onClick={() => saveDetailFileName(i)}
+                                                                    className="text-green-400 hover:text-green-300 p-0.5 flex-shrink-0"
+                                                                    title="Guardar nombre"
                                                                 >
-                                                                    <Trash2 size={12} />
+                                                                    <Check size={12} />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setEditingDetailFileIndex(null)}
+                                                                    className="text-slate-400 hover:text-white p-0.5 flex-shrink-0"
+                                                                    title="Cancelar"
+                                                                >
+                                                                    <X size={12} />
                                                                 </button>
                                                             </div>
-                                                        </div>
+                                                        ) : (
+                                                            <>
+                                                                <span className="text-[10px] font-medium text-slate-200 truncate flex-1" title={fileName}>
+                                                                    {fileName}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setEditingDetailFileIndex(i);
+                                                                        setEditingDetailFileName(fileName);
+                                                                    }}
+                                                                    className="p-1 text-slate-400 hover:text-blue-400 transition-colors flex-shrink-0"
+                                                                    title="Cambiar nombre del archivo"
+                                                                >
+                                                                    <Edit2 size={11} />
+                                                                </button>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
                                             );

@@ -3,9 +3,10 @@ import { useStore } from '../store/useStore';
 import { Plus, Trash2, Edit2, Signpost, MapPin, Route, FileText, Hash, Upload, ExternalLink, X, Loader2 } from 'lucide-react';
 import { sileo } from 'sileo';
 import type { Soporte } from '../types';
+import { SOPORTE_TIPOS } from '../types';
 
 const EMPTY_FORM: Omit<Soporte, 'id' | 'created_at'> = {
-    tipo: '',
+    tipo: 'CA',
     numero: '',
     ubicacion: '',
     ruta: '',
@@ -83,9 +84,19 @@ export const SoportesPage: React.FC = () => {
         (s.ruta || '').toLowerCase().includes(search.toLowerCase())
     );
 
+    const sorted = [...filtered].sort((a, b) => {
+        const rutaA = (a.ruta || '').trim();
+        const rutaB = (b.ruta || '').trim();
+        const rutaCompare = rutaA.localeCompare(rutaB, undefined, { numeric: true, sensitivity: 'base' });
+        if (rutaCompare !== 0) return rutaCompare;
+        const numA = (a.numero || '').trim();
+        const numB = (b.numero || '').trim();
+        return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
     const handleEditStart = (s: Soporte) => {
         setIsEditing(s.id);
-        setFormData({ tipo: s.tipo, numero: s.numero, ubicacion: s.ubicacion || '', ruta: s.ruta || '', localidad: s.localidad || '', ficha: s.ficha || '' });
+        setFormData({ tipo: s.tipo || 'CA', numero: s.numero, ubicacion: s.ubicacion || '', ruta: s.ruta || '', localidad: s.localidad || '', ficha: s.ficha || '' });
         setShowUrlInput(false);
     };
 
@@ -122,7 +133,7 @@ export const SoportesPage: React.FC = () => {
 
             {/* List */}
             <div className="flex-1 min-h-0 overflow-auto custom-scrollbar p-4 md:p-10">
-                {filtered.length === 0 ? (
+                {sorted.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-48 text-slate-500 gap-3">
                         <Signpost size={40} className="text-slate-700" />
                         <p className="font-medium">{search ? 'Sin resultados para la búsqueda' : 'No hay soportes registrados'}</p>
@@ -143,7 +154,7 @@ export const SoportesPage: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {filtered.map((s) => (
+                                {sorted.map((s) => (
                                     <tr key={s.id} className="hover:bg-white/[0.03] transition-colors group">
                                         <td className="px-4 py-3">
                                             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-bold uppercase tracking-wide">
@@ -216,14 +227,22 @@ export const SoportesPage: React.FC = () => {
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
                                         <Signpost size={11} /> Tipo <span className="text-red-400">*</span>
                                     </label>
-                                    <input
-                                        className="input w-full"
-                                        placeholder="ej: Cartel, Valla, Lona..."
+                                    <select
+                                        className="input w-full bg-[#0f172a]"
                                         value={formData.tipo}
                                         onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
                                         required
                                         autoFocus
-                                    />
+                                    >
+                                        {!SOPORTE_TIPOS.includes(formData.tipo as any) && formData.tipo && (
+                                            <option value={formData.tipo}>{formData.tipo}</option>
+                                        )}
+                                        {SOPORTE_TIPOS.map((t) => (
+                                            <option key={t} value={t}>
+                                                {t}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">

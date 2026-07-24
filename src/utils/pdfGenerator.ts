@@ -79,7 +79,9 @@ export const generateWorkerPDF = async (worker: Member) => {
         // Process attached files
         if (worker.files && worker.files.length > 0) {
             for (let i = 0; i < worker.files.length; i++) {
-                const fileUrl = worker.files[i];
+                const item: any = worker.files[i];
+                const fileUrl = typeof item === 'string' ? item : (item?.url || '');
+                const fileName = typeof item === 'string' ? item : (item?.name || item?.url || '');
                 try {
                     const response = await fetch(fileUrl);
                     if (!response.ok) continue;
@@ -87,9 +89,10 @@ export const generateWorkerPDF = async (worker: Member) => {
                     const buffer = await response.arrayBuffer();
                     const contentType = response.headers.get('content-type') || '';
                     const lowerUrl = fileUrl.toLowerCase();
+                    const lowerName = fileName.toLowerCase();
 
-                    const isPdf = contentType.includes('pdf') || lowerUrl.endsWith('.pdf');
-                    const isImage = contentType.includes('image') || lowerUrl.match(/\.(jpg|jpeg|png|webp|gif)$/);
+                    const isPdf = contentType.includes('pdf') || lowerUrl.endsWith('.pdf') || lowerName.endsWith('.pdf');
+                    const isImage = contentType.includes('image') || lowerUrl.match(/\.(jpg|jpeg|png|webp|gif)$/) || lowerName.match(/\.(jpg|jpeg|png|webp|gif)$/);
 
                     if (i === 0) {
                         // Place on first page

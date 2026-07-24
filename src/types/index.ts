@@ -22,9 +22,12 @@ export interface Vehicle {
     plate: string;
 }
 
+export const SOPORTE_TIPOS = ['CA', 'PP', 'TM', 'PG', 'EP', 'MP'] as const;
+export type SoporteTipo = typeof SOPORTE_TIPOS[number];
+
 export interface Soporte {
     id: string;
-    tipo: string;
+    tipo: SoporteTipo | string;
     numero: string;
     ubicacion?: string;
     ruta?: string;
@@ -56,6 +59,11 @@ export interface Task {
     realHours?: number;
 }
 
+export interface OrderAttachment {
+    url: string;
+    name: string;
+}
+
 export interface ProductionOrder {
     id: string;
     opNumber: string;
@@ -68,7 +76,7 @@ export interface ProductionOrder {
     category: string;
     status: string;
     currency: 'UYU' | 'USD';
-    files: string[]; // JSON string in DB, parsed to array in store
+    files: (string | OrderAttachment)[]; // JSON string in DB, parsed to array in store
     comments?: Array<{ text: string, date: string, author?: string }>;
     createdAt?: string;
     updatedAt?: string;
