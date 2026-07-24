@@ -73,6 +73,8 @@ interface AppState {
     markAllNotificationsAsRead: () => void;
     updateNotificationPreferences: (prefs: { notifyNewOP: boolean; pushEnabled: boolean }) => void;
     updateViewPreferences: (prefs: { instalacionesViewMode: 'default' | 'gantt' }) => void;
+    sendEmailNotification: (notification: Notification) => Promise<void>;
+    updateEmailPreference: (enabled: boolean) => Promise<void>;
 
     // Teams
     addTeam: (team: { name: string }) => Promise<void>;
@@ -335,15 +337,21 @@ export const useStore = create<AppState>((set, get) => ({
         }]);
         if (error) throw error;
         
-        await supabase.from('notifications').insert([{
+        const notification = {
             id: uuidv4(),
             title: `Nueva OP #${order.opNumber} — ${order.client}`,
             message: `Se registró una nueva orden de producción.`,
-            type: 'new_op',
+            type: 'new_op' as const,
             targetUsers: null,
             opId: newId,
             opNumber: order.opNumber
-        }]);
+        };
+        await supabase.from('notifications').insert([notification]);
+        
+        await get().sendEmailNotification({
+            ...notification,
+            createdAt: new Date().toISOString()
+        });
 
         await get().fetchData();
     },
@@ -386,26 +394,37 @@ export const useStore = create<AppState>((set, get) => ({
                     const allTargets = Array.from(new Set([...followers, ...mentionedUsers]));
 
                     if (allTargets.length > 0) {
-                        await supabase.from('notifications').insert([{
+                        const notification = {
                             id: uuidv4(),
                             title,
                             message,
-                            type: statusChanged ? 'status_change' : 'comment',
+                            type: (statusChanged ? 'status_change' : 'comment') as 'status_change' | 'comment',
                             targetUsers: JSON.stringify(allTargets),
                             opId: id,
                             opNumber: order.opNumber
-                        }]);
+                        };
+                        await supabase.from('notifications').insert([notification]);
+                        await get().sendEmailNotification({
+                            ...notification,
+                            targetUsers: allTargets,
+                            createdAt: new Date().toISOString()
+                        });
                     } else if (statusChanged) {
                         // Si cambia el estado pero no hay followers ni menciones, notificar igual (broadcast)
-                        await supabase.from('notifications').insert([{
+                        const notification = {
                             id: uuidv4(),
                             title,
                             message,
-                            type: 'status_change',
+                            type: 'status_change' as const,
                             targetUsers: null,
                             opId: id,
                             opNumber: order.opNumber
-                        }]);
+                        };
+                        await supabase.from('notifications').insert([notification]);
+                        await get().sendEmailNotification({
+                            ...notification,
+                            createdAt: new Date().toISOString()
+                        });
                     }
                 }
             }
@@ -493,6 +512,119 @@ export const useStore = create<AppState>((set, get) => ({
             localStorage.setItem('viewPreferences', JSON.stringify(prefs));
             return { viewPreferences: prefs };
         });
+    },
+
+    sendEmailNotification: async (notification) => {
+        try {
+            const token = get().session?.access_token;
+            if (!token) {
+                console.log('No active session, skipping email notification');
+                return;
+            }
+
+            // Determinar destinatarios
+            let recipients: string[] = [];
+
+            // Perfiles que han desactivado las notificaciones por email
+            const optedOutEmails = new Set(
+                get().profiles
+                    .filter(p => p.email_notifications === false)
+                    .map(p => p.email)
+            );
+
+            if (notification.targetUsers && notification.targetUsers.length > 0) {
+                // Notificación dirigida a usuarios específicos
+                const targets = Array.isArray(notification.targetUsers) 
+                    ? notification.targetUsers 
+                    : JSON.parse(notification.targetUsers as any);
+                // Filtrar usuarios que hayan desactivado las notificaciones
+                recipients = targets.filter((email: string) => !optedOutEmails.has(email));
+            } else {
+                // Notificación broadcast (Nueva OP o cambio de estado sin followers)
+                const envEmails = import.meta.env.VITE_BROADCAST_EMAILS;
+                if (envEmails) {
+                    recipients = envEmails.split(',').map((e: string) => e.trim()).filter(Boolean)
+                        .filter((email: string) => !optedOutEmails.has(email));
+                }
+
+                if (recipients.length === 0) {
+                    // Por defecto, enviar a todos los perfiles registrados en el sistema
+                    recipients = get().profiles
+                        .filter(p => p.email_notifications !== false)
+                        .map(p => p.email).filter(Boolean);
+                }
+            }
+
+            if (recipients.length === 0) {
+                console.log('No recipients found for email notification');
+                return;
+            }
+
+            // Obtener la URL base de la app para enlaces y llamadas a la API
+            const baseAppUrl = import.meta.env.VITE_APP_URL || (window.location.origin.startsWith('http') ? window.location.origin : '');
+            
+            if (!baseAppUrl) {
+                console.warn('VITE_APP_URL no configurado, omitiendo envío de correo.');
+                return;
+            }
+
+            const htmlContent = generateNotificationHtml(notification, baseAppUrl);
+
+            const response = await fetch(`${baseAppUrl}/api/send-email`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    to: recipients,
+                    subject: `[Gantt Publicartel] ${notification.title}`,
+                    html: htmlContent,
+                    text: `${notification.title}\n\n${notification.message}`
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({ error: 'Error desconocido' }));
+                console.error('Error al enviar email via API:', errData.error);
+            } else {
+                console.log('Notificación por email enviada con éxito.');
+            }
+        } catch (error) {
+            console.error('Error en sendEmailNotification:', error);
+        }
+    },
+
+    updateEmailPreference: async (enabled: boolean) => {
+        const user = get().user;
+        if (!user) return;
+
+        // Actualización optimista: reflejar el cambio en la UI inmediatamente
+        set(state => ({
+            profiles: state.profiles.map(p =>
+                p.email === user.email ? { ...p, email_notifications: enabled } : p
+            )
+        }));
+
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ email_notifications: enabled })
+                .eq('id', user.id);
+            if (error) throw error;
+
+            // Sync solo los perfiles desde DB para confirmar el valor guardado
+            const { data: profilesData } = await supabase.from('profiles').select('*');
+            if (profilesData) set({ profiles: profilesData });
+        } catch (err: any) {
+            console.error('Error al actualizar preferencia de email:', err.message);
+            // Revertir el cambio optimista en caso de error
+            set(state => ({
+                profiles: state.profiles.map(p =>
+                    p.email === user.email ? { ...p, email_notifications: !enabled } : p
+                )
+            }));
+        }
     },
 
     addTask: async (task) => {
@@ -816,3 +948,162 @@ export const useStore = create<AppState>((set, get) => ({
         await get().fetchData();
     },
 }));
+
+function generateNotificationHtml(notification: Notification, origin: string): string {
+    const opLink = notification.opId ? `${origin}/orders?opId=${notification.opId}` : `${origin}/orders`;
+    const capitalizedType = notification.type === 'new_op' 
+        ? 'Nueva Orden de Producción' 
+        : notification.type === 'status_change' 
+        ? 'Cambio de Estado' 
+        : 'Nuevo Comentario';
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${notification.title}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .logo-text {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .content {
+            padding: 32px 24px;
+        }
+        .title {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-top: 0;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+        .message {
+            font-size: 15px;
+            color: #475569;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+        .details-table {
+            background-color: #f1f5f9;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 28px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .details-label {
+            padding: 12px 0 12px 12px;
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .details-value {
+            padding: 12px 12px 12px 0;
+            font-size: 14px;
+            color: #0f172a;
+            font-weight: 700;
+            text-align: right;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .details-row-last .details-label,
+        .details-row-last .details-value {
+            border-bottom: none;
+        }
+        .btn-container {
+            text-align: center;
+            margin-top: 32px;
+            margin-bottom: 8px;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #2563eb;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 14px 30px;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+            transition: all 0.2s ease;
+        }
+        .footer {
+            background-color: #f8fafc;
+            padding: 24px;
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+            border-top: 1px solid #e2e8f0;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="logo-text">Publicartel</h1>
+        </div>
+        <div class="content">
+            <h2 class="title">${notification.title}</h2>
+            <p class="message">${notification.message}</p>
+            
+            <table class="details-table" width="100%" cellpadding="0" cellspacing="0">
+                ${notification.opNumber ? `
+                <tr>
+                    <td class="details-label" style="padding: 12px 0 12px 12px; font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #e2e8f0;">Número de OP</td>
+                    <td class="details-value" style="padding: 12px 12px 12px 0; font-size: 14px; color: #0f172a; font-weight: 700; text-align: right; border-bottom: 1px solid #e2e8f0;">#${notification.opNumber}</td>
+                </tr>` : ''}
+                <tr>
+                    <td class="details-label" style="padding: 12px 0 12px 12px; font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #e2e8f0;">Evento</td>
+                    <td class="details-value" style="padding: 12px 12px 12px 0; font-size: 14px; color: #0f172a; font-weight: 700; text-align: right; border-bottom: 1px solid #e2e8f0;">${capitalizedType}</td>
+                </tr>
+                <tr class="details-row-last">
+                    <td class="details-label" style="padding: 12px 0 12px 12px; font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;">Fecha</td>
+                    <td class="details-value" style="padding: 12px 12px 12px 0; font-size: 14px; color: #0f172a; font-weight: 700; text-align: right;">${new Date(notification.createdAt).toLocaleDateString('es-UY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                </tr>
+            </table>
+
+            <div class="btn-container">
+                <a href="${opLink}" class="btn" target="_blank" style="color: #ffffff;">Ver en el Sistema</a>
+            </div>
+        </div>
+        <div class="footer">
+            Este es un correo automático generado por la plataforma de gestión Gantt Publicartel.<br>
+            Por favor, no respondas a este mensaje.
+        </div>
+    </div>
+</body>
+</html>
+    `;
+}

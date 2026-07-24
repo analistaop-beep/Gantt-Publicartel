@@ -3,6 +3,7 @@ export interface Profile {
     email: string;
     name: string;
     created_at: string;
+    email_notifications?: boolean;
 }
 
 export interface Member {

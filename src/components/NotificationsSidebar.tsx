@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Check, LogOut, MessageSquare, Activity, ClipboardList } from 'lucide-react';
+import { Bell, Check, LogOut, MessageSquare, Activity, ClipboardList, Mail } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -31,7 +31,27 @@ export const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ onNo
     const viewPrefs = useStore(state => state.viewPreferences);
     const updateViewPrefs = useStore(state => state.updateViewPreferences);
     const user = useStore(state => state.user);
+    const profiles = useStore(state => state.profiles);
     const signOut = useStore(state => state.signOut);
+    const updateEmailPreference = useStore(state => state.updateEmailPreference);
+
+    // Preferencia de email del usuario actual leída desde la base de datos
+    const currentProfile = profiles.find(p => p.email === user?.email);
+    const emailEnabled = currentProfile?.email_notifications !== false;
+
+    const handleEmailToggle = (checked: boolean) => {
+        // Llama sin await: el cambio es optimista e inmediato en el store
+        updateEmailPreference(checked).then(() => {
+            sileo.success({
+                title: checked ? 'Emails activados' : 'Emails desactivados',
+                description: checked
+                    ? 'Recibirás notificaciones por correo.'
+                    : 'Ya no recibirás correos de notificación.',
+            });
+        }).catch(() => {
+            sileo.error({ title: 'Error al guardar', description: 'No se pudo actualizar la preferencia.' });
+        });
+    };
 
     // Solo mostrar notificaciones globales (targetUsers null/vacío) o las dirigidas al usuario actual
     const userEmail = user?.email;
@@ -245,6 +265,29 @@ export const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ onNo
                                         </div>
                                     </div>
                                     <span className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Alertas nativas de Windows/Mac aunque la app esté en segundo plano.</span>
+                                </label>
+
+                                <label className="flex flex-col gap-2 p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 cursor-pointer hover:bg-slate-100/50 dark:hover:bg-white/10 transition-colors">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                            <Mail size={14} className="text-blue-500" />
+                                            Notificaciones por Email
+                                        </span>
+                                        <div className="relative inline-flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                className="sr-only peer"
+                                                checked={emailEnabled}
+                                                onChange={(e) => handleEmailToggle(e.target.checked)}
+                                            />
+                                            <div className="w-8 h-4 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-500"></div>
+                                        </div>
+                                    </div>
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                                        {emailEnabled
+                                            ? 'Recibirás correos automáticos por Gmail cuando haya cambios en tus OPs seguidas.'
+                                            : 'No recibirás correos de notificación por email.'}
+                                    </span>
                                 </label>
                             </div>
                         </div>
