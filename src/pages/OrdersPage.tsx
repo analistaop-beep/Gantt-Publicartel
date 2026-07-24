@@ -137,7 +137,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState<string | null>(null);
     const [viewingOrder, setViewingOrder] = useState<any | null>(null);
-    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+    const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [isUploadingDetail, setIsUploadingDetail] = useState(false);
     const [isPrinting, setIsPrinting] = useState(false);
@@ -199,6 +199,17 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
     const [editingDetailFileIndex, setEditingDetailFileIndex] = useState<number | null>(null);
     const [editingDetailFileName, setEditingDetailFileName] = useState<string>('');
 
+    const lightboxImages = React.useMemo(() => {
+        if (!viewingOrder?.files) return [];
+        return viewingOrder.files
+            .map((f: any) => ({ url: getFileUrl(f), name: getFileName(f) }))
+            .filter((f: { url: string; name: string }) => isImageFile(f.url));
+    }, [viewingOrder]);
+
+    const closeLightbox = React.useCallback(() => setLightboxIndex(null), []);
+    const lightboxPrev = React.useCallback(() => setLightboxIndex(i => i !== null && i > 0 ? i - 1 : (lightboxImages.length - 1)), [lightboxImages.length]);
+    const lightboxNext = React.useCallback(() => setLightboxIndex(i => i !== null && i < lightboxImages.length - 1 ? i + 1 : 0), [lightboxImages.length]);
+
     React.useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
@@ -206,18 +217,21 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                     setIsTaskModalOpen(false);
                 } else if (isTaggingOrder) {
                     setIsTaggingOrder(null);
-                } else if (lightboxImage) {
-                    setLightboxImage(null);
+                } else if (lightboxIndex !== null) {
+                    closeLightbox();
                 } else if (viewingOrder) {
                     setViewingOrder(null);
                 } else if (isModalOpen) {
                     closeModal();
                 }
+            } else if (lightboxIndex !== null) {
+                if (e.key === 'ArrowLeft') lightboxPrev();
+                if (e.key === 'ArrowRight') lightboxNext();
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [lightboxImage, viewingOrder, isModalOpen, isTaskModalOpen, isTaggingOrder]);
+    }, [lightboxIndex, viewingOrder, isModalOpen, isTaskModalOpen, isTaggingOrder, lightboxPrev, lightboxNext, closeLightbox]);
 
     const [formData, setFormData] = useState({
         opNumber: '',
@@ -1840,7 +1854,12 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                     key={i}
                                                     onClick={() => {
                                                         if (!isEditingName) {
-                                                            isImg ? setLightboxImage(fileUrl) : window.open(fileUrl, '_blank');
+                                                            if (isImg) {
+                                                                const imgIdx = lightboxImages.findIndex((lbf: { url: string }) => lbf.url === fileUrl);
+                                                                setLightboxIndex(imgIdx >= 0 ? imgIdx : 0);
+                                                            } else {
+                                                                window.open(fileUrl, '_blank');
+                                                            }
                                                         }
                                                     }}
                                                     className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-white/8 hover:border-blue-500/60 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer"
@@ -2010,35 +2029,99 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                 </div>
             )}
 
-            {/* Lightbox for viewing images */}
-            {lightboxImage && (
-                <div
-                    className="fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center z-[100] p-4 cursor-zoom-out animate-in"
-                    onClick={() => setLightboxImage(null)}
-                >
-                    <button
-                        onClick={() => setLightboxImage(null)}
-                        className="absolute top-6 right-6 p-3 bg-white/5 hover:bg-white/10 text-white rounded-full transition-colors border border-white/10 cursor-pointer"
+            {/* Lightbox carousel for viewing images */}
+            {lightboxIndex !== null && lightboxImages.length > 0 && (() => {
+                const current = lightboxImages[lightboxIndex] ?? lightboxImages[0];
+                return (
+                    <div
+                        className="fixed inset-0 bg-black/97 backdrop-blur-xl flex items-center justify-center z-[100] select-none"
+                        onClick={closeLightbox}
                     >
-                        <X size={24} />
-                    </button>
-                    <img
-                        src={lightboxImage}
-                        alt="Vista ampliada"
-                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl border border-white/10 cursor-default"
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                    <a
-                        href={lightboxImage}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-full transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2 border border-blue-500/30 cursor-pointer"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <ExternalLink size={16} /> Abrir en nueva pestaña
-                    </a>
-                </div>
-            )}
+                        {/* Close */}
+                        <button
+                            onClick={closeLightbox}
+                            className="absolute top-5 right-5 p-2.5 bg-white/8 hover:bg-white/16 text-white rounded-full transition-colors border border-white/10 cursor-pointer z-10"
+                            title="Cerrar (Esc)"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        {/* Counter + filename */}
+                        <div className="absolute top-5 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 pointer-events-none">
+                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{lightboxIndex + 1} / {lightboxImages.length}</span>
+                            <span className="text-sm font-semibold text-white/70 max-w-xs truncate">{current.name}</span>
+                        </div>
+
+                        {/* Prev button */}
+                        {lightboxImages.length > 1 && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); lightboxPrev(); }}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/8 hover:bg-white/18 text-white rounded-full transition-all border border-white/10 hover:scale-110 active:scale-95 cursor-pointer z-10"
+                                title="Anterior (←)"
+                            >
+                                <ChevronDown size={22} className="rotate-90" />
+                            </button>
+                        )}
+
+                        {/* Image */}
+                        <img
+                            key={current.url}
+                            src={current.url}
+                            alt={current.name}
+                            className="max-w-[calc(100%-120px)] max-h-[80vh] object-contain rounded-xl shadow-2xl border border-white/8 cursor-default transition-all duration-300"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+
+                        {/* Next button */}
+                        {lightboxImages.length > 1 && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); lightboxNext(); }}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/8 hover:bg-white/18 text-white rounded-full transition-all border border-white/10 hover:scale-110 active:scale-95 cursor-pointer z-10"
+                                title="Siguiente (→)"
+                            >
+                                <ChevronDown size={22} className="-rotate-90" />
+                            </button>
+                        )}
+
+                        {/* Thumbnail strip */}
+                        {lightboxImages.length > 1 && (
+                            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex gap-2 overflow-x-auto max-w-[80vw] px-4 pb-1" onClick={(e) => e.stopPropagation()}>
+                                {lightboxImages.map((lbf: { url: string; name: string }, idx: number) => (
+                                    <button
+                                        key={idx}
+                                        onClick={(e) => { e.stopPropagation(); setLightboxIndex(idx); }}
+                                        className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
+                                            idx === lightboxIndex
+                                                ? 'border-blue-400 scale-110 shadow-lg shadow-blue-500/30'
+                                                : 'border-white/10 opacity-50 hover:opacity-80 hover:border-white/30'
+                                        }`}
+                                    >
+                                        <img src={lbf.url} alt={lbf.name} className="w-full h-full object-cover" />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Actions bar */}
+                        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                            <a
+                                href={current.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-5 py-2 bg-white/10 hover:bg-white/18 text-white font-semibold rounded-full transition-all border border-white/10 flex items-center gap-2 text-sm cursor-pointer"
+                            >
+                                <ExternalLink size={14} /> Abrir en nueva pestaña
+                            </a>
+                            <button
+                                onClick={() => printFile(current.url)}
+                                className="px-5 py-2 bg-emerald-600/80 hover:bg-emerald-500 text-white font-semibold rounded-full transition-all border border-emerald-500/30 flex items-center gap-2 text-sm cursor-pointer"
+                            >
+                                <Printer size={14} /> Imprimir
+                            </button>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* Task Creation Modal */}
             {isTaskModalOpen && (
