@@ -138,6 +138,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
     const [isEditing, setIsEditing] = useState<string | null>(null);
     const [viewingOrder, setViewingOrder] = useState<any | null>(null);
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+    const [viewingOrderIndex, setViewingOrderIndex] = useState<number | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [isUploadingDetail, setIsUploadingDetail] = useState(false);
     const [isPrinting, setIsPrinting] = useState(false);
@@ -209,6 +210,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
     const closeLightbox = React.useCallback(() => setLightboxIndex(null), []);
     const lightboxPrev = React.useCallback(() => setLightboxIndex(i => i !== null && i > 0 ? i - 1 : (lightboxImages.length - 1)), [lightboxImages.length]);
     const lightboxNext = React.useCallback(() => setLightboxIndex(i => i !== null && i < lightboxImages.length - 1 ? i + 1 : 0), [lightboxImages.length]);
+    const navigateOrderRef = React.useRef<(direction: number) => void>(() => {});
 
     React.useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -221,17 +223,22 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                     closeLightbox();
                 } else if (viewingOrder) {
                     setViewingOrder(null);
+                    setViewingOrderIndex(null);
                 } else if (isModalOpen) {
                     closeModal();
                 }
             } else if (lightboxIndex !== null) {
                 if (e.key === 'ArrowLeft') lightboxPrev();
                 if (e.key === 'ArrowRight') lightboxNext();
+            } else if (viewingOrder && viewingOrderIndex !== null) {
+                if (e.key === 'ArrowLeft') navigateOrderRef.current(-1);
+                if (e.key === 'ArrowRight') navigateOrderRef.current(1);
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [lightboxIndex, viewingOrder, isModalOpen, isTaskModalOpen, isTaggingOrder, lightboxPrev, lightboxNext, closeLightbox]);
+    }, [lightboxIndex, viewingOrder, viewingOrderIndex, isModalOpen, isTaskModalOpen, isTaggingOrder, lightboxPrev, lightboxNext, closeLightbox]);
+
 
     const [formData, setFormData] = useState({
         opNumber: '',
@@ -278,6 +285,16 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
 
         return dateB - dateA;
     });
+
+    const navigateOrder = React.useCallback((direction: number) => {
+        setViewingOrderIndex(prev => {
+            if (prev === null) return prev;
+            const next = Math.max(0, Math.min(filteredOrders.length - 1, prev + direction));
+            setViewingOrder(filteredOrders[next]);
+            return next;
+        });
+    }, [filteredOrders]);
+    navigateOrderRef.current = navigateOrder;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -943,7 +960,11 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                             </td>
                                             <td className="px-4 py-2">
                                                 <button
-                                                    onClick={() => setViewingOrder(order)}
+                                                    onClick={() => {
+                                                        const idx = filteredOrders.indexOf(order);
+                                                        setViewingOrderIndex(idx);
+                                                        setViewingOrder(order);
+                                                    }}
                                                     className="flex flex-col text-left group/client hover:opacity-80 transition-all"
                                                 >
                                                     <span className="font-bold text-white text-xs group-hover/client:text-blue-400 transition-colors underline decoration-blue-500/30 underline-offset-4 leading-tight">{order.client}</span>
@@ -1530,6 +1551,30 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                         {viewingOrder.category}
                                     </span>
                                 </div>
+                                {/* OP navigation arrows */}
+                                {viewingOrderIndex !== null && filteredOrders.length > 1 && (
+                                    <div className="hidden sm:flex items-center gap-1 border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden">
+                                        <button
+                                            onClick={() => navigateOrder(-1)}
+                                            disabled={viewingOrderIndex <= 0}
+                                            className="px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/8 transition-colors text-slate-400 hover:text-slate-700 dark:hover:text-white disabled:opacity-25 disabled:cursor-not-allowed"
+                                            title="OP anterior (←)"
+                                        >
+                                            <ChevronDown size={16} className="rotate-90" />
+                                        </button>
+                                        <span className="text-[10px] font-bold text-slate-400 tabular-nums px-1.5 select-none">
+                                            {viewingOrderIndex + 1} / {filteredOrders.length}
+                                        </span>
+                                        <button
+                                            onClick={() => navigateOrder(1)}
+                                            disabled={viewingOrderIndex >= filteredOrders.length - 1}
+                                            className="px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/8 transition-colors text-slate-400 hover:text-slate-700 dark:hover:text-white disabled:opacity-25 disabled:cursor-not-allowed"
+                                            title="OP siguiente (→)"
+                                        >
+                                            <ChevronDown size={16} className="-rotate-90" />
+                                        </button>
+                                    </div>
+                                )}
                                 <button
                                     onClick={() => setViewingOrder(null)}
                                     className="p-2 hover:bg-slate-200 dark:hover:bg-white/8 transition-colors text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl ml-2"
