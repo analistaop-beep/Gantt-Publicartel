@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../utils/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
-import type { Team, ProductionOrder, Notification, Profile, Soporte } from '../types';
+import type { Team, ProductionOrder, Notification, Profile, Soporte, TareaDisa, DisaEstado } from '../types';
 
 
 // Track which tasks have been locally modified but not yet saved to the database
@@ -60,6 +60,13 @@ interface AppState {
     updateSoporte: (soporte: Soporte) => Promise<void>;
     deleteSoporte: (id: string) => Promise<void>;
 
+    // Disa
+    disaTasks: TareaDisa[];
+    addDisaTask: (task: Omit<TareaDisa, 'id' | 'created_at'>) => Promise<void>;
+    updateDisaTask: (task: TareaDisa) => Promise<void>;
+    deleteDisaTask: (id: string) => Promise<void>;
+    moveDisaTask: (id: string, estado: DisaEstado) => Promise<void>;
+
     // Reminders
     addReminder: (reminder: { opNumber: string; name: string; client: string; address: string; totalHours: number }) => Promise<void>;
     updateReminder: (reminder: any) => Promise<void>;
@@ -74,6 +81,7 @@ interface AppState {
     uploadFile: (file: File | Blob, fileName: string) => Promise<string>;
     uploadMemberFile: (file: File | Blob, fileName: string) => Promise<string>;
     uploadSoporteFile: (file: File | Blob, fileName: string) => Promise<string>;
+    uploadDisaFile: (file: File | Blob, fileName: string) => Promise<string>;
 
     // Notifications & Views
     markNotificationAsRead: (id: string) => void;
@@ -144,6 +152,7 @@ export const useStore = create<AppState>((set, get) => ({
     members: [],
     vehicles: [],
     soportes: [],
+    disaTasks: [],
     teams: [],
     tasks: [],
     herreriaTasks: [],
@@ -192,10 +201,11 @@ export const useStore = create<AppState>((set, get) => ({
                 supabase.from('reminders').select('*').order('opNumber'),
                 supabase.from('production_orders').select('*').order('createdAt', { ascending: false }),
                 supabase.from('notifications').select('*').order('createdAt', { ascending: false }).limit(50),
-                supabase.from('profiles').select('*')
+                supabase.from('profiles').select('*'),
+                supabase.from('disa_tasks').select('*').order('created_at', { ascending: false }),
             ]);
 
-            const [membersRes, vehiclesRes, soportesRes, teamsRes, tasksRes, remindersRes, ordersRes, notificationsRes, profilesRes] = results;
+            const [membersRes, vehiclesRes, soportesRes, teamsRes, tasksRes, remindersRes, ordersRes, notificationsRes, profilesRes, disaRes] = results;
 
             const mappedTasks = (tasksRes.data || []).map(task => ({
                 ...task,
@@ -229,7 +239,11 @@ export const useStore = create<AppState>((set, get) => ({
                     ...n,
                     targetUsers: typeof n.targetUsers === 'string' ? JSON.parse(n.targetUsers) : (n.targetUsers || null)
                 })),
-                isLoading: false
+                isLoading: false,
+                disaTasks: (disaRes.data || []).map((t: any) => ({
+                    ...t,
+                    files: typeof t.files === 'string' ? JSON.parse(t.files) : (t.files || [])
+                })) as TareaDisa[],
             });
         } catch (err: any) {
             set({ error: err.message, isLoading: false });
@@ -311,6 +325,50 @@ export const useStore = create<AppState>((set, get) => ({
         const { error } = await supabase.from('soportes').delete().eq('id', id);
         if (error) throw error;
         await get().fetchData();
+    },
+
+    addDisaTask: async (task) => {
+        const payload = {
+            ...task,
+            files: task.files ? JSON.stringify(task.files) : '[]'
+        };
+        const { error } = await supabase.from('disa_tasks').insert([{ id: uuidv4(), ...payload }]);
+        if (error) throw error;
+        await get().fetchData();
+    },
+    updateDisaTask: async (task) => {
+        try {
+            set({ error: null });
+            const { id, created_at, ...data } = task;
+            const payload = {
+                ...data,
+                files: data.files ? JSON.stringify(data.files) : '[]'
+            };
+            const { error } = await supabase.from('disa_tasks').update(payload).eq('id', id);
+            if (error) throw error;
+            // Optimistic local update
+            set(state => ({ disaTasks: state.disaTasks.map(t => t.id === id ? task : t) }));
+        } catch (err: any) {
+            set({ error: err.message });
+            throw err;
+        }
+    },
+    deleteDisaTask: async (id) => {
+        const { error } = await supabase.from('disa_tasks').delete().eq('id', id);
+        if (error) throw error;
+        set(state => ({ disaTasks: state.disaTasks.filter(t => t.id !== id) }));
+    },
+    moveDisaTask: async (id, estado) => {
+        // Optimistic: update locally first for instant UI feedback
+        set(state => ({
+            disaTasks: state.disaTasks.map(t => t.id === id ? { ...t, estado } : t)
+        }));
+        const { error } = await supabase.from('disa_tasks').update({ estado }).eq('id', id);
+        if (error) {
+            // Revert on failure
+            await get().fetchData();
+            throw error;
+        }
     },
 
     addTeam: async (team) => {
@@ -536,6 +594,40 @@ export const useStore = create<AppState>((set, get) => ({
                 .from('members')
                 .upload(path, file, {
                     contentType: file instanceof File ? file.type : 'application/pdf',
+                    cacheControl: '3600',
+                    upsert: false
+                });
+            if (fallbackRes.error) throw uploadError;
+        }
+
+        const { data } = supabase.storage
+            .from(bucketName)
+            .getPublicUrl(path);
+
+        return data.publicUrl;
+    },
+
+    uploadDisaFile: async (file, fileName) => {
+        const fileExt = fileName.split('.').pop();
+        const path = `disa/${uuidv4()}.${fileExt}`;
+        const isWebp = fileName.toLowerCase().endsWith('.webp') || file.type?.startsWith('image/');
+        const contentType = file instanceof File ? file.type : (isWebp ? 'image/webp' : 'application/octet-stream');
+        
+        let bucketName = 'production-orders';
+        let { error: uploadError } = await supabase.storage
+            .from('production-orders')
+            .upload(path, file, {
+                contentType,
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (uploadError) {
+            bucketName = 'members';
+            const fallbackRes = await supabase.storage
+                .from('members')
+                .upload(path, file, {
+                    contentType,
                     cacheControl: '3600',
                     upsert: false
                 });

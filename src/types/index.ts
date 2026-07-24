@@ -100,3 +100,23 @@ export interface Notification {
     opId?: string | null;          // ID de la OP relacionada (para navegar al hacer click)
     opNumber?: string | null;      // Número de OP legible
 }
+
+// ─── Disa ───────────────────────────────────────────────────────────────────
+
+export type DisaEstado = 'Detenido' | 'Pendiente' | 'Para facturar' | 'Facturado';
+
+export const DISA_ESTADOS: DisaEstado[] = ['Detenido', 'Pendiente', 'Para facturar', 'Facturado'];
+
+export interface TareaDisa {
+    id: string;
+    eess: string;
+    monto?: number | null;
+    direccion?: string | null;
+    asunto?: string | null;
+    detalles?: string | null;
+    fecha_prometida?: string | null;
+    estado: DisaEstado;
+    files?: (string | OrderAttachment)[];
+    created_at?: string;
+}
+
