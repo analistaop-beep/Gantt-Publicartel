@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic, Filter, Check, BarChart2, Signpost } from 'lucide-react';
+import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic, Filter, Check, BarChart2, Signpost, Table2, Download } from 'lucide-react';
 import { sileo } from 'sileo';
-import { convertToWebP, getFileUrl, getFileName, isImageFile, printFile, type OrderAttachment } from '../utils/fileUtils';
+import { convertToWebP, getFileUrl, getFileName, isImageFile, isExcelFile, printFile, type OrderAttachment } from '../utils/fileUtils';
 import { printOrderSummaryPDF, printHoursAnalysisPDF } from '../utils/reportUtils';
 
 const MultiSelect = ({
@@ -199,6 +199,8 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
     const [editingFormFileName, setEditingFormFileName] = useState<string>('');
     const [editingDetailFileIndex, setEditingDetailFileIndex] = useState<number | null>(null);
     const [editingDetailFileName, setEditingDetailFileName] = useState<string>('');
+    const [excelViewerFile, setExcelViewerFile] = useState<{ url: string; name: string } | null>(null);
+    const [iframeLoaded, setIframeLoaded] = useState(false);
 
     const lightboxImages = React.useMemo(() => {
         if (!viewingOrder?.files) return [];
@@ -451,6 +453,12 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
             if (detailFileInputRef.current) detailFileInputRef.current.value = '';
         }
     };
+
+    const openExcelPreview = (url: string, name: string) => {
+        setExcelViewerFile({ url, name });
+        setIframeLoaded(false);
+    };
+
 
     const saveFormFileName = (index: number) => {
         if (!editingFormFileName.trim()) return;
@@ -1393,14 +1401,14 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                             </div>
 
                             <div className="space-y-4">
-                                <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Archivos / Adjuntos (Fotos o PDF)</label>
+                                <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Archivos / Adjuntos (Fotos, PDF o Excel)</label>
                                 <div className="flex flex-col gap-4">
                                     <input
                                         type="file"
                                         className="hidden"
                                         ref={fileInputRef}
                                         multiple
-                                        accept="image/*,application/pdf"
+                                        accept="image/*,application/pdf,.xls,.xlsx,.xlsm,.xlsb,.ods,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                                         onChange={handleFileUpload}
                                     />
                                     <button
@@ -1418,7 +1426,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                             <>
                                                 <Upload size={24} className="text-slate-400" />
                                                 <span className="text-sm font-bold">Click para subir archivos</span>
-                                                <span className="text-[10px] text-slate-500">Imágenes se convertirán a WebP automáticamente</span>
+                                                <span className="text-[10px] text-slate-500">Imágenes → WebP · PDF · Excel (.xls, .xlsx)</span>
                                             </>
                                         )}
                                     </button>
@@ -1877,7 +1885,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                         className="hidden"
                                         ref={detailFileInputRef}
                                         multiple
-                                        accept="image/*,application/pdf"
+                                        accept="image/*,application/pdf,.xls,.xlsx,.xlsm,.xlsb,.ods,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                                         onChange={handleDetailFileUpload}
                                     />
                                 </div>
@@ -1889,6 +1897,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                             const fileUrl = getFileUrl(file);
                                             const fileName = getFileName(file);
                                             const isImg = isImageFile(file);
+                                            const isExcel = isExcelFile(file);
                                             const isEditingName = editingDetailFileIndex === i;
 
                                             return (
@@ -1899,13 +1908,15 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                             if (isImg) {
                                                                 const imgIdx = lightboxImages.findIndex((lbf: { url: string }) => lbf.url === fileUrl);
                                                                 setLightboxIndex(imgIdx >= 0 ? imgIdx : 0);
+                                                            } else if (isExcel) {
+                                                                openExcelPreview(fileUrl, fileName);
                                                             } else {
                                                                 window.open(fileUrl, '_blank');
                                                             }
                                                         }
                                                     }}
                                                     className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-white/8 hover:border-blue-500/60 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer"
-                                                    title={fileName}
+                                                    title={isExcel ? `Ver planilla: ${fileName}` : fileName}
                                                 >
                                                     {isImg ? (
                                                         <img
@@ -1913,6 +1924,16 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                             alt={fileName}
                                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pb-7"
                                                         />
+                                                    ) : isExcel ? (
+                                                        <div className="w-full h-full flex flex-col items-center justify-center p-3 pb-8 bg-emerald-950/30 dark:bg-emerald-950/50">
+                                                            <div className="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform duration-300">
+                                                                <Table2 size={24} className="text-emerald-400" />
+                                                            </div>
+                                                            <span className="text-[9px] font-bold text-emerald-500 dark:text-emerald-400 group-hover:text-emerald-300 transition-colors uppercase tracking-wide">
+                                                                {fileName.split('.').pop()?.toUpperCase() || 'XLS'}
+                                                            </span>
+                                                            <span className="text-[8px] text-slate-500 dark:text-slate-500 mt-0.5">Click para ver</span>
+                                                        </div>
                                                     ) : (
                                                         <div className="w-full h-full flex flex-col items-center justify-center p-3 pb-8 bg-slate-50 dark:bg-slate-900/30">
                                                             <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform duration-300">
@@ -1930,11 +1951,21 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                                     <Eye size={12} />
                                                                 </div>
                                                             )}
+                                                            {isExcel && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => { e.stopPropagation(); openExcelPreview(fileUrl, fileName); }}
+                                                                    className="p-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-lg flex items-center justify-center transition-colors"
+                                                                    title="Ver planilla Excel"
+                                                                >
+                                                                    <Table2 size={12} />
+                                                                </button>
+                                                            )}
                                                             <button
                                                                 type="button"
                                                                 onClick={(e) => { e.stopPropagation(); printFile(fileUrl); }}
                                                                 className="p-1.5 bg-emerald-500/80 hover:bg-emerald-500 text-white rounded-lg flex items-center justify-center transition-colors"
-                                                                title="Imprimir archivo"
+                                                                title={isExcel ? 'Abrir en Google Viewer (ver/imprimir)' : 'Imprimir archivo'}
                                                             >
                                                                 <Printer size={12} />
                                                             </button>
@@ -1944,9 +1975,10 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                                 rel="noopener noreferrer"
                                                                 onClick={(e) => e.stopPropagation()}
                                                                 className="p-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg flex items-center justify-center transition-colors"
-                                                                title="Abrir en nueva pestaña"
+                                                                title={isExcel ? 'Descargar Excel' : 'Abrir en nueva pestaña'}
+                                                                download={isExcel ? fileName : undefined}
                                                             >
-                                                                <ExternalLink size={12} />
+                                                                {isExcel ? <Download size={12} /> : <ExternalLink size={12} />}
                                                             </a>
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); handleDetailRemoveFile(i); }}
@@ -2066,6 +2098,72 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                             >
                                 CERRAR
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Excel Viewer Modal (Microsoft Office Web Embed) */}
+            {excelViewerFile && (
+                <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-[110] p-2 sm:p-4">
+                    <div className="bg-[#0f172a] w-full max-w-[98vw] h-[95vh] rounded-2xl border border-emerald-500/20 shadow-2xl shadow-emerald-500/10 flex flex-col overflow-hidden">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-white/8 bg-emerald-950/30 flex-shrink-0 gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
+                                    <Table2 size={18} className="text-emerald-400" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">PLANILLA EXCEL</p>
+                                    <p className="text-sm font-bold text-white truncate max-w-[300px] sm:max-w-[500px]">{excelViewerFile.name}</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                                <a
+                                    href={excelViewerFile.url}
+                                    download={excelViewerFile.name}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 font-bold border border-emerald-500/30 rounded-lg text-[10px] uppercase tracking-wider transition-all"
+                                    title="Descargar archivo Excel"
+                                >
+                                    <Download size={12} /> Descargar
+                                </a>
+                                <button
+                                    onClick={() => printFile(excelViewerFile.url)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 font-bold border border-blue-500/30 rounded-lg text-[10px] uppercase tracking-wider transition-all"
+                                    title="Imprimir / Ver en Google Viewer"
+                                >
+                                    <Printer size={12} /> Imprimir
+                                </button>
+                                <button
+                                    onClick={() => setExcelViewerFile(null)}
+                                    className="p-2 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-colors ml-1"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Viewer Body (Microsoft Office Web Embed) */}
+                        <div className="flex-1 min-h-0 relative bg-slate-900 overflow-hidden">
+                            {!iframeLoaded && (
+                                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#0f172a] gap-3">
+                                    <Loader2 size={36} className="animate-spin text-emerald-400" />
+                                    <p className="text-slate-300 font-medium text-sm">Cargando planilla Excel con formato original...</p>
+                                </div>
+                            )}
+                            <iframe
+                                src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(excelViewerFile.url)}`}
+                                className="w-full h-full border-0"
+                                title="Excel Viewer"
+                                onLoad={() => setIframeLoaded(true)}
+                            />
+                        </div>
+
+                        {/* Footer info */}
+                        <div className="px-6 py-2.5 border-t border-white/5 bg-[#0a1120]/70 flex-shrink-0 flex items-center justify-between text-[10px] text-slate-400">
+                            <span>🟢 <strong>Visor Microsoft Office Web:</strong> Visualización exacta con formatos de celda, colores, fuentes, anchos de columna y solapas en la parte inferior.</span>
+                            <span className="text-slate-500 italic hidden sm:inline">Usá el botón "Imprimir" para enviar a la impresora.</span>
                         </div>
                     </div>
                 </div>

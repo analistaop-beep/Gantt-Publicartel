@@ -68,9 +68,24 @@ export const isImageFile = (file: string | OrderAttachment | null | undefined): 
     return imageExtensions.includes(extUrl) || imageExtensions.includes(extName);
 };
 
+export const isExcelFile = (file: string | OrderAttachment | null | undefined): boolean => {
+    const url = getFileUrl(file).toLowerCase();
+    const name = getFileName(file).toLowerCase();
+    const excelExtensions = ['xls', 'xlsx', 'xlsm', 'xlsb', 'ods', 'csv'];
+    const extUrl = url.split('.').pop()?.split('?')[0] || '';
+    const extName = name.split('.').pop() || '';
+    return excelExtensions.includes(extUrl) || excelExtensions.includes(extName);
+};
+
 export const printFile = (url: string) => {
     const isImage = /\.(jpeg|jpg|gif|png|webp|svg|bmp)(?:\?.*)?$/i.test(url);
-    if (isImage) {
+    const isExcel = /\.(xls|xlsx|xlsm|xlsb|ods|csv)(?:\?.*)?$/i.test(url);
+
+    if (isExcel) {
+        // Open via Google Sheets viewer which allows viewing and printing Excel files for free
+        const googleSheetsViewer = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=false`;
+        window.open(googleSheetsViewer, '_blank');
+    } else if (isImage) {
         const printWindow = window.open('', '_blank');
         if (printWindow) {
             printWindow.document.write(`
@@ -111,5 +126,21 @@ export const printFile = (url: string) => {
                 document.body.removeChild(iframe);
             }, 5000);
         };
+    }
+};
+
+/**
+ * Opens an Excel file in Google Docs Viewer for online preview and printing.
+ * Falls back to direct download if the URL is not publicly accessible.
+ */
+export const openExcelViewer = (url: string, fileName?: string) => {
+    const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=false`;
+    const viewerWindow = window.open(googleViewerUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    if (!viewerWindow) {
+        // Fallback: direct download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName || 'archivo.xlsx';
+        link.click();
     }
 };
