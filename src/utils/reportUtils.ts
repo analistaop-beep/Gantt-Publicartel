@@ -566,35 +566,6 @@ const wrapRichText = (doc: any, text: string, maxWidth: number, fontSize: number
     return wrappedLines;
 };
 
-const drawRichText = (
-    doc: any,
-    text: string,
-    x: number,
-    y: number,
-    maxWidth: number,
-    fontSize: number,
-    lineHeight: number,
-    color: [number, number, number]
-): number => {
-    const lines = wrapRichText(doc, text, maxWidth, fontSize);
-    let currentY = y;
-    
-    doc.setFontSize(fontSize);
-    doc.setTextColor(...color);
-    
-    for (const line of lines) {
-        let currentX = x;
-        for (const seg of line) {
-            const style = seg.bold ? 'bold' : (seg.italic ? 'italic' : 'normal');
-            doc.setFont('helvetica', style);
-            doc.text(seg.text, currentX, currentY);
-            currentX += doc.getTextWidth(seg.text);
-        }
-        currentY += lineHeight;
-    }
-    
-    return lines.length * lineHeight;
-};
 
 /**
  * Generates and downloads a complete PDF summary of a Production Order,
@@ -656,34 +627,17 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
     doc.setTextColor(...blue);
     const opText = `OP #${order.opNumber}`;
     const opWidth = doc.getTextWidth(opText);
-    doc.text(opText, pageW - margin - opWidth, 22);
+    doc.text(opText, pageW - margin - opWidth, 20);
 
-
+    // Client below OP number — same bold style and blue color
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...blue);
+    const clientHeaderText = order.client || '';
+    const clientHeaderWidth = doc.getTextWidth(clientHeaderText);
+    doc.text(clientHeaderText, pageW - margin - clientHeaderWidth, 31);
 
     y = 50;
-
-    // ─── Status Badge ─────────────────────────────────────────────────
-    const s = order.status || 'Gestión de Acopio';
-    let statusColor: [number, number, number] = muted;
-    if (s === 'Gestión de Acopio') statusColor = [245, 158, 11];
-    if (s === 'En Proceso') statusColor = [59, 130, 246];
-    if (s === 'Para Facturar') statusColor = [16, 185, 129];
-    if (s === 'Para Entregar') statusColor = [13, 148, 136];
-
-    doc.setFillColor(...statusColor);
-    doc.roundedRect(margin, y - 4, 42, 8, 2, 2, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(...white);
-    doc.text(s.toUpperCase(), margin + 3, y + 1.2);
-
-    // Category badge
-    doc.setFillColor(...light);
-    doc.roundedRect(margin + 46, y - 4, 32, 8, 2, 2, 'F');
-    doc.setTextColor(...muted);
-    doc.text((order.category || 'Sin categoría').toUpperCase(), margin + 49, y + 1.2);
-
-    y += 12;
 
     // ─── Main Info Grid ───────────────────────────────────────────────
     const labelFn = (label: string, val: string, lx: number, vy: number, valColor?: [number, number, number]) => {
@@ -700,8 +654,8 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
     const col1 = margin;
     const col2 = margin + contentW / 2 + 4;
 
-    labelFn('CLIENTE', order.client, col1, y);
-    labelFn('VENDEDOR', order.seller, col2, y);
+    labelFn('VENDEDOR', order.seller, col1, y);
+    labelFn('CATEGORÍA', order.category || 'Sin categoría', col2, y);
     y += 18;
 
     labelFn('DIRECCIÓN', order.address || 'No especificada', col1, y);
@@ -721,54 +675,69 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
     y += 5;
 
     const descText = order.description || 'Sin descripción.';
-    const lines = wrapRichText(doc, descText, contentW - 8, 10);
-    const descBlockH = lines.length * 5 + 6;
+    const descAllLines = wrapRichText(doc, descText, contentW - 8, 10);
 
-    checkPage(descBlockH + 10);
+    // Render description across multiple pages:
+    // Pass 1 — calculate text Y positions and page numbers for each line.
+    // Pass 2 — draw one background rect per page segment, then overlay text.
+    {
+        const lh = 5;
+        const pd = 5;
+        checkPage(pd + lh + pd);
 
-    doc.setFillColor(...light);
-    doc.rect(margin, y, contentW, descBlockH, 'F');
-    drawRichText(doc, descText, margin + 4, y + 5, contentW - 8, 10, 5, navy);
-    y += descBlockH + 10;
+        type DEntry = { dl: typeof descAllLines[0]; ty: number; pg: number };
+        const dEntries: DEntry[] = [];
+        let dY = y + pd;
+        let dPg = (doc as any).internal.getCurrentPageInfo().pageNumber;
 
-    // ─── Comments ───────────────────────────────────────────────────
-    const comments = order.comments || [];
-    if (comments.length > 0) {
-        checkPage(20);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8);
-        doc.setTextColor(...muted);
-        doc.text('COMENTARIOS DEL USUARIO', margin, y);
-        y += 5;
+        for (const dl of descAllLines) {
+            if (dY + lh > pageH - margin) {
+                doc.addPage();
+                dPg = (doc as any).internal.getCurrentPageInfo().pageNumber;
+                dY = margin + pd;
+            }
+            dEntries.push({ dl, ty: dY, pg: dPg });
+            dY += lh;
+        }
+        const finalDY = dY + pd;
 
-        comments.forEach((c: any) => {
-            const dateStr = format(new Date(c.date), "dd/MM/yyyy HH:mm", { locale: es });
-            const commentText = `${c.text}`;
-            const commentLines = doc.splitTextToSize(commentText, contentW - 35);
-            const blockH = Math.max(commentLines.length * 4 + 4, 10);
-            
-            checkPage(blockH + 2);
-            
-            // Date column
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(7);
-            doc.setTextColor(...blue);
-            doc.text(dateStr, margin, y + 5);
-            
-            // Text column
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(9);
-            doc.setTextColor(...navy);
-            doc.text(commentLines, margin + 30, y + 5);
-            
-            doc.setDrawColor(...light);
-            doc.setLineWidth(0.1);
-            doc.line(margin, y + blockH, pageW - margin, y + blockH);
-            
-            y += blockH;
-        });
-        y += 5;
+        if (dEntries.length > 0) {
+            type Grp = { pg: number; sy: number; ey: number; entries: DEntry[] };
+            const grps: Grp[] = [];
+            let gPg = dEntries[0].pg;
+            let gSy = y;
+            let gArr: DEntry[] = [];
+
+            for (const e of dEntries) {
+                if (e.pg !== gPg) {
+                    grps.push({ pg: gPg, sy: gSy, ey: gArr[gArr.length - 1].ty + lh + pd, entries: [...gArr] });
+                    gPg = e.pg; gSy = margin; gArr = [];
+                }
+                gArr.push(e);
+            }
+            grps.push({ pg: gPg, sy: gSy, ey: gArr[gArr.length - 1].ty + lh + pd, entries: [...gArr] });
+
+            for (const grp of grps) {
+                doc.setPage(grp.pg);
+                doc.setFillColor(...light);
+                doc.rect(margin, grp.sy, contentW, grp.ey - grp.sy, 'F');
+                for (const e of grp.entries) {
+                    let cx = margin + 4;
+                    doc.setFontSize(10);
+                    for (const seg of e.dl) {
+                        const st = seg.bold ? 'bold' : (seg.italic ? 'italic' : 'normal');
+                        doc.setFont('helvetica', st);
+                        doc.setTextColor(...navy);
+                        doc.text(seg.text, cx, e.ty);
+                        cx += doc.getTextWidth(seg.text);
+                    }
+                }
+            }
+            doc.setPage(grps[grps.length - 1].pg);
+        }
+        y = finalDY + 4;
     }
+
 
     // ─── Attachments ─────────────────────────────────────────────────
     const files = order.files || [];
@@ -833,25 +802,7 @@ export const printOrderSummaryPDF = async (order: any): Promise<void> => {
                     y += 7;
                 }
             } else {
-                // PDF / other file — show as clickable link row
-                checkPage(12);
-                doc.setFillColor(...light);
-                doc.rect(margin, y - 3, contentW, 10, 'F');
-
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(9);
-                doc.setTextColor(...navy);
-                doc.text(`📄 ${fileName}`, margin + 3, y + 3.5);
-
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(7);
-                doc.setTextColor(59, 130, 246);
-                const linkLabel = 'Abrir archivo →';
-                const linkW = doc.getTextWidth(linkLabel);
-                doc.text(linkLabel, pageW - margin - linkW, y + 3.5);
-                doc.link(pageW - margin - linkW - 2, y - 3, linkW + 4, 10, { url: fileUrl });
-
-                y += 13;
+                // Non-image file — skip (not shown in PDF summary)
             }
         }
     }
