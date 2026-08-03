@@ -2160,6 +2160,41 @@ export const GanttPage: React.FC = () => {
                     >
                         <Printer size={14} className="text-blue-400" /> Imprimir Orden
                     </button>
+                    <button
+                        onClick={() => {
+                            const task = contextMenu.task;
+                            setContextMenu(null);
+                            const existingPending = pendingTasks.find(pt => 
+                                pt.opNumber === task.opNumber && 
+                                pt.client === task.client && 
+                                pt.name === task.name && 
+                                pt.address === task.address &&
+                                pt.id !== task.id
+                            );
+
+                            if (existingPending) {
+                                updateTaskLocal({
+                                    ...existingPending,
+                                    totalHours: (existingPending.totalHours || 0) + (task.totalHours || 0),
+                                    duration: (existingPending.duration || 0) + (task.duration || 0)
+                                });
+                                deleteTaskLocal(task.id);
+                                sileo.success({ title: "Tarea agrupada en pendientes" });
+                            } else {
+                                updateTaskLocal({
+                                    ...task,
+                                    date: '',
+                                    teamId: null,
+                                    members: [],
+                                    vehicles: []
+                                });
+                                sileo.success({ title: "Tarea movida a pendientes" });
+                            }
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors border-t border-white/5"
+                    >
+                        <ArrowDownToLine size={14} className="text-orange-400" /> Mover a pendientes
+                    </button>
                 </div>
             )}
 

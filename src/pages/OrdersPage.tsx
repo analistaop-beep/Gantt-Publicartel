@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic, Filter, Check, BarChart2, Signpost, Table2, Download } from 'lucide-react';
+import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic, Filter, Check, BarChart2, Signpost, Table2, Download, FileSpreadsheet } from 'lucide-react';
 import { sileo } from 'sileo';
 import { convertToWebP, getFileUrl, getFileName, isImageFile, isExcelFile, printFile, type OrderAttachment } from '../utils/fileUtils';
 import { printOrderSummaryPDF, printHoursAnalysisPDF } from '../utils/reportUtils';
+import * as XLSX from 'xlsx';
 
 const MultiSelect = ({
     options,
@@ -143,6 +144,8 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
     const [isUploadingDetail, setIsUploadingDetail] = useState(false);
     const [isPrinting, setIsPrinting] = useState(false);
     const [isPrintingAnalysis, setIsPrintingAnalysis] = useState(false);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [exportDateFrom, setExportDateFrom] = useState('');
 
     // Abrir OP automáticamente al navegar desde una notificación
     React.useEffect(() => {
@@ -622,6 +625,63 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
         }
     };
 
+    const handleExportExcel = () => {
+        try {
+            // Filter orders by date if exportDateFrom is set
+            const dateFromMs = exportDateFrom ? new Date(exportDateFrom).getTime() : null;
+            const ordersToExport = filteredOrders.filter(order => {
+                if (!dateFromMs) return true;
+                const createdAt = order.createdAt ? new Date(order.createdAt).getTime() : 0;
+                return createdAt >= dateFromMs;
+            });
+
+            if (ordersToExport.length === 0) {
+                sileo.error({ title: 'Sin resultados', description: 'No hay órdenes en el rango de fecha seleccionado.' });
+                return;
+            }
+
+            const rows = ordersToExport.map(order => ({
+                'N° OP': order.opNumber || '',
+                'Cliente': order.client || '',
+                'Sector': order.category || '',
+                'Comercial': order.seller || '',
+                'Moneda': order.currency === 'USD' ? 'USD' : 'UYU',
+                'Monto': order.price || 0,
+                'Estado': order.status === 'Gestión de Acopio' ? 'En Proceso' : (order.status || 'En Proceso'),
+                'Fecha de creación': order.createdAt
+                    ? new Date(order.createdAt).toLocaleDateString('es-UY', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                    : ''
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(rows);
+
+            // Column widths
+            worksheet['!cols'] = [
+                { wch: 10 }, // N° OP
+                { wch: 30 }, // Cliente
+                { wch: 18 }, // Sector
+                { wch: 20 }, // Comercial
+                { wch: 8 },  // Moneda
+                { wch: 14 }, // Monto
+                { wch: 22 }, // Estado
+                { wch: 18 }, // Fecha de creación
+            ];
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Órdenes de Producción');
+
+            const dateLabel = exportDateFrom
+                ? `_desde_${exportDateFrom}`
+                : `_${new Date().toISOString().slice(0, 10)}`;
+            XLSX.writeFile(workbook, `Ordenes_Produccion${dateLabel}.xlsx`);
+
+            sileo.success({ title: `Reporte exportado`, description: `${ordersToExport.length} órdenes exportadas correctamente.` });
+            setIsExportModalOpen(false);
+        } catch (err: any) {
+            sileo.error({ title: 'Error al exportar', description: err.message });
+        }
+    };
+
     // Associated Tasks Calculations & Handlers
     const allTasks = React.useMemo(() => {
         return [
@@ -925,12 +985,110 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                         </div>
                     </div>
 
-                    <button
-                        onClick={() => openModal()}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-blue-600/20 active:scale-95 w-full md:w-auto justify-center whitespace-nowrap flex-shrink-0"
-                    >
-                        <Plus size={15} /> Nueva Orden
-                    </button>
+                    <div className="flex items-center gap-2 flex-shrink-0 w-full md:w-auto">
+                        <button
+                            onClick={() => setIsExportModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-emerald-600/20 active:scale-95 flex-1 md:flex-initial justify-center whitespace-nowrap"
+                            title="Exportar a Excel"
+                        >
+                            <FileSpreadsheet size={15} /> Exportar Excel
+                        </button>
+                        <button
+                            onClick={() => openModal()}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-blue-600/20 active:scale-95 flex-1 md:flex-initial justify-center whitespace-nowrap"
+                        >
+                            <Plus size={15} /> Nueva Orden
+                        </button>
+                    </div>
+
+                    {/* Export Excel Modal */}
+                    {isExportModalOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setIsExportModalOpen(false)}>
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                            <div
+                                className="relative z-10 w-full max-w-sm rounded-2xl border border-white/10 bg-[#0f172a] shadow-2xl p-6 flex flex-col gap-5"
+                                onClick={e => e.stopPropagation()}
+                            >
+                                {/* Header */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20">
+                                            <FileSpreadsheet size={20} className="text-emerald-400" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-bold text-white">Exportar a Excel</h3>
+                                            <p className="text-xs text-slate-400">Resumen de Órdenes de Producción</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setIsExportModalOpen(false)}
+                                        className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+
+                                {/* Columns preview */}
+                                <div className="rounded-xl bg-white/5 border border-white/10 p-3">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Columnas incluidas</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {['N° OP', 'Cliente', 'Sector', 'Comercial', 'Moneda', 'Monto', 'Estado', 'Fecha de creación'].map(col => (
+                                            <span key={col} className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{col}</span>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Date filter */}
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-xs font-semibold text-slate-300 flex items-center gap-2">
+                                        <Calendar size={14} className="text-slate-400" />
+                                        Mostrar órdenes desde (fecha mínima)
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={exportDateFrom}
+                                        onChange={e => setExportDateFrom(e.target.value)}
+                                        className="input-sm w-full bg-white/5 border-white/10 text-white [color-scheme:dark]"
+                                        max={new Date().toISOString().slice(0, 10)}
+                                    />
+                                    {!exportDateFrom && (
+                                        <p className="text-[11px] text-slate-500">Sin filtro — se exportarán todas las órdenes visibles.</p>
+                                    )}
+                                    {exportDateFrom && (
+                                        <p className="text-[11px] text-emerald-400">
+                                            Se exportarán órdenes creadas desde el {new Date(exportDateFrom + 'T00:00:00').toLocaleDateString('es-UY', { day: '2-digit', month: 'long', year: 'numeric' })}.
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Info */}
+                                <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2 flex items-start gap-2">
+                                    <Download size={13} className="text-blue-400 mt-0.5 flex-shrink-0" />
+                                    <p className="text-[11px] text-blue-300">
+                                        Se exportarán los <strong className="text-white">{exportDateFrom
+                                            ? filteredOrders.filter(o => o.createdAt && new Date(o.createdAt).getTime() >= new Date(exportDateFrom).getTime()).length
+                                            : filteredOrders.length}</strong> registros actualmente visibles (con los filtros aplicados).
+                                    </p>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setIsExportModalOpen(false)}
+                                        className="flex-1 px-4 py-2.5 rounded-lg border border-white/10 text-slate-300 hover:bg-white/5 hover:text-white text-sm font-semibold transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={handleExportExcel}
+                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
+                                    >
+                                        <Download size={14} /> Descargar .xlsx
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

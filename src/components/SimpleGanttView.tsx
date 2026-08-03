@@ -4,7 +4,7 @@ import { es } from 'date-fns/locale';
 import { useStore } from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
 import { sileo } from 'sileo';
-import { ChevronLeft, ChevronRight, CalendarRange } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarRange, CalendarPlus, ArrowDownToLine } from 'lucide-react';
 
 interface SimpleGanttViewProps {
     tasks: any[];
@@ -51,6 +51,9 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
 
     // State to track which cell is being hovered during an HTML5 drag
     const [html5DragOverCell, setHtml5DragOverCell] = useState<{ rowId: string; dayIdx: number } | null>(null);
+
+    // State to track which day drop zone is being hovered (for pending task drops)
+    const [pendingDropDayIdx, setPendingDropDayIdx] = useState<number | null>(null);
 
     const days = useMemo(() => {
         return Array.from({ length: DAYS_TO_SHOW }).map((_, i) => addDays(startDate, i));
@@ -239,7 +242,8 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
             date: newDateStr,
             teamId: null // Gantt view is for general installations, no teamId mapping
         });
-        sileo.success({ title: `Tarea asignada al ${format(date, 'dd/MM', { locale: es })}` });
+        sileo.success({ title: `Tarea asignada al ${format(date, "dd 'de' MMMM", { locale: es })}` });
+        setPendingDropDayIdx(null);
     };
 
     // --- Extender barra ---
@@ -344,6 +348,15 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
                     <div className={`h-12 border-b flex items-center px-4 font-bold text-xs uppercase tracking-widest sticky top-0 z-30 ${isLight ? 'border-slate-200 bg-slate-100 text-slate-500' : 'border-white/10 bg-[#1e293b] text-slate-400'}`}>
                         Tareas
                     </div>
+
+                    {/* Pending drop zone label row — only visible during a drag */}
+                    {isDragging && (
+                        <div className={`h-12 border-b flex items-center px-4 gap-2 animate-in fade-in duration-200 ${isLight ? 'border-slate-200 bg-emerald-50 text-emerald-600' : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'}`}>
+                            <CalendarPlus size={14} className="flex-shrink-0" />
+                            <span className="text-xs font-black uppercase tracking-widest truncate">Soltar aquí</span>
+                        </div>
+                    )}
+
                     {groupedTasks.map(g => (
                         <div
                             key={g.id}
@@ -377,6 +390,75 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
                             </div>
                         ))}
                     </div>
+
+                    {/* Pending task Drop Zone Row — visible only during a drag from the pending drawer */}
+                    {isDragging && (
+                        <div
+                            className="h-12 border-b animate-in fade-in duration-200"
+                            style={{
+                                display: 'grid',
+                                gridTemplateColumns: `repeat(${DAYS_TO_SHOW}, minmax(0, 1fr))`,
+                                borderColor: isLight ? 'rgba(16,185,129,0.2)' : 'rgba(16,185,129,0.15)'
+                            }}
+                        >
+                            {days.map((day, i) => {
+                                const isWeekendDay = isWeekend(day);
+                                const isHovered = pendingDropDayIdx === i;
+                                return (
+                                    <div
+                                        key={i}
+                                        onDragOver={(e) => {
+                                            const isTaskDrag = Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'taskid');
+                                            if (isTaskDrag) {
+                                                e.preventDefault();
+                                                e.dataTransfer.dropEffect = 'move';
+                                                setPendingDropDayIdx(i);
+                                            }
+                                        }}
+                                        onDragLeave={() => setPendingDropDayIdx(null)}
+                                        onDrop={(e) => {
+                                            handleHtml5Drop(e, day);
+                                            setPendingDropDayIdx(null);
+                                        }}
+                                        title={`Asignar al ${format(day, "EEEE d 'de' MMMM", { locale: es })}`}
+                                        className={`
+                                            h-full border-r flex items-center justify-center transition-all duration-150 relative
+                                            ${isLight ? 'border-slate-200/70' : 'border-white/5'}
+                                            ${isWeekendDay
+                                                ? (isLight ? 'bg-slate-100/60' : 'bg-white/[0.02]')
+                                                : (isLight ? 'bg-emerald-50/40' : 'bg-emerald-500/[0.04]')
+                                            }
+                                            ${isHovered
+                                                ? (isLight ? '!bg-emerald-100 !border-emerald-300' : '!bg-emerald-500/30 !border-emerald-500/50 scale-y-105')
+                                                : ''
+                                            }
+                                            ${isToday(day) && !isHovered ? (isLight ? 'ring-inset ring-1 ring-blue-300/50' : 'bg-blue-500/[0.06]') : ''}
+                                        `}
+                                    >
+                                        {!isWeekendDay && (
+                                            <div className={`flex flex-col items-center gap-0.5 pointer-events-none transition-all duration-150 ${isHovered ? 'scale-110' : 'opacity-40'}`}>
+                                                <CalendarPlus
+                                                    size={isHovered ? 18 : 14}
+                                                    className={`transition-all duration-150 ${isHovered
+                                                        ? (isLight ? 'text-emerald-600' : 'text-emerald-300')
+                                                        : (isLight ? 'text-emerald-500' : 'text-emerald-600')
+                                                    }`}
+                                                />
+                                                {isHovered && (
+                                                    <span className={`text-[8px] font-black uppercase tracking-wider animate-in fade-in duration-100 ${isLight ? 'text-emerald-600' : 'text-emerald-300'}`}>
+                                                        {format(day, 'dd/MM')}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+                                        {isWeekendDay && isHovered && (
+                                            <span className={`text-[8px] font-black uppercase ${isLight ? 'text-slate-400' : 'text-slate-600'}`}>Fin de semana</span>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
 
                     {/* Filas de tareas */}
                     <div className="flex-1 flex flex-col" ref={gridBodyRef}>
@@ -527,6 +609,42 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
                                 </div>
                             );
                         })}
+
+                        {/* Empty state drop zone — always visible at the bottom when dragging */}
+                        {isDragging && (
+                            <div
+                                className="flex-1 min-h-[48px]"
+                                style={{ display: 'grid', gridTemplateColumns: `repeat(${DAYS_TO_SHOW}, minmax(0, 1fr))` }}
+                            >
+                                {days.map((day, i) => {
+                                    const isHovered = pendingDropDayIdx === i;
+                                    const isWeekendDay = isWeekend(day);
+                                    return (
+                                        <div
+                                            key={i}
+                                            onDragOver={(e) => {
+                                                const isTaskDrag = Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'taskid');
+                                                if (isTaskDrag) {
+                                                    e.preventDefault();
+                                                    e.dataTransfer.dropEffect = 'move';
+                                                    setPendingDropDayIdx(i);
+                                                }
+                                            }}
+                                            onDragLeave={() => setPendingDropDayIdx(null)}
+                                            onDrop={(e) => {
+                                                handleHtml5Drop(e, day);
+                                                setPendingDropDayIdx(null);
+                                            }}
+                                            className={`h-full border-r transition-all duration-150
+                                                ${isLight ? 'border-slate-200/70' : 'border-white/5'}
+                                                ${isWeekendDay ? (isLight ? 'bg-slate-100/60' : 'bg-white/[0.02]') : ''}
+                                                ${isHovered ? (isLight ? '!bg-emerald-100' : '!bg-emerald-500/20') : ''}
+                                            `}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -548,6 +666,35 @@ export const SimpleGanttView: React.FC<SimpleGanttViewProps> = ({ tasks, current
                     >
                         <CalendarRange size={14} className="text-blue-400 flex-shrink-0" />
                         Cambiar cantidad de días
+                    </button>
+                    <button
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-200 hover:bg-white/10 transition-colors text-left border-t border-white/5"
+                        onClick={() => {
+                            const group = contextMenu.group;
+                            setContextMenu(null);
+                            const firstTask = group.originalTasks[0];
+                            const totalGroupHours = group.originalTasks.reduce((acc: number, t: any) => acc + (t.totalHours || 0), 0);
+                            
+                            // Remove extra task parts if multi-day
+                            group.originalTasks.slice(1).forEach((t: any) => {
+                                deleteTaskLocal(t.id);
+                            });
+
+                            // Return main task to pending
+                            updateTaskLocal({
+                                ...firstTask,
+                                date: '',
+                                teamId: null,
+                                totalHours: totalGroupHours > 0 ? totalGroupHours : (firstTask.totalHours || 1),
+                                duration: totalGroupHours > 0 ? totalGroupHours : (firstTask.duration || 1),
+                                members: [],
+                                vehicles: []
+                            });
+                            sileo.success({ title: `Tarea OP ${group.opNumber} movida a pendientes` });
+                        }}
+                    >
+                        <ArrowDownToLine size={14} className="text-orange-400 flex-shrink-0" />
+                        Mover a pendientes
                     </button>
                 </div>
             )}
