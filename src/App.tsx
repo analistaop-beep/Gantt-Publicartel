@@ -30,9 +30,9 @@ function App() {
   const isAuthLoading = useStore(state => state.isAuthLoading);
   const initAuth = useStore(state => state.initAuth);
 
-  const [activeTab, setActiveTab] = useState('gantt');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth > 1024);
-  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(() => window.innerWidth > 1024);
+  const [activeTab, setActiveTab] = useState('orders');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const [pendingOpenOrderId, setPendingOpenOrderId] = useState<string | null>(null);
   const [pendingOpenOrderNumber, setPendingOpenOrderNumber] = useState<string | null>(null);
   const fetchData = useStore(state => state.fetchData);
