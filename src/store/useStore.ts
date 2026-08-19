@@ -232,7 +232,7 @@ export const useStore = create<AppState>((set, get) => ({
                     ...o,
                     files: typeof o.files === 'string' ? JSON.parse(o.files) : (o.files || []),
                     comments: typeof o.comments === 'string' ? JSON.parse(o.comments) : (o.comments || []),
-                    followers: typeof o.followers === 'string' ? JSON.parse(o.followers) : (o.followers || [])
+                    followers: typeof o.followers === 'string' ? JSON.parse(o.followers) : (o.followers ?? null)
                 })),
                 profiles: profilesRes.data || [],
                 notifications: (notificationsRes.data || []).map(n => ({
@@ -480,9 +480,22 @@ export const useStore = create<AppState>((set, get) => ({
                         mentionedUsers = [...lastComment.text.matchAll(mentionRegex)].map((m: RegExpMatchArray) => m[1]);
                     }
 
-                    // Unir followers + mencionados (sin duplicados)
-                    const followers = order.followers || [];
-                    const allTargets = Array.from(new Set([...followers, ...mentionedUsers]));
+                    // followers === null significa "nunca configurado" → notificar a todos por defecto
+                    // followers === [] significa "explícitamente vacío" → no notificar a nadie
+                    // followers === ['a@b.com', ...] → notificar solo a esos
+                    const followersNeverSet = order.followers == null;
+                    const allProfiles: Profile[] = get().profiles;
+
+                    let baseTargets: string[];
+                    if (followersNeverSet) {
+                        // Por defecto: todos los usuarios registrados
+                        baseTargets = allProfiles.map(p => p.email);
+                    } else {
+                        baseTargets = order.followers as string[];
+                    }
+
+                    // Unir base + mencionados (sin duplicados)
+                    const allTargets = Array.from(new Set([...baseTargets, ...mentionedUsers]));
 
                     if (allTargets.length > 0) {
                         const notification = {

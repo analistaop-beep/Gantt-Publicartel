@@ -1226,7 +1226,8 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                                     <button
                                                         onClick={() => {
                                                             setIsTaggingOrder(order);
-                                                            setTaggingSelection(order.followers || []);
+                                                            // Si nunca fue configurado (null), pre-seleccionar todos los usuarios por defecto
+                                                            setTaggingSelection(order.followers ?? profiles.map((p: any) => p.email));
                                                         }}
                                                         className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-blue-400 transition-all hover:scale-110"
                                                         title="Etiquetar usuarios"
@@ -2740,7 +2741,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                         
                         <div className="p-4 overflow-y-auto custom-scrollbar flex-1">
                             <p className="text-xs text-slate-400 mb-4">
-                                Los usuarios seleccionados recibirán notificaciones cuando esta OP cambie de estado o se agregue un comentario.
+                                Por defecto, <strong className="text-slate-300">todos los usuarios</strong> son notificados cuando se agrega un comentario. Desmarca a quienes no deban recibir notificaciones de esta OP.
                             </p>
                             
                             <div className="space-y-2">
