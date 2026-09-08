@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { supabase } from '../utils/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import type { Team, ProductionOrder, Notification, Profile, Soporte, TareaDisa, DisaEstado } from '../types';
+import { getOpTemplateByCategory } from '../utils/opTemplates';
 
 
 // Track which tasks have been locally modified but not yet saved to the database
@@ -113,6 +114,8 @@ interface AppState {
         type?: 'instalacion' | 'herreria' | 'corporeas' | 'lonas' | 'pintura';
         section?: string;
         blockedBy?: string | null;
+        photo?: string | null;
+        status?: string;
     }) => Promise<void>;
     updateTask: (task: any) => Promise<void>;
     deleteTask: (id: string) => Promise<void>;
@@ -141,6 +144,139 @@ function getTaskListKey(type: string): 'tasks' | 'herreriaTasks' | 'corporeasTas
         case 'lonas': return 'lonasTasks';
         case 'pintura': return 'pinturaTasks';
         default: return 'tasks';
+    }
+}
+
+// Valid columns in Supabase Postgres 'tasks' table
+const VALID_TASK_COLUMNS = new Set([
+    'id',
+    'opNumber',
+    'name',
+    'client',
+    'address',
+    'date',
+    'totalHours',
+    'duration',
+    'teamId',
+    'vehicleId',
+    'groupId',
+    'additionalJobs',
+    'type',
+    'section',
+    'estimatedHours',
+    'blockedBy',
+    'completed',
+    'realHours'
+]);
+
+function sanitizeTaskPayload(task: any) {
+    const payload: Record<string, any> = {};
+    for (const key of Object.keys(task)) {
+        if (VALID_TASK_COLUMNS.has(key) && task[key] !== undefined) {
+            payload[key] = task[key];
+        }
+    }
+    // Sanitize teamId: empty string violates foreign key constraint in Supabase/Postgres
+    if (payload.teamId === '') {
+        payload.teamId = null;
+    }
+    // Sanitize additionalJobs
+    if (payload.additionalJobs !== undefined && typeof payload.additionalJobs !== 'string') {
+        payload.additionalJobs = JSON.stringify(payload.additionalJobs || []);
+    }
+    return payload;
+}
+
+function getPinturaTaskExtras(): Record<string, { photo?: string | null; status?: string }> {
+    try {
+        const rawGeneral = localStorage.getItem('task_extras');
+        const rawPintura = localStorage.getItem('pintura_task_extras');
+        const parsedGeneral = rawGeneral ? JSON.parse(rawGeneral) : {};
+        const parsedPintura = rawPintura ? JSON.parse(rawPintura) : {};
+        return { ...parsedPintura, ...parsedGeneral };
+    } catch {
+        return {};
+    }
+}
+
+function savePinturaTaskExtra(taskId: string, extra: { photo?: string | null; status?: string }) {
+    try {
+        const extras = getPinturaTaskExtras();
+        extras[taskId] = {
+            ...(extras[taskId] || {}),
+            ...(extra.photo !== undefined ? { photo: extra.photo } : {}),
+            ...(extra.status !== undefined ? { status: extra.status } : {})
+        };
+        localStorage.setItem('task_extras', JSON.stringify(extras));
+        localStorage.setItem('pintura_task_extras', JSON.stringify(extras));
+    } catch (e) {
+        console.error('Error saving task_extras to localStorage', e);
+    }
+}
+
+function removePinturaTaskExtra(taskId: string) {
+    try {
+        const extras = getPinturaTaskExtras();
+        if (extras[taskId]) {
+            delete extras[taskId];
+            localStorage.setItem('task_extras', JSON.stringify(extras));
+            localStorage.setItem('pintura_task_extras', JSON.stringify(extras));
+        }
+    } catch {}
+}
+
+async function applyOpTemplateTasks(opNumber: string, client: string, address?: string, category?: string) {
+    const template = getOpTemplateByCategory(category);
+    if (!template || !template.defaultTasks || template.defaultTasks.length === 0) return;
+
+    // Buscar tareas existentes para esta OP para no duplicar si ya fueron creadas
+    const { data: existingTasks, error: fetchErr } = await supabase
+        .from('tasks')
+        .select('name, section')
+        .eq('opNumber', opNumber);
+
+    if (fetchErr) {
+        console.error('Error al consultar tareas existentes para plantilla de OP:', fetchErr);
+        return;
+    }
+
+    const existingKeys = new Set(
+        (existingTasks || []).map((t: any) => `${t.section?.trim().toLowerCase()}-${t.name?.trim().toLowerCase()}`)
+    );
+
+    const missingTasks = template.defaultTasks.filter(
+        t => !existingKeys.has(`${t.section.trim().toLowerCase()}-${t.name.trim().toLowerCase()}`)
+    );
+
+    if (missingTasks.length === 0) return;
+
+    const tasksToInsert = missingTasks.map(t => {
+        const taskId = uuidv4();
+        return sanitizeTaskPayload({
+            id: taskId,
+            opNumber: opNumber,
+            name: t.name,
+            client: client,
+            address: address || 'Montevideo',
+            date: '', // Tarea pendiente (sin agendar)
+            totalHours: t.totalHours || 1,
+            estimatedHours: t.estimatedHours || 1,
+            duration: t.totalHours || 1,
+            teamId: null,
+            vehicleId: null,
+            groupId: taskId,
+            additionalJobs: [],
+            type: t.type,
+            section: t.section,
+            blockedBy: null,
+            completed: false,
+            realHours: 0
+        });
+    });
+
+    const { error: insertError } = await supabase.from('tasks').insert(tasksToInsert);
+    if (insertError) {
+        console.error('Error al insertar tareas de plantilla de OP:', insertError);
     }
 }
 
@@ -207,12 +343,18 @@ export const useStore = create<AppState>((set, get) => ({
 
             const [membersRes, vehiclesRes, soportesRes, teamsRes, tasksRes, remindersRes, ordersRes, notificationsRes, profilesRes, disaRes] = results;
 
-            const mappedTasks = (tasksRes.data || []).map(task => ({
-                ...task,
-                members: task.task_members.map((tm: any) => ({ id: tm.memberId, hours: tm.hours })),
-                vehicles: task.task_vehicles.map((tv: any) => tv.vehicleId),
-                additionalJobs: typeof task.additionalJobs === 'string' ? JSON.parse(task.additionalJobs) : task.additionalJobs
-            }));
+            const pinturaExtras = getPinturaTaskExtras();
+            const mappedTasks = (tasksRes.data || []).map(task => {
+                const extra = pinturaExtras[task.id] || {};
+                return {
+                    ...task,
+                    photo: extra.photo ?? null,
+                    status: extra.status ?? (task.completed ? 'Terminada' : undefined),
+                    members: task.task_members.map((tm: any) => ({ id: tm.memberId, hours: tm.hours })),
+                    vehicles: task.task_vehicles.map((tv: any) => tv.vehicleId),
+                    additionalJobs: typeof task.additionalJobs === 'string' ? JSON.parse(task.additionalJobs) : task.additionalJobs
+                };
+            });
 
             set({
                 members: (membersRes.data || []).map((m: any) => ({
@@ -427,6 +569,10 @@ export const useStore = create<AppState>((set, get) => ({
             followers: order.followers ? JSON.stringify(order.followers) : '[]'
         }]);
         if (error) throw error;
+
+        // Si la orden pertenece a una categoría con plantilla (ej: Modelo de OP Outdoor),
+        // crear automáticamente las tareas pendientes asociadas.
+        await applyOpTemplateTasks(order.opNumber, order.client, order.address, order.category);
         
         const notification = {
             id: uuidv4(),
@@ -461,6 +607,10 @@ export const useStore = create<AppState>((set, get) => ({
 
             const { error } = await supabase.from('production_orders').update(payload).eq('id', id);
             if (error) throw error;
+
+            // Si se asignó o actualizó a una categoría con plantilla (ej: Modelo de OP Outdoor),
+            // verificar si las tareas ya fueron creadas y crear las que falten.
+            await applyOpTemplateTasks(order.opNumber, order.client, order.address, order.category);
 
             if (previousOrder) {
                 const statusChanged = previousOrder.status !== order.status;
@@ -812,18 +962,19 @@ export const useStore = create<AppState>((set, get) => ({
             const taskId = uuidv4();
             const { vehicles = [], members = [], additionalJobs = [], task_members, task_vehicles, id, ...taskData } = task as any;
 
-            // Sanitize teamId: empty string violates foreign key constraint in Supabase/Postgres
-            if (taskData.teamId === '') {
-                taskData.teamId = null;
+            if (task.photo !== undefined || task.status !== undefined) {
+                savePinturaTaskExtra(taskId, { photo: task.photo, status: task.status });
             }
 
-            const { error: taskError } = await supabase.from('tasks').insert([{
+            const payload = sanitizeTaskPayload({
                 id: taskId,
                 ...taskData,
                 estimatedHours: taskData.estimatedHours ?? taskData.totalHours,
-                additionalJobs: JSON.stringify(additionalJobs),
+                additionalJobs,
                 groupId: taskData.date ? taskId : (taskData as any).groupId || taskId
-            }]);
+            });
+
+            const { error: taskError } = await supabase.from('tasks').insert([payload]);
 
             if (taskError) throw taskError;
 
@@ -853,15 +1004,17 @@ export const useStore = create<AppState>((set, get) => ({
             set({ error: null });
             const { id, vehicles = [], members = [], additionalJobs = [], task_members, task_vehicles, ...taskData } = task;
 
-            // Sanitize teamId: empty string violates foreign key constraint in Supabase/Postgres
-            if (taskData.teamId === '') {
-                taskData.teamId = null;
+            if (task.photo !== undefined || task.status !== undefined) {
+                savePinturaTaskExtra(id, { photo: task.photo, status: task.status });
             }
 
-            const { error: taskError } = await supabase.from('tasks').update({
+            const payload = sanitizeTaskPayload({
                 ...taskData,
-                additionalJobs: JSON.stringify(additionalJobs)
-            }).eq('id', id);
+                additionalJobs
+            });
+            delete payload.id;
+
+            const { error: taskError } = await supabase.from('tasks').update(payload).eq('id', id);
 
             if (taskError) throw taskError;
 
@@ -891,6 +1044,7 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     deleteTask: async (id) => {
+        removePinturaTaskExtra(id);
         const { error } = await supabase.from('tasks').delete().eq('id', id);
         if (error) throw error;
         await get().fetchData();
@@ -938,6 +1092,9 @@ export const useStore = create<AppState>((set, get) => ({
     // ============================================================
 
     updateTaskLocal: (task: any) => {
+        if (task.photo !== undefined || task.status !== undefined) {
+            savePinturaTaskExtra(task.id, { photo: task.photo, status: task.status });
+        }
         const state = get();
         const taskType = task.type || 'instalacion';
         const listKey = getTaskListKey(taskType);
@@ -969,6 +1126,7 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     deleteTaskLocal: (id: string) => {
+        removePinturaTaskExtra(id);
         const state = get();
 
         // Remove from all task lists
@@ -1014,6 +1172,10 @@ export const useStore = create<AppState>((set, get) => ({
         // Ensure the task has an ID
         const newTask = { ...task, id: task.id || uuidv4() };
 
+        if (newTask.photo !== undefined || newTask.status !== undefined) {
+            savePinturaTaskExtra(newTask.id, { photo: newTask.photo, status: newTask.status });
+        }
+
         // Add to the appropriate list
         const updatedList = [...state[listKey], newTask];
 
@@ -1058,6 +1220,7 @@ export const useStore = create<AppState>((set, get) => ({
 
             // 1. Process deletions first
             for (const id of deletedTaskIds) {
+                removePinturaTaskExtra(id);
                 const { error } = await supabase.from('tasks').delete().eq('id', id);
                 if (error) throw error;
             }
@@ -1066,17 +1229,18 @@ export const useStore = create<AppState>((set, get) => ({
             for (const [, task] of updatedTasks) {
                 const { id, vehicles = [], members = [], additionalJobs = [], task_members, task_vehicles, ...taskData } = task;
 
-                // Sanitize teamId
-                if (taskData.teamId === '') {
-                    taskData.teamId = null;
+                if (task.photo !== undefined || task.status !== undefined) {
+                    savePinturaTaskExtra(id, { photo: task.photo, status: task.status });
                 }
 
-                // upsert: INSERT if the row doesn't exist yet, UPDATE if it does
-                const { error: taskError } = await supabase.from('tasks').upsert({
+                const payload = sanitizeTaskPayload({
                     id,
                     ...taskData,
-                    additionalJobs: JSON.stringify(additionalJobs)
-                }, { onConflict: 'id' });
+                    additionalJobs
+                });
+
+                // upsert: INSERT if the row doesn't exist yet, UPDATE if it does
+                const { error: taskError } = await supabase.from('tasks').upsert(payload, { onConflict: 'id' });
 
                 if (taskError) throw taskError;
 

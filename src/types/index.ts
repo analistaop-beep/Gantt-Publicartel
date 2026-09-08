@@ -57,6 +57,8 @@ export interface Task {
     blockedBy?: string | null;
     completed?: boolean;
     realHours?: number;
+    status?: string;
+    photo?: string | null;
 }
 
 export interface OrderAttachment {
@@ -119,4 +121,23 @@ export interface TareaDisa {
     files?: (string | OrderAttachment)[];
     created_at?: string;
 }
+
+// ─── OP Templates / Modelos de OP ──────────────────────────────────────────
+
+export interface OpTemplateTask {
+    section: string; // 'Lonas', 'Instalaciones', etc.
+    type: 'lonas' | 'instalacion' | 'herreria' | 'corporeas' | 'pintura';
+    name: string; // Descripción de tarea
+    estimatedHours?: number;
+    totalHours?: number;
+}
+
+export interface OpTemplate {
+    id: string;
+    name: string;
+    category: string;
+    description?: string;
+    defaultTasks: OpTemplateTask[];
+}
+
 

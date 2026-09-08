@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { sileo } from 'sileo';
-import { Plus, Minus, Calendar, ChevronLeft, ChevronRight, Trash2, LayoutGrid, Users, Truck, Bell, ArrowDownToLine, Copy, Search, Save, Loader2 } from 'lucide-react';
+import { Plus, Minus, Calendar, ChevronLeft, ChevronRight, Trash2, LayoutGrid, Users, Truck, Bell, ArrowDownToLine, Copy, Search, Save, Loader2, ClipboardList } from 'lucide-react';
 import {
     format,
     addDays,
@@ -16,16 +16,25 @@ import { getCompactName } from '../utils/stringUtils';
 import { exportToExcel, exportTaskToPDF } from '../utils/reportUtils';
 import { FileDown, FileText, Printer, ToggleLeft, ToggleRight } from 'lucide-react';
 import { SimpleGanttView } from '../components/SimpleGanttView';
+import type { SectorTaskStatus } from '../utils/taskStatusUtils';
+import { PendingTasksTableView } from '../components/PendingTasksTableView';
+import { TaskDetailModal } from '../components/TaskDetailModal';
+import { TaskCompletionModal } from '../components/TaskCompletionModal';
 
-export const GanttPage: React.FC = () => {
+interface GanttPageProps {
+    onNavigateToOrder?: (opNumber: string) => void;
+}
+
+export const GanttPage: React.FC<GanttPageProps> = ({ onNavigateToOrder }) => {
     const {
         teams, tasks, herreriaTasks, corporeasTasks, lonasTasks, pinturaTasks, members, vehicles, reminders,
-        addTask, addMember, addVehicle, updateTask, deleteTask,
+        addTask, addMember, addVehicle, updateTask,
         updateTaskLocal, deleteTaskLocal, addTaskLocal,
         saveAllChanges, hasPendingChanges, isSaving,
         clearTasksRange, error, clearError,
         addReminder, updateReminder, deleteReminder,
-        viewPreferences, updateViewPreferences
+        viewPreferences, updateViewPreferences,
+        uploadFile
     } = useStore();
     const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 })); // Monday
 
@@ -84,45 +93,99 @@ export const GanttPage: React.FC = () => {
     const [fragmentTargetTask, setFragmentTargetTask] = useState<any | null>(null);
 
 
-    // Pending Tasks state
-    const [isPendingTasksOpen, setIsPendingTasksOpen] = useState(false);
+    // Capacity panel state
     const [isCapacityOpen, setIsCapacityOpen] = useState(false);
     const [memberSearch, setMemberSearch] = useState('');
-    const [pendingSearch, setPendingSearch] = useState('');
-    const [pendingTasksHeight, setPendingTasksHeight] = useState(300);
-    const [isResizing, setIsResizing] = useState(false);
     const [manualHours, setManualHours] = useState('');
 
-    const startResizing = (e: React.MouseEvent) => {
-        setIsResizing(true);
-        e.preventDefault();
-        e.stopPropagation();
+    // View mode: 'gantt' = cronograma, 'lista' = pending tasks table
+    const [activeView, setActiveView] = useState<'gantt' | 'lista'>('gantt');
+
+    // Task detail modal state
+    const [selectedTaskDetail, setSelectedTaskDetail] = useState<any | null>(null);
+    const [taskDetailPhoto, setTaskDetailPhoto] = useState<string | null>(null);
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+    // Task completion confirmation modal state
+    const [taskToComplete, setTaskToComplete] = useState<any | null>(null);
+    const [completeHours, setCompleteHours] = useState<string>('');
+    const [isCompleting, setIsCompleting] = useState(false);
+
+    const handleStatusChange = (task: any, newStatus: SectorTaskStatus) => {
+        if (newStatus === 'Terminada') {
+            setTaskToComplete(task);
+            const defaultHours = task.realHours ?? task.totalHours ?? '';
+            setCompleteHours(defaultHours !== '' && defaultHours !== undefined ? String(defaultHours) : '');
+            return;
+        }
+        const updated = { ...task, status: newStatus, completed: false };
+        updateTaskLocal(updated);
+        if (selectedTaskDetail && selectedTaskDetail.id === task.id) {
+            setSelectedTaskDetail(updated);
+        }
+        sileo.success({ title: `Estado actualizado a "${newStatus}"` });
     };
 
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!isResizing) return;
-            const newHeight = window.innerHeight - e.clientY - 40;
-            if (newHeight > 64 && newHeight < window.innerHeight * 0.7) {
-                setPendingTasksHeight(newHeight);
-                if (!isPendingTasksOpen && newHeight > 100) {
-                    setIsPendingTasksOpen(true);
-                }
-            }
-        };
-
-        const handleMouseUp = () => setIsResizing(false);
-
-        if (isResizing) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
+    const confirmCompleteTask = async () => {
+        if (!taskToComplete) return;
+        const hours = parseFloat(completeHours);
+        if (isNaN(hours) || hours < 0) {
+            sileo.error({ title: 'Ingresa una cantidad válida de horas' });
+            return;
         }
-
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
+        setIsCompleting(true);
+        const updated = {
+            ...taskToComplete,
+            status: 'Terminada',
+            completed: true,
+            realHours: hours,
+            totalHours: hours
         };
-    }, [isResizing, isPendingTasksOpen]);
+        try {
+            await updateTask(updated);
+            sileo.success({ title: `Tarea OP #${taskToComplete.opNumber || ''} finalizada con ${hours}h` });
+        } catch {
+            updateTaskLocal(updated);
+            sileo.success({ title: `Tarea finalizada con ${hours}h (guardada)` });
+        } finally {
+            setIsCompleting(false);
+            if (selectedTaskDetail && selectedTaskDetail.id === taskToComplete.id) {
+                setSelectedTaskDetail(null);
+                setTaskDetailPhoto(null);
+            }
+            setTaskToComplete(null);
+            setCompleteHours('');
+        }
+    };
+
+    const handleUploadPhoto = async (file: File) => {
+        if (!selectedTaskDetail) return;
+        setIsUploadingPhoto(true);
+        try {
+            const url = await uploadFile(file, file.name);
+            const updated = { ...selectedTaskDetail, photo: url };
+            updateTaskLocal(updated);
+            setSelectedTaskDetail(updated);
+            setTaskDetailPhoto(url);
+            sileo.success({ title: 'Foto agregada con éxito' });
+        } catch {
+            sileo.error({ title: 'Error al subir la foto' });
+        } finally {
+            setIsUploadingPhoto(false);
+        }
+    };
+
+    const handleDeletePhoto = async () => {
+        if (!selectedTaskDetail) return;
+        const updated = { ...selectedTaskDetail, photo: null };
+        updateTaskLocal(updated);
+        setSelectedTaskDetail(updated);
+        setTaskDetailPhoto(null);
+        sileo.success({ title: 'Foto eliminada' });
+    };
+
+
+
 
     // Unify all task types to resolve cross-section blocking dependencies
     const allTasks = useMemo(() => {
@@ -150,19 +213,9 @@ export const GanttPage: React.FC = () => {
             const blockerDate = new Date(blocker.date + 'T00:00:00');
             return blockerDate < today; // unblocked only if blocker is in the past
         });
-
-        if (pendingSearch.trim()) {
-            const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-            const search = normalize(pendingSearch);
-            pts = pts.filter(t =>
-                normalize(t.client || '').includes(search) ||
-                normalize(t.opNumber?.toString() || '').includes(search) ||
-                normalize(t.name || '').includes(search)
-            );
-        }
         
         return pts;
-    }, [tasks, allTasks, pendingSearch]);
+    }, [tasks, allTasks]);
 
     // Vehicle availability logic
     const busyVehiclesOnDate = useMemo(() => {
@@ -806,8 +859,35 @@ export const GanttPage: React.FC = () => {
                 </div>
             </div>
 
+            {/* View Tabs */}
+            <div className="flex items-center gap-1 px-4 lg:px-10 pb-1">
+                <button
+                    onClick={() => setActiveView('gantt')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-bold transition-all border-b-2 ${activeView === 'gantt'
+                        ? 'text-blue-400 border-blue-500 bg-blue-500/10'
+                        : 'text-slate-500 border-transparent hover:text-slate-300 hover:bg-white/5'}`}
+                >
+                    <Calendar size={15} />
+                    Cronograma
+                </button>
+                <button
+                    onClick={() => setActiveView('lista')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-bold transition-all border-b-2 ${activeView === 'lista'
+                        ? 'text-blue-400 border-blue-500 bg-blue-500/10'
+                        : 'text-slate-500 border-transparent hover:text-slate-300 hover:bg-white/5'}`}
+                >
+                    <ClipboardList size={15} />
+                    Tareas Pendientes
+                    {tasks.filter(t => (!t.date || t.date === '') && !t.completed && t.status !== 'Terminada').length > 0 && (
+                        <span className="bg-amber-500/20 text-amber-400 text-[10px] font-black px-1.5 py-0.5 rounded-full border border-amber-500/30">
+                            {tasks.filter(t => (!t.date || t.date === '') && !t.completed && t.status !== 'Terminada').length}
+                        </span>
+                    )}
+                </button>
+            </div>
+
             {/* Gantt Timeline */}
-            {viewMode === 'gantt' ? (
+            {activeView === 'gantt' && viewMode === 'gantt' ? (
                 <SimpleGanttView 
                     tasks={tasks}
                     currentWeekStart={currentWeekStart}
@@ -816,7 +896,7 @@ export const GanttPage: React.FC = () => {
                     isDragging={isDragging}
                     isZoomed={isZoomed}
                 />
-            ) : (
+            ) : activeView === 'gantt' ? (
             <div className="flex-1 min-h-0 bg-[#0f172a] flex flex-col overflow-hidden border-t sm:border border-white/5 mx-0 sm:mx-2 lg:mx-10 mb-0 sm:mb-2 rounded-none sm:rounded-[1rem] relative shadow-2xl">
                 <div className="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar flex flex-col" ref={timelineRef}>
                     <div className="w-full flex-1 flex flex-col">
@@ -1178,7 +1258,63 @@ export const GanttPage: React.FC = () => {
                     </div>
                 </div>
             </div>
+            ) : null}
+
+            {/* Lista de Tareas Pendientes */}
+            {activeView === 'lista' && (
+                <PendingTasksTableView
+                    tasks={tasks}
+                    sectorName="Instalaciones"
+                    onSelectTask={(task) => {
+                        setSelectedTaskDetail(task);
+                        setTaskDetailPhoto(task.photo || null);
+                    }}
+                    onStatusChange={handleStatusChange}
+                    onNewPendingClick={() => {
+                        setEditingTask(null);
+                        setSelectedContext(null);
+                        setFormData({
+                            opNumber: '',
+                            name: '',
+                            client: '',
+                            address: '',
+                            totalHours: 1,
+                            estimatedHours: 1,
+                            duration: 1,
+                            vehicles: [],
+                            members: [],
+                            additionalJobs: [],
+                            date: format(new Date(), 'yyyy-MM-dd'),
+                            teamId: teams[0]?.id || null,
+                            section: 'Instalaciones',
+                            blockedBy: null
+                        });
+                        setIsTaskModalOpen(true);
+                    }}
+                />
             )}
+
+            {/* Task Detail Modal */}
+            <TaskDetailModal
+                task={selectedTaskDetail}
+                photo={taskDetailPhoto}
+                isUploadingPhoto={isUploadingPhoto}
+                onClose={() => { setSelectedTaskDetail(null); setTaskDetailPhoto(null); }}
+                onStatusChange={handleStatusChange}
+                onUploadPhoto={handleUploadPhoto}
+                onDeletePhoto={handleDeletePhoto}
+                onNavigateToOrder={onNavigateToOrder}
+            />
+
+            {/* Task Completion Modal */}
+            <TaskCompletionModal
+                task={taskToComplete}
+                completeHours={completeHours}
+                isCompleting={isCompleting}
+                onHoursChange={setCompleteHours}
+                onConfirm={confirmCompleteTask}
+                onClose={() => { setTaskToComplete(null); setCompleteHours(''); }}
+            />
 
             {/* Modals */}
             {isTaskModalOpen && (
@@ -1749,192 +1885,6 @@ export const GanttPage: React.FC = () => {
                 )
             }
 
-
-            {/* Bottom Drawer: Tareas Pendientes */}
-            <div
-                className={`relative mx-10 mb-6 z-[60] glass rounded-sm border border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 ease-in-out ${isResizing ? 'duration-0' : ''}`}
-                style={{ height: isPendingTasksOpen ? `${pendingTasksHeight}px` : '64px' }}
-                onDragOver={(e) => {
-                    const isTaskDrag = Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'taskid');
-                    if (isTaskDrag) {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = 'move';
-                    }
-                }}
-                onDrop={(e) => {
-                    const draggedTaskId = e.dataTransfer.getData('taskId') || e.dataTransfer.getData('taskid');
-                    if (draggedTaskId) {
-                        e.preventDefault();
-                        const task = tasks.find(t => t.id === draggedTaskId);
-                        if (task && task.date !== '') {
-                            const existingPending = pendingTasks.find(pt => 
-                                pt.opNumber === task.opNumber && 
-                                pt.client === task.client && 
-                                pt.name === task.name && 
-                                pt.address === task.address &&
-                                pt.id !== task.id
-                            );
-
-                            if (existingPending) {
-                                updateTaskLocal({
-                                    ...existingPending,
-                                    totalHours: (existingPending.totalHours || 0) + (task.totalHours || 0),
-                                    duration: (existingPending.duration || 0) + (task.duration || 0)
-                                });
-                                deleteTaskLocal(task.id);
-                                sileo.success({ title: "Tarea agrupada en pendientes" });
-                            } else {
-                                updateTaskLocal({
-                                    ...task,
-                                    date: '',
-                                    teamId: null,
-                                    members: [],
-                                    vehicles: []
-                                });
-                                sileo.success({ title: "Tarea movida a pendientes" });
-                            }
-                        }
-                    }
-                }}
-            >
-                {/* Resizer Handle */}
-                <div 
-                    onMouseDown={startResizing}
-                    className="absolute -top-1 left-12 right-12 h-2 cursor-ns-resize z-[70] flex items-center justify-center group"
-                >
-                    <div className="w-12 h-1 rounded-full bg-white/10 group-hover:bg-blue-500/50 transition-all"></div>
-                </div>
-
-                {/* Header / Toggle Button */}
-                <div
-                    className="flex justify-between items-center px-10 h-16 cursor-pointer group"
-                    onClick={() => setIsPendingTasksOpen(!isPendingTasksOpen)}
-                >
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 group-hover:bg-blue-500/20 transition-all">
-                            <LayoutGrid size={20} className="text-blue-400" />
-                        </div>
-                        <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                            Tareas Pendientes
-                            <span className="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black">
-                                {pendingTasks.length}
-                            </span>
-                        </h3>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        <div className="relative group/search">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/search:text-blue-400 transition-colors" size={14} />
-                            <input
-                                type="text"
-                                placeholder="BUSCAR OP O CLIENTE..."
-                                value={pendingSearch}
-                                onChange={(e) => setPendingSearch(e.target.value)}
-                                onClick={(e) => e.stopPropagation()}
-                                className="bg-white/5 border border-white/10 rounded-none pl-9 pr-4 py-2 text-[10px] font-bold text-white focus:outline-none transition-all w-40 lg:w-60"
-                            />
-                        </div>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingTask(null);
-                                setSelectedContext(null);
-                                setFormData({
-                                    opNumber: '',
-                                    name: '',
-                                    client: '',
-                                    address: '',
-                                    totalHours: 1,
-                                    estimatedHours: 1,
-                                    duration: 8,
-                                    vehicles: [],
-                                    members: [],
-                                    additionalJobs: [],
-                                    date: '',
-                                    teamId: null,
-                                    section: 'Instalaciones',
-                                    blockedBy: null
-                                });
-                                setIsTaskModalOpen(true);
-                            }}
-                            className="bg-blue-600/20 text-blue-400 px-4 py-2 rounded-md border border-blue-500/30 text-sm font-bold hover:bg-blue-600/30 transition-all flex items-center gap-2"
-                        >
-                            <Plus size={14} /> NUEVO PENDIENTE
-                        </button>
-                        <div className="p-2 hover:bg-white/10 transition-all text-slate-400">
-                            {isPendingTasksOpen ? <Plus className="rotate-45" size={24} /> : <Plus className="rotate-180" size={24} />}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Content */}
-                <div className={`px-10 pb-10 overflow-hidden transition-opacity duration-300 ${isPendingTasksOpen ? 'opacity-100' : 'opacity-0'}`}>
-                    <div 
-                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto custom-scrollbar pr-2 pt-2"
-                        style={{ maxHeight: `${pendingTasksHeight - 80}px` }}
-                    >
-                        {pendingTasks.length === 0 ? (
-                            <div className="col-span-full py-10 text-center text-slate-500 italic">
-                                No hay tareas pendientes para instalaciones.
-                            </div>
-                        ) : (
-                            pendingTasks.map(task => {
-                                const taskVehicles = (task.vehicles || []).map((vId: string) => vehicles.find(v => v.id === vId)).filter(Boolean);
-                                const isMatch = pendingSearch && (
-                                    task.client?.toLowerCase().includes(pendingSearch.toLowerCase()) || 
-                                    task.opNumber?.toString().toLowerCase().includes(pendingSearch.toLowerCase())
-                                );
-                                
-                                return (
-                                <div
-                                    key={task.id}
-                                    draggable={true}
-                                    onDragStart={(e) => handleDragStart(e, task.id)}
-                                    onDragEnd={handleDragEnd}
-                                    onContextMenu={(e) => handleContextMenu(e, task)}
-                                    onClick={() => handleEditTask(task)}
-                                    className={`group/item relative shadow-lg rounded-none p-4 transition-all cursor-pointer border ${
-                                        isMatch 
-                                            ? 'bg-emerald-500/10 border-emerald-500/40' 
-                                            : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
-                                    }`}
-                                >
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="text-[10px] font-black text-blue-400 uppercase tracking-wider">OP: {task.opNumber}</span>
-                                        <span className="text-[10px] font-bold text-slate-500">{(task.totalHours || 0).toFixed(1)}h</span>
-                                    </div>
-                                    <h4 className="text-white font-bold text-sm truncate">{task.client}</h4>
-                                    <p className="text-slate-400 text-xs truncate mt-1">{task.name}</p>
-
-                                    {taskVehicles.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-2">
-                                            {taskVehicles.map((v: any, i: number) => (
-                                                <span key={i} className="px-1.5 py-0.5 rounded-md bg-orange-500/20 text-orange-400 font-bold border border-orange-500/30 uppercase text-[8px]">
-                                                    {v.name}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (window.confirm('¿Estás seguro de que deseas eliminar permanentemente esta tarea pendiente?')) {
-                                                deleteTask(task.id);
-                                            }
-                                        }}
-                                        title="Eliminar permanentemente"
-                                        className="absolute top-2 right-2 w-6 h-6 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center opacity-0 group-hover/item:opacity-100 hover:bg-red-500 hover:text-white transition-all"
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
-                                </div>
-                                );
-                            })
-                        )}
-                    </div>
-                </div>
-            </div>
 
 
 

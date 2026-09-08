@@ -103,23 +103,30 @@ function App() {
 
 
   const renderContent = () => {
+    const navigateToOrder = (opNumber: string) => {
+      setActiveTab('orders');
+      setPendingOpenOrderNumber(opNumber);
+    };
+
+    const renderActivePage = () => {
+      switch (activeTab) {
+        case 'members': return <MembersPage />;
+        case 'vehicles': return <VehiclesPage />;
+        case 'soportes': return <SoportesPage />;
+        case 'disa': return <DisaPage />;
+        case 'gantt': return <GanttPage onNavigateToOrder={navigateToOrder} />;
+        case 'herreria': return <HerreriaPage onNavigateToOrder={navigateToOrder} />;
+        case 'corporeas': return <CorporeasPage onNavigateToOrder={navigateToOrder} />;
+        case 'lonas': return <LonasVinilosPage onNavigateToOrder={navigateToOrder} />;
+        case 'pintura': return <PinturaPage onNavigateToOrder={navigateToOrder} />;
+        case 'orders': return <OrdersPage openOrderId={pendingOpenOrderId} openOrderNumber={pendingOpenOrderNumber} onOpenOrderIdConsumed={() => { setPendingOpenOrderId(null); setPendingOpenOrderNumber(null); }} bothSidebarsHidden={!isSidebarOpen && !isRightSidebarOpen} />;
+        default: return <GanttPage onNavigateToOrder={navigateToOrder} />;
+      }
+    };
+
     return (
       <Suspense fallback={<LoadingView />}>
-        {(() => {
-          switch (activeTab) {
-            case 'members': return <MembersPage />;
-            case 'vehicles': return <VehiclesPage />;
-            case 'soportes': return <SoportesPage />;
-            case 'disa': return <DisaPage />;
-            case 'gantt': return <GanttPage />;
-            case 'herreria': return <HerreriaPage />;
-            case 'corporeas': return <CorporeasPage />;
-            case 'lonas': return <LonasVinilosPage />;
-            case 'pintura': return <PinturaPage />;
-            case 'orders': return <OrdersPage openOrderId={pendingOpenOrderId} openOrderNumber={pendingOpenOrderNumber} onOpenOrderIdConsumed={() => { setPendingOpenOrderId(null); setPendingOpenOrderNumber(null); }} bothSidebarsHidden={!isSidebarOpen && !isRightSidebarOpen} />;
-            default: return <GanttPage />;
-          }
-        })()}
+        {renderActivePage()}
       </Suspense>
     );
   };

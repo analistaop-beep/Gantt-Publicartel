@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { sileo } from 'sileo';
-import { Plus, Minus, Calendar, ChevronLeft, ChevronRight, Trash2, LayoutGrid, Users, Truck, Bell, ArrowDownToLine, Copy, Search, Save, Loader2 } from 'lucide-react';
+import { Plus, Minus, Calendar, ChevronLeft, ChevronRight, Trash2, LayoutGrid, Users, Truck, Bell, ArrowDownToLine, Copy, Search, Save, Loader2, Image, ExternalLink, X, ClipboardList, ChevronUp, ChevronDown, CheckCircle2 } from 'lucide-react';
 import {
     format,
     addDays,
@@ -16,14 +16,24 @@ import { getCompactName } from '../utils/stringUtils';
 import { exportToExcel, exportTaskToPDF } from '../utils/reportUtils';
 import { FileDown, FileText, Printer } from 'lucide-react';
 
-export const PinturaPage: React.FC = () => {
+import { type SectorTaskStatus, SECTOR_TASK_STATUSES, getTaskStatus, getStatusBadgeStyle } from '../utils/taskStatusUtils';
+export type PinturaTaskStatus = SectorTaskStatus;
+export const PINTURA_TASK_STATUSES = SECTOR_TASK_STATUSES;
+export { getTaskStatus, getStatusBadgeStyle };
+
+interface PinturaPageProps {
+    onNavigateToOrder?: (opNumber: string) => void;
+}
+
+export const PinturaPage: React.FC<PinturaPageProps> = ({ onNavigateToOrder }) => {
     const {
         teams, tasks: instalacionTasks, pinturaTasks: tasks, herreriaTasks, corporeasTasks, lonasTasks, members, vehicles, reminders,
-        addTask, deleteTask, addMember, addVehicle, updateTask,
+        addTask, addMember, addVehicle, updateTask,
         updateTaskLocal, deleteTaskLocal, addTaskLocal,
         saveAllChanges, hasPendingChanges, isSaving,
         clearTasksRange, error, clearError,
-        addReminder, updateReminder, deleteReminder
+        addReminder, updateReminder, deleteReminder,
+        uploadFile
     } = useStore();
     const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 })); // Monday
 
@@ -80,44 +90,72 @@ export const PinturaPage: React.FC = () => {
     const [fragmentTargetTask, setFragmentTargetTask] = useState<any | null>(null);
 
 
-    // Pending Tasks state
-    const [isPendingTasksOpen, setIsPendingTasksOpen] = useState(false);
     const [isCapacityOpen, setIsCapacityOpen] = useState(false);
-    const [pendingSearch, setPendingSearch] = useState('');
-    const [pendingTasksHeight, setPendingTasksHeight] = useState(300);
-    const [isResizing, setIsResizing] = useState(false);
     const [manualHours, setManualHours] = useState('');
 
-    const startResizing = (e: React.MouseEvent) => {
-        setIsResizing(true);
-        e.preventDefault();
-        e.stopPropagation();
+    // View mode: 'gantt' = timeline, 'lista' = pending tasks table
+    const [activeView, setActiveView] = useState<'gantt' | 'lista'>('gantt');
+
+    // Task detail modal state (for lista view)
+    const [selectedTaskDetail, setSelectedTaskDetail] = useState<any | null>(null);
+    const [taskDetailPhoto, setTaskDetailPhoto] = useState<string | null>(null);
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+    const [listSearch, setListSearch] = useState('');
+    const [listSort, setListSort] = useState<{ col: string; dir: 'asc' | 'desc' }>({ col: 'date', dir: 'asc' });
+
+    // Task completion confirmation modal state
+    const [taskToComplete, setTaskToComplete] = useState<any | null>(null);
+    const [completeHours, setCompleteHours] = useState<string>('');
+    const [isCompleting, setIsCompleting] = useState(false);
+
+    const handleStatusChange = (task: any, newStatus: PinturaTaskStatus) => {
+        if (newStatus === 'Terminada') {
+            setTaskToComplete(task);
+            const defaultHours = task.realHours ?? task.totalHours ?? '';
+            setCompleteHours(defaultHours !== '' && defaultHours !== undefined ? String(defaultHours) : '');
+            return;
+        }
+        const updated = { ...task, status: newStatus, completed: false };
+        updateTaskLocal(updated);
+        if (selectedTaskDetail && selectedTaskDetail.id === task.id) {
+            setSelectedTaskDetail(updated);
+        }
+        sileo.success({ title: `Estado actualizado a "${newStatus}"` });
     };
 
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!isResizing) return;
-            const newHeight = window.innerHeight - e.clientY - 40;
-            if (newHeight > 64 && newHeight < window.innerHeight * 0.7) {
-                setPendingTasksHeight(newHeight);
-                if (!isPendingTasksOpen && newHeight > 100) {
-                    setIsPendingTasksOpen(true);
-                }
-            }
-        };
-
-        const handleMouseUp = () => setIsResizing(false);
-
-        if (isResizing) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
+    const confirmCompleteTask = async () => {
+        if (!taskToComplete) return;
+        const hours = parseFloat(completeHours);
+        if (isNaN(hours) || hours < 0) {
+            sileo.error({ title: 'Ingresa una cantidad válida de horas' });
+            return;
         }
 
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
+        setIsCompleting(true);
+        const updated = {
+            ...taskToComplete,
+            status: 'Terminada',
+            completed: true,
+            realHours: hours,
+            totalHours: hours
         };
-    }, [isResizing, isPendingTasksOpen]);
+
+        try {
+            await updateTask(updated);
+            sileo.success({ title: `Tarea OP #${taskToComplete.opNumber || ''} finalizada con ${hours}h` });
+        } catch {
+            updateTaskLocal(updated);
+            sileo.success({ title: `Tarea finalizada con ${hours}h (guardada)` });
+        } finally {
+            setIsCompleting(false);
+            if (selectedTaskDetail && selectedTaskDetail.id === taskToComplete.id) {
+                setSelectedTaskDetail(null);
+                setTaskDetailPhoto(null);
+            }
+            setTaskToComplete(null);
+            setCompleteHours('');
+        }
+    };
 
     // Unify all task types to resolve cross-section blocking dependencies
     const allTasks = useMemo(() => {
@@ -145,24 +183,54 @@ export const PinturaPage: React.FC = () => {
             const blockerDate = new Date(blocker.date + 'T00:00:00');
             return blockerDate < today; // unblocked only if blocker is in the past
         });
-
-        if (pendingSearch.trim()) {
-            const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-            const search = normalize(pendingSearch);
-            pts = pts.filter(t =>
-                normalize(t.client || '').includes(search) ||
-                normalize(t.opNumber?.toString() || '').includes(search) ||
-                normalize(t.name || '').includes(search)
-            );
-        }
         
         return pts;
-    }, [tasks, allTasks, pendingSearch]);
+    }, [tasks, allTasks]);
 
     // Filter tasks for the timeline (tasks with a date)
     const timelineTasks = useMemo(() => {
         return tasks.filter(t => t.date && t.date !== '');
     }, [tasks]);
+
+    // All pintura tasks for the list view (sorted, filtered, excluding completed/Terminada tasks)
+    const allPinturaTasksForList = useMemo(() => {
+        const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        let list = tasks.filter(t => !t.completed && t.status !== 'Terminada');
+        if (listSearch.trim()) {
+            const search = normalize(listSearch);
+            list = list.filter(t =>
+                normalize(t.client || '').includes(search) ||
+                normalize(t.opNumber?.toString() || '').includes(search) ||
+                normalize(t.name || '').includes(search) ||
+                normalize(getTaskStatus(t)).includes(search)
+            );
+        }
+        list.sort((a, b) => {
+            let valA: any, valB: any;
+            if (listSort.col === 'date') {
+                valA = a.date || 'zzzzz'; // no-date tasks go to end
+                valB = b.date || 'zzzzz';
+            } else if (listSort.col === 'opNumber') {
+                valA = a.opNumber || '';
+                valB = b.opNumber || '';
+            } else if (listSort.col === 'client') {
+                valA = (a.client || '').toLowerCase();
+                valB = (b.client || '').toLowerCase();
+            } else if (listSort.col === 'name') {
+                valA = (a.name || '').toLowerCase();
+                valB = (b.name || '').toLowerCase();
+            } else if (listSort.col === 'status') {
+                valA = getTaskStatus(a);
+                valB = getTaskStatus(b);
+            } else {
+                valA = ''; valB = '';
+            }
+            if (valA < valB) return listSort.dir === 'asc' ? -1 : 1;
+            if (valA > valB) return listSort.dir === 'asc' ? 1 : -1;
+            return 0;
+        });
+        return list;
+    }, [tasks, listSearch, listSort]);
 
     // Watch for store errors
     useEffect(() => {
@@ -685,8 +753,8 @@ export const PinturaPage: React.FC = () => {
                                 try {
                                     await saveAllChanges();
                                     sileo.success({ title: 'Cambios guardados con éxito' });
-                                } catch (err) {
-                                    sileo.error({ title: 'Error al guardar los cambios' });
+                                } catch (err: any) {
+                                    sileo.error({ title: 'Error al guardar los cambios', description: err?.message });
                                 }
                             }}
                             disabled={isSaving}
@@ -780,7 +848,35 @@ export const PinturaPage: React.FC = () => {
                 </div>
             </div>
 
+            {/* View Tabs */}
+            <div className="flex items-center gap-1 px-4 lg:px-10 pb-1">
+                <button
+                    onClick={() => setActiveView('gantt')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-bold transition-all border-b-2 ${activeView === 'gantt'
+                        ? 'text-blue-400 border-blue-500 bg-blue-500/10'
+                        : 'text-slate-500 border-transparent hover:text-slate-300 hover:bg-white/5'}`}
+                >
+                    <Calendar size={15} />
+                    Cronograma
+                </button>
+                <button
+                    onClick={() => setActiveView('lista')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-bold transition-all border-b-2 ${activeView === 'lista'
+                        ? 'text-blue-400 border-blue-500 bg-blue-500/10'
+                        : 'text-slate-500 border-transparent hover:text-slate-300 hover:bg-white/5'}`}
+                >
+                    <ClipboardList size={15} />
+                    Tareas Pendientes
+                    {tasks.filter(t => !t.date || t.date === '').length > 0 && (
+                        <span className="bg-amber-500/20 text-amber-400 text-[10px] font-black px-1.5 py-0.5 rounded-full border border-amber-500/30">
+                            {tasks.filter(t => !t.date || t.date === '').length}
+                        </span>
+                    )}
+                </button>
+            </div>
+
             {/* Gantt Timeline */}
+            {activeView === 'gantt' && (
             <div className="flex-1 min-h-0 bg-[#0f172a] flex flex-col overflow-hidden border-t sm:border border-white/5 mx-0 sm:mx-2 lg:mx-10 mb-0 sm:mb-2 rounded-none sm:rounded-[1rem] relative shadow-2xl">
                 <div className="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar flex flex-col" ref={timelineRef}>
                     <div className="w-full flex-1 flex flex-col">
@@ -1139,10 +1235,147 @@ export const PinturaPage: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            )}
 
-                {/* Modals */}
-                {
-                    isTaskModalOpen && (
+            {/* ── Lista de Tareas Pendientes ─────────────────────────────── */}
+            {activeView === 'lista' && (
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden mx-0 sm:mx-2 lg:mx-10 mb-0 sm:mb-2 rounded-none sm:rounded-[1rem] bg-[#0f172a] border border-white/5 shadow-2xl animate-in fade-in duration-300">
+                    {/* Search bar */}
+                    <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-[#1e293b]/80 sticky top-0 z-10">
+                        <div className="relative flex-1">
+                            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                            <input
+                                type="text"
+                                value={listSearch}
+                                onChange={e => setListSearch(e.target.value)}
+                                placeholder="Buscar por OP, cliente o descripción..."
+                                className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                            />
+                        </div>
+                        <div className="text-[11px] font-bold text-slate-500 whitespace-nowrap">
+                            {allPinturaTasksForList.length} tarea{allPinturaTasksForList.length !== 1 ? 's' : ''}
+                        </div>
+                    </div>
+
+                    {/* Table */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        {allPinturaTasksForList.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-600 py-24">
+                                <ClipboardList size={48} className="opacity-30" />
+                                <p className="text-sm font-bold uppercase tracking-widest opacity-50">Sin tareas registradas</p>
+                            </div>
+                        ) : (
+                            <table className="w-full text-xs border-collapse table-fixed">
+                                <colgroup>
+                                    <col className="w-24" />
+                                    <col className="w-56" />
+                                    <col className="w-auto" />
+                                    <col className="w-40" />
+                                    <col className="w-48" />
+                                </colgroup>
+                                <thead className="sticky top-0 z-10 bg-[#1e293b] border-b border-white/10">
+                                    <tr>
+                                        {[
+                                            { col: 'opNumber', label: 'N° OP' },
+                                            { col: 'client', label: 'Cliente' },
+                                            { col: 'name', label: 'Descripción de tarea' },
+                                            { col: 'status', label: 'Estado' },
+                                            { col: 'date', label: 'Fecha de ejecución' },
+                                        ].map(({ col, label }) => (
+                                            <th
+                                                key={col}
+                                                onClick={() => setListSort(prev => ({
+                                                    col,
+                                                    dir: prev.col === col && prev.dir === 'asc' ? 'desc' : 'asc'
+                                                }))}
+                                                className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-slate-400 cursor-pointer select-none hover:text-blue-400 transition-colors group"
+                                            >
+                                                <span className="flex items-center gap-1.5">
+                                                    {label}
+                                                    <span className="opacity-40 group-hover:opacity-100 transition-opacity">
+                                                        {listSort.col === col
+                                                            ? listSort.dir === 'asc'
+                                                                ? <ChevronUp size={12} />
+                                                                : <ChevronDown size={12} />
+                                                            : <ChevronUp size={12} className="opacity-30" />}
+                                                    </span>
+                                                </span>
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {allPinturaTasksForList.map((task, idx) => {
+                                        const hasPendingDate = !task.date || task.date === '';
+                                        const currentStatus = getTaskStatus(task);
+                                        const style = getStatusBadgeStyle(currentStatus);
+                                        return (
+                                            <tr
+                                                key={task.id}
+                                                onClick={() => {
+                                                    setSelectedTaskDetail(task);
+                                                    setTaskDetailPhoto(task.photo || null);
+                                                }}
+                                                className={`cursor-pointer transition-colors duration-150 hover:bg-slate-800/80 ${idx % 2 === 0 ? 'bg-white/[0.01]' : ''}`}
+                                            >
+                                                <td className="px-3 py-1.5 align-middle">
+                                                    <span className="font-mono font-bold text-blue-400 text-[11px] bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 inline-block">
+                                                        #{task.opNumber || '—'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-1.5 align-middle">
+                                                    <span className="font-semibold text-white/90 truncate block text-xs" title={task.client}>
+                                                        {task.client || <span className="text-slate-600 italic">Sin cliente</span>}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-1.5 align-middle">
+                                                    <span className="text-slate-300 truncate block text-xs" title={task.name}>
+                                                        {task.name || <span className="text-slate-600 italic">Sin descripción</span>}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-1.5 align-middle" onClick={(e) => e.stopPropagation()}>
+                                                    <div className="relative inline-flex items-center">
+                                                        <select
+                                                            value={currentStatus}
+                                                            onChange={(e) => handleStatusChange(task, e.target.value as PinturaTaskStatus)}
+                                                            className={`text-[11px] font-bold pl-2.5 pr-6 py-0.5 rounded-full border cursor-pointer appearance-none focus:outline-none transition-all ${style.badge} bg-[#0f172a] hover:brightness-125`}
+                                                        >
+                                                            {PINTURA_TASK_STATUSES.map(st => (
+                                                                <option key={st} value={st} className="bg-slate-900 text-white font-semibold">
+                                                                    {st}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
+                                                            <span className={`w-1.5 h-1.5 rounded-full ${style.dot} ${style.pulse ? 'animate-pulse' : ''}`} />
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-3 py-1.5 align-middle">
+                                                    {hasPendingDate ? (
+                                                        <span className="inline-flex items-center gap-1.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/20">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                                            Pendiente de fecha
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-slate-300 font-medium text-xs whitespace-nowrap">
+                                                            {format(new Date(task.date + 'T00:00:00'), "dd 'de' MMMM yyyy", { locale: es })}
+                                                        </span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Modals */}
+            {
+                isTaskModalOpen && (
                         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
                             <div className="glass p-6 rounded-[1.25rem] w-full max-w-[80vw] max-h-[95vh] flex flex-col shadow-2xl border-white/20 animate-in fade-in zoom-in-95 duration-300">
                                 <div className="mb-4 flex justify-between items-start">
@@ -1660,184 +1893,6 @@ export const PinturaPage: React.FC = () => {
                 }
 
 
-                {/* Bottom Drawer: Tareas Pendientes */}
-                <div
-                    className={`relative mx-10 mb-6 z-[60] glass rounded-sm border border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 ease-in-out ${isResizing ? 'duration-0' : ''}`}
-                    style={{ height: isPendingTasksOpen ? `${pendingTasksHeight}px` : '64px' }}
-                    onDragOver={(e) => {
-                        const isTaskDrag = Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'taskid');
-                        if (isTaskDrag) {
-                            e.preventDefault();
-                            e.dataTransfer.dropEffect = 'move';
-                        }
-                    }}
-                    onDrop={(e) => {
-                        const draggedTaskId = e.dataTransfer.getData('taskId') || e.dataTransfer.getData('taskid');
-                        if (draggedTaskId) {
-                            e.preventDefault();
-                            const task = tasks.find(t => t.id === draggedTaskId);
-                            if (task && task.date !== '') {
-                                const existingPending = pendingTasks.find(pt => 
-                                    pt.opNumber === task.opNumber && 
-                                    pt.client === task.client && 
-                                    pt.name === task.name && 
-                                    pt.address === task.address &&
-                                    pt.id !== task.id
-                                );
-
-                                if (existingPending) {
-                                    updateTaskLocal({
-                                        ...existingPending,
-                                        totalHours: (existingPending.totalHours || 0) + (task.totalHours || 0),
-                                        duration: (existingPending.duration || 0) + (task.duration || 0)
-                                    });
-                                    deleteTaskLocal(task.id);
-                                    sileo.success({ title: "Tarea agrupada en pendientes" });
-                                } else {
-                                    updateTaskLocal({
-                                        ...task,
-                                        date: '',
-                                        teamId: null,
-                                        members: [],
-                                        vehicles: []
-                                    });
-                                    sileo.success({ title: "Tarea movida a pendientes" });
-                                }
-                            }
-                        }
-                    }}
-                >
-                    {/* Resizer Handle */}
-                    <div 
-                        onMouseDown={startResizing}
-                        className="absolute -top-1 left-12 right-12 h-2 cursor-ns-resize z-[70] flex items-center justify-center group"
-                    >
-                        <div className="w-12 h-1 rounded-full bg-white/10 group-hover:bg-blue-500/50 transition-all"></div>
-                    </div>
-
-                    {/* Header / Toggle Button */}
-                    <div
-                        className="flex justify-between items-center px-10 h-16 cursor-pointer group"
-                        onClick={() => setIsPendingTasksOpen(!isPendingTasksOpen)}
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 group-hover:bg-blue-500/20 transition-all">
-                                <LayoutGrid size={20} className="text-blue-400" />
-                            </div>
-                            <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                                Tareas Pendientes
-                                <span className="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black">
-                                    {pendingTasks.length}
-                                </span>
-                            </h3>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <div className="relative group/search">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/search:text-blue-400 transition-colors" size={14} />
-                                <input
-                                    type="text"
-                                    placeholder="Buscar OP o Cliente..."
-                                    value={pendingSearch}
-                                    onChange={(e) => setPendingSearch(e.target.value)}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="bg-white/5 border border-white/10 rounded-md pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all w-40 lg:w-60"
-                                />
-                            </div>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingTask(null);
-                                    setSelectedContext(null);
-                                    setFormData({
-                                        opNumber: '',
-                                        name: '',
-                                        client: '',
-                                        address: 'Montevideo',
-                                        totalHours: 1,
-                                        estimatedHours: 1,
-                                        duration: 8,
-                                        vehicles: [],
-                                        members: [],
-                                        additionalJobs: [],
-                                        date: '',
-                                        teamId: teams[0]?.id || null,
-                                        section: 'Pintura',
-                                        blockedBy: null
-                                    });
-                                    setIsTaskModalOpen(true);
-                                }}
-                                className="bg-blue-600/20 text-blue-400 px-4 py-2 rounded-md border border-blue-500/30 text-sm font-bold hover:bg-blue-600/30 transition-all flex items-center gap-2"
-                            >
-                                <Plus size={16} /> Nuevo Pendiente
-                            </button>
-                            <div className="p-2 hover:bg-white/10 rounded-full transition-all text-slate-400">
-                                {isPendingTasksOpen ? <Plus className="rotate-45" size={24} /> : <Plus className="rotate-180" size={24} />}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className={`px-10 pb-10 overflow-hidden transition-opacity duration-300 ${isPendingTasksOpen ? 'opacity-100' : 'opacity-0'}`}>
-                        <div 
-                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto custom-scrollbar pr-2 pt-2"
-                            style={{ maxHeight: `${pendingTasksHeight - 80}px` }}
-                        >
-                            {pendingTasks.length === 0 ? (
-                                <div className="col-span-full py-10 text-center text-slate-500 italic">
-                                    No hay tareas pendientes para pintura.
-                                </div>
-                            ) : (
-                                pendingTasks.map(task => {
-                                    const isMatch = pendingSearch && (
-                                        task.client?.toLowerCase().includes(pendingSearch.toLowerCase()) || 
-                                        task.opNumber?.toString().toLowerCase().includes(pendingSearch.toLowerCase())
-                                    );
-
-                                    return (
-                                    <div
-                                        key={task.id}
-                                        draggable={true}
-                                        onDragStart={(e) => handleDragStart(e, task.id)}
-                                        onDragEnd={handleDragEnd}
-                                        onContextMenu={(e) => handleContextMenu(e, task)}
-                                        onClick={() => handleEditTask(task)}
-                                        className={`group/item relative shadow-lg rounded-lg p-4 transition-all hover:scale-[1.02] cursor-pointer border ${
-                                            isMatch 
-                                                ? 'bg-emerald-500/20 border-emerald-500/50 shadow-emerald-500/10' 
-                                                : 'bg-slate-800/40 border-white/10 hover:bg-slate-800/60'
-                                        }`}
-                                    >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className="text-[10px] font-black text-blue-400 uppercase tracking-wider">OP: {task.opNumber}</span>
-                                            <span className="text-[10px] font-bold text-slate-500">{(task.totalHours || 0).toFixed(1)}h</span>
-                                        </div>
-                                        <h4 className="text-white font-bold text-sm truncate">{task.client}</h4>
-                                        <p className="text-slate-400 text-xs truncate mt-1">{task.name}</p>
-
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (window.confirm('¿Estás seguro de que deseas eliminar permanentemente esta tarea pendiente?')) {
-                                                    deleteTask(task.id);
-                                                }
-                                            }}
-                                            title="Eliminar permanentemente"
-                                            className="absolute top-2 right-2 w-6 h-6 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center opacity-0 group-hover/item:opacity-100 hover:bg-red-500 hover:text-white transition-all"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-                                    );
-                                })
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Floating Zoom and Navigation Controls */}
-
-
 
                 {/* Reminders List Modal */}
                 {
@@ -2116,6 +2171,301 @@ export const PinturaPage: React.FC = () => {
                         </div>
                     )}
 
+            {/* ── Task Detail Modal ─────────────────────────────────────── */}
+            {selectedTaskDetail && (
+                <div
+                    className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-[200] p-4 animate-in fade-in duration-200"
+                    onClick={(e) => { if (e.target === e.currentTarget) { setSelectedTaskDetail(null); setTaskDetailPhoto(null); } }}
+                >
+                    <div className="bg-[#0f172a] border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg animate-in zoom-in-95 duration-200 overflow-hidden">
+                        {/* Modal Header */}
+                        <div className="flex items-start justify-between p-5 border-b border-white/10">
+                            <div className="flex items-start gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                                    <ClipboardList size={18} className="text-blue-400" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                        <span className="font-mono text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                                            OP #{selectedTaskDetail.opNumber || '—'}
+                                        </span>
+                                        {(() => {
+                                            const currentStatus = getTaskStatus(selectedTaskDetail);
+                                            const style = getStatusBadgeStyle(currentStatus);
+                                            return (
+                                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border uppercase tracking-wide flex items-center gap-1.5 ${style.badge}`}>
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${style.dot} ${style.pulse ? 'animate-pulse' : ''}`} />
+                                                    {currentStatus}
+                                                </span>
+                                            );
+                                        })()}
+                                    </div>
+                                    <h3 className="text-white font-bold text-base leading-tight">{selectedTaskDetail.client}</h3>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => { setSelectedTaskDetail(null); setTaskDetailPhoto(null); }}
+                                className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 transition-all"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                            {/* Description */}
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Descripción</p>
+                                <p className="text-slate-200 text-sm leading-relaxed">
+                                    {selectedTaskDetail.name || <span className="text-slate-600 italic">Sin descripción</span>}
+                                </p>
+                            </div>
+
+                            {/* Estado Selector */}
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Estado</p>
+                                <select
+                                    value={getTaskStatus(selectedTaskDetail)}
+                                    onChange={(e) => handleStatusChange(selectedTaskDetail, e.target.value as PinturaTaskStatus)}
+                                    className="w-full bg-[#1e293b] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                                >
+                                    {PINTURA_TASK_STATUSES.map(st => (
+                                        <option key={st} value={st} className="bg-slate-900 text-white font-semibold">
+                                            {st}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Date */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Fecha de ejecución</p>
+                                    {(!selectedTaskDetail.date || selectedTaskDetail.date === '') ? (
+                                        <span className="text-amber-400 text-sm font-semibold">Sin asignar</span>
+                                    ) : (
+                                        <span className="text-slate-200 text-sm font-semibold">
+                                            {format(new Date(selectedTaskDetail.date + 'T00:00:00'), "dd/MM/yyyy")}
+                                        </span>
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Dirección</p>
+                                    <span className="text-slate-200 text-sm">{selectedTaskDetail.address || '—'}</span>
+                                </div>
+                            </div>
+
+                            {/* Additional jobs */}
+                            {selectedTaskDetail.additionalJobs && selectedTaskDetail.additionalJobs.length > 0 && (
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Trabajos adicionales</p>
+                                    <div className="space-y-1.5">
+                                        {selectedTaskDetail.additionalJobs.map((job: any, i: number) => (
+                                            <div key={i} className="bg-white/5 rounded-lg px-3 py-2 text-xs text-slate-300 border border-white/5">
+                                                <span className="font-bold text-white">{job.client}</span> — {job.description}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Photo */}
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Foto de referencia</p>
+                                {taskDetailPhoto ? (
+                                    <div className="relative group rounded-xl overflow-hidden border border-white/10">
+                                        <img
+                                            src={taskDetailPhoto}
+                                            alt="Foto de tarea"
+                                            className="w-full max-h-48 object-cover"
+                                        />
+                                        <button
+                                            onClick={async () => {
+                                                if (!confirm('¿Eliminar la foto de esta tarea?')) return;
+                                                const updated = { ...selectedTaskDetail, photo: null };
+                                                updateTaskLocal(updated);
+                                                setSelectedTaskDetail(updated);
+                                                setTaskDetailPhoto(null);
+                                            }}
+                                            className="absolute top-2 right-2 bg-red-600/80 hover:bg-red-500 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <label className={`flex flex-col items-center justify-center gap-2 h-28 rounded-xl border-2 border-dashed border-white/10 hover:border-blue-500/40 hover:bg-blue-500/5 transition-all cursor-pointer text-slate-600 hover:text-slate-400 ${isUploadingPhoto ? 'pointer-events-none opacity-50' : ''}`}>
+                                        {isUploadingPhoto ? (
+                                            <><Loader2 size={24} className="animate-spin text-blue-400" /><span className="text-xs font-bold">Subiendo foto...</span></>
+                                        ) : (
+                                            <><Image size={24} /><span className="text-xs font-bold">Agregar foto</span><span className="text-[10px]">JPG, PNG o WebP</span></>
+                                        )}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                setIsUploadingPhoto(true);
+                                                try {
+                                                    const url = await uploadFile(file, file.name);
+                                                    const updated = { ...selectedTaskDetail, photo: url };
+                                                    updateTaskLocal(updated);
+                                                    setSelectedTaskDetail(updated);
+                                                    setTaskDetailPhoto(url);
+                                                    sileo.success({ title: 'Foto agregada con éxito' });
+                                                } catch {
+                                                    sileo.error({ title: 'Error al subir la foto' });
+                                                } finally {
+                                                    setIsUploadingPhoto(false);
+                                                }
+                                            }}
+                                        />
+                                    </label>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-5 border-t border-white/10 flex items-center gap-3">
+                            <button
+                                onClick={() => {
+                                    if (onNavigateToOrder) {
+                                        onNavigateToOrder(selectedTaskDetail.opNumber);
+                                        setSelectedTaskDetail(null);
+                                        setTaskDetailPhoto(null);
+                                    } else {
+                                        sileo.error({ title: 'Navegación no disponible' });
+                                    }
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95 text-sm"
+                            >
+                                <ExternalLink size={16} />
+                                Ver Orden de Producción
+                            </button>
+                            <button
+                                onClick={() => { setSelectedTaskDetail(null); setTaskDetailPhoto(null); }}
+                                className="px-4 py-3 rounded-xl text-slate-400 hover:bg-white/5 font-bold text-sm transition-all border border-white/10"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            );
-        };
+            )}
+
+            {/* ── Modal de Confirmación: Tarea Terminada ──────────────────── */}
+            {taskToComplete && (
+                <div
+                    className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[250] p-4 animate-in fade-in duration-200"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget && !isCompleting) {
+                            setTaskToComplete(null);
+                            setCompleteHours('');
+                        }
+                    }}
+                >
+                    <div className="bg-[#0f172a] border border-emerald-500/30 rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200 overflow-hidden">
+                        {/* Header */}
+                        <div className="flex items-center gap-3 p-5 border-b border-white/10 bg-emerald-500/10">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                                <CheckCircle2 size={22} className="text-emerald-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-white">Marcar tarea como Terminada</h3>
+                                <p className="text-xs text-slate-400">Confirmación y registro de horas reales</p>
+                            </div>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-5 space-y-4">
+                            {/* Resumen de la tarea */}
+                            <div className="bg-white/5 rounded-xl p-3 border border-white/5 space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-mono text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                                        OP #{taskToComplete.opNumber || '—'}
+                                    </span>
+                                    <span className="text-xs font-semibold text-white truncate">
+                                        {taskToComplete.client || 'Sin cliente'}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-400 truncate">
+                                    {taskToComplete.name || 'Sin descripción'}
+                                </p>
+                            </div>
+
+                            {/* Input de Horas Totales */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+                                    <span>Horas totales destinadas a la tarea:</span>
+                                    {taskToComplete.totalHours ? (
+                                        <span className="text-[11px] font-normal text-slate-500">
+                                            Planificadas: {taskToComplete.totalHours}h
+                                        </span>
+                                    ) : null}
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        step="0.5"
+                                        min="0"
+                                        autoFocus
+                                        value={completeHours}
+                                        onChange={(e) => setCompleteHours(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                confirmCompleteTask();
+                                            }
+                                        }}
+                                        placeholder="Ej: 4.5"
+                                        className="w-full bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3 text-base text-white font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-mono"
+                                    />
+                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-slate-500 font-bold pointer-events-none">
+                                        horas
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-slate-500 mt-1.5">
+                                    Al confirmar, esta tarea se archivará como finalizada y se retirará de las Tareas Pendientes.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Footer Buttons */}
+                        <div className="p-5 border-t border-white/10 flex items-center gap-3 bg-[#1e293b]/40">
+                            <button
+                                type="button"
+                                disabled={isCompleting}
+                                onClick={() => {
+                                    setTaskToComplete(null);
+                                    setCompleteHours('');
+                                }}
+                                className="flex-1 px-4 py-2.5 rounded-xl text-slate-400 hover:bg-white/5 font-bold text-xs transition-all border border-white/10 disabled:opacity-50"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isCompleting || !completeHours || parseFloat(completeHours) < 0}
+                                onClick={confirmCompleteTask}
+                                className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-2.5 px-4 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 text-xs"
+                            >
+                                {isCompleting ? (
+                                    <>
+                                        <Loader2 size={14} className="animate-spin" />
+                                        Guardando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle2 size={14} />
+                                        Confirmar y Terminar
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+        </div>
+    );
+};

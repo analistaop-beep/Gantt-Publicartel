@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic, Filter, Check, BarChart2, Signpost, Table2, Download, FileSpreadsheet } from 'lucide-react';
+import { Plus, Trash2, Edit2, ClipboardList, Search, FileText, X, DollarSign, User, MapPin, AlignLeft, Upload, Loader2, Layers, ChevronDown, Printer, Eye, ExternalLink, Calendar, Users, Bold, Italic, Filter, Check, BarChart2, Signpost, Table2, Download, FileSpreadsheet, Sparkles } from 'lucide-react';
 import { sileo } from 'sileo';
 import { convertToWebP, getFileUrl, getFileName, isImageFile, isExcelFile, printFile, type OrderAttachment } from '../utils/fileUtils';
 import { printOrderSummaryPDF, printHoursAnalysisPDF } from '../utils/reportUtils';
@@ -303,10 +303,24 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
         try {
             if (isEditing) {
                 await updateProductionOrder({ id: isEditing, ...formData });
-                sileo.success({ title: "Orden de producción actualizada" });
+                if (formData.category === 'Outdoor') {
+                    sileo.success({ 
+                        title: "Orden de producción actualizada", 
+                        description: "Se aplicó el Modelo Outdoor (tareas pendientes verificadas y creadas si no existían)."
+                    });
+                } else {
+                    sileo.success({ title: "Orden de producción actualizada" });
+                }
             } else {
                 await addProductionOrder(formData);
-                sileo.success({ title: "Orden de producción creada" });
+                if (formData.category === 'Outdoor') {
+                    sileo.success({ 
+                        title: "Orden de producción creada", 
+                        description: "Se aplicó el Modelo Outdoor (4 tareas cargadas automáticamente)."
+                    });
+                } else {
+                    sileo.success({ title: "Orden de producción creada" });
+                }
             }
             closeModal();
         } catch (err: any) {
@@ -1402,25 +1416,61 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                             </div>
 
                             {formData.category === 'Outdoor' && (
-                                <div className="space-y-2">
-                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Soporte (4 dígitos - Opcional)</label>
-                                    <div className="relative group">
-                                        <Layers size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
-                                        <input
-                                            type="text"
-                                            maxLength={4}
-                                            className="input w-full pl-12"
-                                            placeholder="Ej: 1234"
-                                            value={formData.soporte}
-                                            onChange={(e) => {
-                                                const val = e.target.value.replace(/\D/g, '');
-                                                if (val.length <= 4) {
-                                                    setFormData({ ...formData, soporte: val });
-                                                }
-                                            }}
-                                        />
+                                <>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Soporte (4 dígitos - Opcional)</label>
+                                        <div className="relative group">
+                                            <Layers size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                                            <input
+                                                type="text"
+                                                maxLength={4}
+                                                className="input w-full pl-12"
+                                                placeholder="Ej: 1234"
+                                                value={formData.soporte}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/\D/g, '');
+                                                    if (val.length <= 4) {
+                                                        setFormData({ ...formData, soporte: val });
+                                                    }
+                                                }}
+                                            />
+                                        </div>
                                     </div>
-                                </div>
+
+                                    <div className="p-3 bg-sky-500/10 border border-sky-500/20 rounded-xl space-y-2 animate-in fade-in duration-200">
+                                        <div className="flex items-center gap-2 text-sky-400 text-xs font-bold">
+                                            <Sparkles size={16} />
+                                            <span>Modelo de OP Outdoor activo</span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-400 leading-relaxed">
+                                            {isEditing 
+                                                ? 'Al guardar con categoría Outdoor se verificarán y cargarán automáticamente las tareas de la plantilla que aún no hayan sido creadas:'
+                                                : 'Al guardar esta orden se cargarán automáticamente las siguientes 4 tareas pendientes:'}
+                                        </p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                                            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900/60 rounded-lg border border-white/5 text-[11px]">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
+                                                <span className="text-slate-400">Lonas + Vinilos:</span>
+                                                <span className="text-white font-medium truncate">Muestra de impresión</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900/60 rounded-lg border border-white/5 text-[11px]">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
+                                                <span className="text-slate-400">Lonas + Vinilos:</span>
+                                                <span className="text-white font-medium truncate">Impresión de lona</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900/60 rounded-lg border border-white/5 text-[11px]">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
+                                                <span className="text-slate-400">Lonas + Vinilos:</span>
+                                                <span className="text-white font-medium truncate">Soldado de lona</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900/60 rounded-lg border border-white/5 text-[11px]">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></span>
+                                                <span className="text-slate-400">Instalaciones:</span>
+                                                <span className="text-white font-medium truncate">Instalación de lona</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
                             )}
 
                             <div className="space-y-2">
