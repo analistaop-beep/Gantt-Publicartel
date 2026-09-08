@@ -4,6 +4,8 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { type SectorTaskStatus, SECTOR_TASK_STATUSES, getTaskStatus, getStatusBadgeStyle } from '../utils/taskStatusUtils';
 
+import { useStore } from '../store/useStore';
+
 interface PendingTasksTableViewProps {
     tasks: any[];
     sectorName: string;
@@ -19,8 +21,27 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
     onStatusChange,
     onNewPendingClick
 }) => {
+    const { productionOrders } = useStore();
     const [search, setSearch] = useState('');
     const [sort, setSort] = useState<{ col: string; dir: 'asc' | 'desc' }>({ col: 'date', dir: 'asc' });
+
+    const opAddressMap = useMemo(() => {
+        const map = new Map<string, string>();
+        (productionOrders || []).forEach(o => {
+            if (o.opNumber && o.address) {
+                map.set(String(o.opNumber).trim().toLowerCase(), o.address);
+            }
+        });
+        return map;
+    }, [productionOrders]);
+
+    const getTaskAddress = (task: any): string => {
+        if (task.opNumber) {
+            const opAddr = opAddressMap.get(String(task.opNumber).trim().toLowerCase());
+            if (opAddr) return opAddr;
+        }
+        return task.address || '';
+    };
 
     const filteredTasks = useMemo(() => {
         const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -31,6 +52,7 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
                 normalize(t.client || '').includes(q) ||
                 normalize(t.opNumber?.toString() || '').includes(q) ||
                 normalize(t.name || '').includes(q) ||
+                normalize(getTaskAddress(t)).includes(q) ||
                 normalize(getTaskStatus(t)).includes(q)
             );
         }
@@ -45,6 +67,9 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
             } else if (sort.col === 'client') {
                 valA = (a.client || '').toLowerCase();
                 valB = (b.client || '').toLowerCase();
+            } else if (sort.col === 'address') {
+                valA = (getTaskAddress(a) || '').toLowerCase();
+                valB = (getTaskAddress(b) || '').toLowerCase();
             } else if (sort.col === 'name') {
                 valA = (a.name || '').toLowerCase();
                 valB = (b.name || '').toLowerCase();
@@ -60,7 +85,7 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
             return 0;
         });
         return list;
-    }, [tasks, search, sort]);
+    }, [tasks, search, sort, opAddressMap]);
 
     return (
         <div className="flex-1 flex flex-col min-h-0 bg-[#0b1120] rounded-xl border border-white/10 overflow-hidden shadow-2xl">
@@ -116,11 +141,12 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
                         <thead className="bg-slate-900/90 sticky top-0 z-10 border-b border-white/10 backdrop-blur-sm">
                             <tr>
                                 {[
-                                    { label: 'N° OP', col: 'opNumber', width: 'w-28' },
-                                    { label: 'Cliente', col: 'client', width: 'w-56' },
+                                    { label: 'N° OP', col: 'opNumber', width: 'w-24' },
+                                    { label: 'Cliente', col: 'client', width: 'w-48' },
+                                    { label: 'Dirección', col: 'address', width: 'w-56' },
                                     { label: 'Descripción de tarea', col: 'name', width: 'w-auto' },
-                                    { label: 'Estado', col: 'status', width: 'w-44' },
-                                    { label: 'Fecha de ejecución', col: 'date', width: 'w-52' }
+                                    { label: 'Estado', col: 'status', width: 'w-40' },
+                                    { label: 'Fecha de ejecución', col: 'date', width: 'w-48' }
                                 ].map(({ label, col, width }) => (
                                     <th
                                         key={col}
@@ -149,6 +175,7 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
                                 const hasPendingDate = !task.date || task.date === '';
                                 const currentStatus = getTaskStatus(task);
                                 const style = getStatusBadgeStyle(currentStatus);
+                                const taskAddress = getTaskAddress(task);
                                 return (
                                     <tr
                                         key={task.id}
@@ -163,6 +190,11 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
                                         <td className="px-3 py-1.5 align-middle">
                                             <span className="font-semibold text-white/90 truncate block text-xs" title={task.client}>
                                                 {task.client || <span className="text-slate-600 italic">Sin cliente</span>}
+                                            </span>
+                                        </td>
+                                        <td className="px-3 py-1.5 align-middle">
+                                            <span className="text-slate-300 truncate block text-xs" title={taskAddress}>
+                                                {taskAddress || <span className="text-slate-600 italic">—</span>}
                                             </span>
                                         </td>
                                         <td className="px-3 py-1.5 align-middle">

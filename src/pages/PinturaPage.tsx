@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { sileo } from 'sileo';
-import { Plus, Minus, Calendar, ChevronLeft, ChevronRight, Trash2, LayoutGrid, Users, Truck, Bell, ArrowDownToLine, Copy, Search, Save, Loader2, Image, ExternalLink, X, ClipboardList, ChevronUp, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { Plus, Minus, Calendar, ChevronLeft, ChevronRight, Trash2, LayoutGrid, Users, Truck, Bell, ArrowDownToLine, Copy, Search, Save, Loader2, Image, ExternalLink, X, ClipboardList, CheckCircle2 } from 'lucide-react';
 import {
     format,
     addDays,
@@ -17,6 +17,7 @@ import { exportToExcel, exportTaskToPDF } from '../utils/reportUtils';
 import { FileDown, FileText, Printer } from 'lucide-react';
 
 import { type SectorTaskStatus, SECTOR_TASK_STATUSES, getTaskStatus, getStatusBadgeStyle } from '../utils/taskStatusUtils';
+import { PendingTasksTableView } from '../components/PendingTasksTableView';
 export type PinturaTaskStatus = SectorTaskStatus;
 export const PINTURA_TASK_STATUSES = SECTOR_TASK_STATUSES;
 export { getTaskStatus, getStatusBadgeStyle };
@@ -100,8 +101,6 @@ export const PinturaPage: React.FC<PinturaPageProps> = ({ onNavigateToOrder }) =
     const [selectedTaskDetail, setSelectedTaskDetail] = useState<any | null>(null);
     const [taskDetailPhoto, setTaskDetailPhoto] = useState<string | null>(null);
     const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-    const [listSearch, setListSearch] = useState('');
-    const [listSort, setListSort] = useState<{ col: string; dir: 'asc' | 'desc' }>({ col: 'date', dir: 'asc' });
 
     // Task completion confirmation modal state
     const [taskToComplete, setTaskToComplete] = useState<any | null>(null);
@@ -192,45 +191,7 @@ export const PinturaPage: React.FC<PinturaPageProps> = ({ onNavigateToOrder }) =
         return tasks.filter(t => t.date && t.date !== '');
     }, [tasks]);
 
-    // All pintura tasks for the list view (sorted, filtered, excluding completed/Terminada tasks)
-    const allPinturaTasksForList = useMemo(() => {
-        const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        let list = tasks.filter(t => !t.completed && t.status !== 'Terminada');
-        if (listSearch.trim()) {
-            const search = normalize(listSearch);
-            list = list.filter(t =>
-                normalize(t.client || '').includes(search) ||
-                normalize(t.opNumber?.toString() || '').includes(search) ||
-                normalize(t.name || '').includes(search) ||
-                normalize(getTaskStatus(t)).includes(search)
-            );
-        }
-        list.sort((a, b) => {
-            let valA: any, valB: any;
-            if (listSort.col === 'date') {
-                valA = a.date || 'zzzzz'; // no-date tasks go to end
-                valB = b.date || 'zzzzz';
-            } else if (listSort.col === 'opNumber') {
-                valA = a.opNumber || '';
-                valB = b.opNumber || '';
-            } else if (listSort.col === 'client') {
-                valA = (a.client || '').toLowerCase();
-                valB = (b.client || '').toLowerCase();
-            } else if (listSort.col === 'name') {
-                valA = (a.name || '').toLowerCase();
-                valB = (b.name || '').toLowerCase();
-            } else if (listSort.col === 'status') {
-                valA = getTaskStatus(a);
-                valB = getTaskStatus(b);
-            } else {
-                valA = ''; valB = '';
-            }
-            if (valA < valB) return listSort.dir === 'asc' ? -1 : 1;
-            if (valA > valB) return listSort.dir === 'asc' ? 1 : -1;
-            return 0;
-        });
-        return list;
-    }, [tasks, listSearch, listSort]);
+
 
     // Watch for store errors
     useEffect(() => {
@@ -1239,138 +1200,36 @@ export const PinturaPage: React.FC<PinturaPageProps> = ({ onNavigateToOrder }) =
 
             {/* ── Lista de Tareas Pendientes ─────────────────────────────── */}
             {activeView === 'lista' && (
-                <div className="flex-1 min-h-0 flex flex-col overflow-hidden mx-0 sm:mx-2 lg:mx-10 mb-0 sm:mb-2 rounded-none sm:rounded-[1rem] bg-[#0f172a] border border-white/5 shadow-2xl animate-in fade-in duration-300">
-                    {/* Search bar */}
-                    <div className="flex items-center gap-3 p-4 border-b border-white/10 bg-[#1e293b]/80 sticky top-0 z-10">
-                        <div className="relative flex-1">
-                            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                            <input
-                                type="text"
-                                value={listSearch}
-                                onChange={e => setListSearch(e.target.value)}
-                                placeholder="Buscar por OP, cliente o descripción..."
-                                className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                            />
-                        </div>
-                        <div className="text-[11px] font-bold text-slate-500 whitespace-nowrap">
-                            {allPinturaTasksForList.length} tarea{allPinturaTasksForList.length !== 1 ? 's' : ''}
-                        </div>
-                    </div>
-
-                    {/* Table */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar">
-                        {allPinturaTasksForList.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-600 py-24">
-                                <ClipboardList size={48} className="opacity-30" />
-                                <p className="text-sm font-bold uppercase tracking-widest opacity-50">Sin tareas registradas</p>
-                            </div>
-                        ) : (
-                            <table className="w-full text-xs border-collapse table-fixed">
-                                <colgroup>
-                                    <col className="w-24" />
-                                    <col className="w-56" />
-                                    <col className="w-auto" />
-                                    <col className="w-40" />
-                                    <col className="w-48" />
-                                </colgroup>
-                                <thead className="sticky top-0 z-10 bg-[#1e293b] border-b border-white/10">
-                                    <tr>
-                                        {[
-                                            { col: 'opNumber', label: 'N° OP' },
-                                            { col: 'client', label: 'Cliente' },
-                                            { col: 'name', label: 'Descripción de tarea' },
-                                            { col: 'status', label: 'Estado' },
-                                            { col: 'date', label: 'Fecha de ejecución' },
-                                        ].map(({ col, label }) => (
-                                            <th
-                                                key={col}
-                                                onClick={() => setListSort(prev => ({
-                                                    col,
-                                                    dir: prev.col === col && prev.dir === 'asc' ? 'desc' : 'asc'
-                                                }))}
-                                                className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-slate-400 cursor-pointer select-none hover:text-blue-400 transition-colors group"
-                                            >
-                                                <span className="flex items-center gap-1.5">
-                                                    {label}
-                                                    <span className="opacity-40 group-hover:opacity-100 transition-opacity">
-                                                        {listSort.col === col
-                                                            ? listSort.dir === 'asc'
-                                                                ? <ChevronUp size={12} />
-                                                                : <ChevronDown size={12} />
-                                                            : <ChevronUp size={12} className="opacity-30" />}
-                                                    </span>
-                                                </span>
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {allPinturaTasksForList.map((task, idx) => {
-                                        const hasPendingDate = !task.date || task.date === '';
-                                        const currentStatus = getTaskStatus(task);
-                                        const style = getStatusBadgeStyle(currentStatus);
-                                        return (
-                                            <tr
-                                                key={task.id}
-                                                onClick={() => {
-                                                    setSelectedTaskDetail(task);
-                                                    setTaskDetailPhoto(task.photo || null);
-                                                }}
-                                                className={`cursor-pointer transition-colors duration-150 hover:bg-slate-800/80 ${idx % 2 === 0 ? 'bg-white/[0.01]' : ''}`}
-                                            >
-                                                <td className="px-3 py-1.5 align-middle">
-                                                    <span className="font-mono font-bold text-blue-400 text-[11px] bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 inline-block">
-                                                        #{task.opNumber || '—'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-3 py-1.5 align-middle">
-                                                    <span className="font-semibold text-white/90 truncate block text-xs" title={task.client}>
-                                                        {task.client || <span className="text-slate-600 italic">Sin cliente</span>}
-                                                    </span>
-                                                </td>
-                                                <td className="px-3 py-1.5 align-middle">
-                                                    <span className="text-slate-300 truncate block text-xs" title={task.name}>
-                                                        {task.name || <span className="text-slate-600 italic">Sin descripción</span>}
-                                                    </span>
-                                                </td>
-                                                <td className="px-3 py-1.5 align-middle" onClick={(e) => e.stopPropagation()}>
-                                                    <div className="relative inline-flex items-center">
-                                                        <select
-                                                            value={currentStatus}
-                                                            onChange={(e) => handleStatusChange(task, e.target.value as PinturaTaskStatus)}
-                                                            className={`text-[11px] font-bold pl-2.5 pr-6 py-0.5 rounded-full border cursor-pointer appearance-none focus:outline-none transition-all ${style.badge} bg-[#0f172a] hover:brightness-125`}
-                                                        >
-                                                            {PINTURA_TASK_STATUSES.map(st => (
-                                                                <option key={st} value={st} className="bg-slate-900 text-white font-semibold">
-                                                                    {st}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                        <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
-                                                            <span className={`w-1.5 h-1.5 rounded-full ${style.dot} ${style.pulse ? 'animate-pulse' : ''}`} />
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-3 py-1.5 align-middle">
-                                                    {hasPendingDate ? (
-                                                        <span className="inline-flex items-center gap-1.5 bg-amber-500/10 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/20">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                                                            Pendiente de fecha
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-slate-300 font-medium text-xs whitespace-nowrap">
-                                                            {format(new Date(task.date + 'T00:00:00'), "dd 'de' MMMM yyyy", { locale: es })}
-                                                        </span>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
-                </div>
+                <PendingTasksTableView
+                    tasks={tasks}
+                    sectorName="Pintura"
+                    onSelectTask={(task) => {
+                        setSelectedTaskDetail(task);
+                        setTaskDetailPhoto(task.photo || null);
+                    }}
+                    onStatusChange={handleStatusChange}
+                    onNewPendingClick={() => {
+                        setEditingTask(null);
+                        setSelectedContext(null);
+                        setFormData({
+                            opNumber: '',
+                            name: '',
+                            client: '',
+                            address: 'Montevideo',
+                            totalHours: 1,
+                            estimatedHours: 1,
+                            duration: 1,
+                            vehicles: [],
+                            members: [],
+                            additionalJobs: [],
+                            date: '',
+                            teamId: teams[0]?.id || null,
+                            section: 'Pintura',
+                            blockedBy: null
+                        });
+                        setIsTaskModalOpen(true);
+                    }}
+                />
             )}
 
             {/* Modals */}
@@ -2331,8 +2190,6 @@ export const PinturaPage: React.FC<PinturaPageProps> = ({ onNavigateToOrder }) =
                                 onClick={() => {
                                     if (onNavigateToOrder) {
                                         onNavigateToOrder(selectedTaskDetail.opNumber);
-                                        setSelectedTaskDetail(null);
-                                        setTaskDetailPhoto(null);
                                     } else {
                                         sileo.error({ title: 'Navegación no disponible' });
                                     }

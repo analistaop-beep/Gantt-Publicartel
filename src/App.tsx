@@ -102,10 +102,15 @@ function App() {
 
 
 
+  const [viewingOpFromSector, setViewingOpFromSector] = useState<string | null>(null);
+
   const renderContent = () => {
     const navigateToOrder = (opNumber: string) => {
-      setActiveTab('orders');
-      setPendingOpenOrderNumber(opNumber);
+      if (activeTab !== 'orders') {
+        setViewingOpFromSector(opNumber);
+      } else {
+        setPendingOpenOrderNumber(opNumber);
+      }
     };
 
     const renderActivePage = () => {
@@ -217,6 +222,15 @@ function App() {
         <Bell size={12} className={`opacity-50 ${unreadCount > 0 && !isRightSidebarOpen ? 'text-red-400 animate-[wiggle_1s_ease-in-out_infinite] opacity-100' : 'text-slate-500'}`} />
       </button>
     </div>
+      )}
+      {viewingOpFromSector && (
+        <Suspense fallback={null}>
+          <OrdersPage
+            openOrderNumber={viewingOpFromSector}
+            isModalOnly={true}
+            onCloseViewingOrder={() => setViewingOpFromSector(null)}
+          />
+        </Suspense>
       )}
     </>
   );

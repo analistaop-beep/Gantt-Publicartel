@@ -2,6 +2,7 @@ import React from 'react';
 import { X, ExternalLink, Image, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { type SectorTaskStatus, SECTOR_TASK_STATUSES, getTaskStatus, getStatusBadgeStyle } from '../utils/taskStatusUtils';
+import { useStore } from '../store/useStore';
 
 interface TaskDetailModalProps {
     task: any | null;
@@ -24,7 +25,13 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     onDeletePhoto,
     onNavigateToOrder
 }) => {
+    const { productionOrders } = useStore();
     if (!task) return null;
+
+    const opAddr = task.opNumber
+        ? (productionOrders || []).find(o => String(o.opNumber).trim().toLowerCase() === String(task.opNumber).trim().toLowerCase())?.address
+        : undefined;
+    const taskAddress = opAddr || task.address || '—';
 
     const currentStatus = getTaskStatus(task);
     const style = getStatusBadgeStyle(currentStatus);
@@ -101,7 +108,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                         </div>
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Dirección</p>
-                            <span className="text-slate-200 text-sm truncate block">{task.address || '—'}</span>
+                            <span className="text-slate-200 text-sm truncate block" title={taskAddress}>{taskAddress}</span>
                         </div>
                     </div>
 
@@ -171,7 +178,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                         onClick={() => {
                             if (onNavigateToOrder && task.opNumber) {
                                 onNavigateToOrder(task.opNumber);
-                                onClose();
                             }
                         }}
                         disabled={!onNavigateToOrder || !task.opNumber}

@@ -112,9 +112,18 @@ interface OrdersPageProps {
     openOrderNumber?: string | null;
     onOpenOrderIdConsumed?: () => void;
     bothSidebarsHidden?: boolean;
+    isModalOnly?: boolean;
+    onCloseViewingOrder?: () => void;
 }
 
-export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNumber, onOpenOrderIdConsumed, bothSidebarsHidden = false }) => {
+export const OrdersPage: React.FC<OrdersPageProps> = ({
+    openOrderId,
+    openOrderNumber,
+    onOpenOrderIdConsumed,
+    bothSidebarsHidden = false,
+    isModalOnly = false,
+    onCloseViewingOrder
+}) => {
     const { 
         productionOrders, 
         addProductionOrder, 
@@ -147,7 +156,13 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [exportDateFrom, setExportDateFrom] = useState('');
 
-    // Abrir OP automáticamente al navegar desde una notificación
+    const handleCloseViewingOrder = () => {
+        setViewingOrder(null);
+        setViewingOrderIndex(null);
+        onCloseViewingOrder?.();
+    };
+
+    // Abrir OP automáticamente al navegar desde una notificación o desde otra vista
     React.useEffect(() => {
         if (!(openOrderId || openOrderNumber) || productionOrders.length === 0) return;
         
@@ -159,8 +174,11 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
         if (target) {
             setViewingOrder(target);
             onOpenOrderIdConsumed?.();
+        } else if (isModalOnly) {
+            sileo.error({ title: `No se encontró la OP #${openOrderNumber}` });
+            handleCloseViewingOrder();
         }
-    }, [openOrderId, openOrderNumber, productionOrders]);
+    }, [openOrderId, openOrderNumber, productionOrders, isModalOnly]);
     const [isTaggingOrder, setIsTaggingOrder] = useState<any | null>(null);
     const [taggingSelection, setTaggingSelection] = useState<string[]>([]);
     const categories = ['Proyectos', 'Outdoor', 'Digital', 'Mantenimiento', 'Petroleras', 'Reclamos', 'Otros'];
@@ -227,8 +245,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                 } else if (lightboxIndex !== null) {
                     closeLightbox();
                 } else if (viewingOrder) {
-                    setViewingOrder(null);
-                    setViewingOrderIndex(null);
+                    handleCloseViewingOrder();
                 } else if (isModalOpen) {
                     closeModal();
                 }
@@ -950,8 +967,10 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
     };
 
     return (
-        <div className="h-full flex flex-col">
-            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-4 py-3 md:px-6 md:py-4 border-b border-white/5 sticky-header-custom">
+        <div className={isModalOnly ? 'contents' : 'h-full flex flex-col'}>
+            {!isModalOnly && (
+                <>
+                    <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-4 py-3 md:px-6 md:py-4 border-b border-white/5 sticky-header-custom">
                 <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3 xl:gap-4">
                     <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 lg:gap-6 flex-1 w-full">
                         {bothSidebarsHidden && (
@@ -1276,9 +1295,11 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                     </div>
                 </div>
             </div>
+            </>
+            )}
 
             {/* Modal */}
-            {isModalOpen && (
+            {!isModalOnly && isModalOpen && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-[#1e293b] p-4 md:p-8 rounded-sm w-full max-w-[95vw] md:max-w-[80vw] shadow-2xl border border-white/10 max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <div className="flex justify-between items-center mb-8">
@@ -1740,7 +1761,12 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
 
             {/* View Details Modal */}
             {viewingOrder && (
-                <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-2 sm:p-4">
+                <div
+                    className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md flex items-center justify-center z-[300] p-2 sm:p-4"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) handleCloseViewingOrder();
+                    }}
+                >
                     <div className="bg-white dark:bg-[#0f172a] w-full max-w-[98vw] 2xl:max-w-[1800px] shadow-2xl border border-slate-200 dark:border-white/10 rounded-2xl h-full max-h-[96vh] flex flex-col overflow-hidden relative">
 
                         {/* Header */}
@@ -1790,7 +1816,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                     </div>
                                 )}
                                 <button
-                                    onClick={() => setViewingOrder(null)}
+                                    onClick={handleCloseViewingOrder}
                                     className="p-2 hover:bg-slate-200 dark:hover:bg-white/8 transition-colors text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl ml-2"
                                 >
                                     <X size={22} />
@@ -2302,7 +2328,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                                 )}
                             </button>
                             <button
-                                onClick={() => setViewingOrder(null)}
+                                onClick={handleCloseViewingOrder}
                                 className="px-7 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-white font-bold transition-all border border-slate-200 dark:border-white/10 rounded-xl text-sm"
                             >
                                 CERRAR
@@ -2314,7 +2340,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
 
             {/* Excel Viewer Modal (Microsoft Office Web Embed) */}
             {excelViewerFile && (
-                <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-[110] p-2 sm:p-4">
+                <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-[350] p-2 sm:p-4">
                     <div className="bg-[#0f172a] w-full max-w-[98vw] h-[95vh] rounded-2xl border border-emerald-500/20 shadow-2xl shadow-emerald-500/10 flex flex-col overflow-hidden">
                         {/* Header */}
                         <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-white/8 bg-emerald-950/30 flex-shrink-0 gap-3">
@@ -2383,7 +2409,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
                 const current = lightboxImages[lightboxIndex] ?? lightboxImages[0];
                 return (
                     <div
-                        className="fixed inset-0 bg-black/97 backdrop-blur-xl flex items-center justify-center z-[100] select-none"
+                        className="fixed inset-0 bg-black/97 backdrop-blur-xl flex items-center justify-center z-[350] select-none"
                         onClick={closeLightbox}
                     >
                         {/* Close */}
@@ -2474,7 +2500,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
 
             {/* Task Creation Modal */}
             {isTaskModalOpen && (
-                <div className="fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center z-[60] p-4">
+                <div className="fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center z-[350] p-4">
                     <div className="bg-[#0f172a] w-full max-w-4xl shadow-2xl border border-white/10 rounded-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-3 border-b border-white/10 flex-shrink-0 bg-[#0f172a]/80 backdrop-blur-sm">
@@ -2776,7 +2802,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({ openOrderId, openOrderNu
             )}
 
             {/* Modal de Etiquetado */}
-            {isTaggingOrder && (
+            {!isModalOnly && isTaggingOrder && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-[#1e293b] rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl border border-white/10 flex flex-col max-h-[80vh]">
                         <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
