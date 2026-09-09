@@ -93,7 +93,7 @@ export const LonasVinilosPage: React.FC<LonasVinilosPageProps> = ({ onNavigateTo
     const [manualHours, setManualHours] = useState('');
 
     // View mode: 'gantt' = cronograma, 'lista' = pending tasks table
-    const [activeView, setActiveView] = useState<'gantt' | 'lista'>('gantt');
+    const [activeView, setActiveView] = useState<'gantt' | 'lista'>('lista');
 
     // Task detail modal state
     const [selectedTaskDetail, setSelectedTaskDetail] = useState<any | null>(null);
@@ -833,15 +833,6 @@ export const LonasVinilosPage: React.FC<LonasVinilosPageProps> = ({ onNavigateTo
             {/* View Tabs */}
             <div className="flex items-center gap-1 px-4 lg:px-10 pb-1">
                 <button
-                    onClick={() => setActiveView('gantt')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-bold transition-all border-b-2 ${activeView === 'gantt'
-                        ? 'text-blue-400 border-blue-500 bg-blue-500/10'
-                        : 'text-slate-500 border-transparent hover:text-slate-300 hover:bg-white/5'}`}
-                >
-                    <Calendar size={15} />
-                    Cronograma
-                </button>
-                <button
                     onClick={() => setActiveView('lista')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-bold transition-all border-b-2 ${activeView === 'lista'
                         ? 'text-blue-400 border-blue-500 bg-blue-500/10'
@@ -854,6 +845,15 @@ export const LonasVinilosPage: React.FC<LonasVinilosPageProps> = ({ onNavigateTo
                             {tasks.filter(t => (!t.date || t.date === '') && !t.completed && t.status !== 'Terminada').length}
                         </span>
                     )}
+                </button>
+                <button
+                    onClick={() => setActiveView('gantt')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-bold transition-all border-b-2 ${activeView === 'gantt'
+                        ? 'text-blue-400 border-blue-500 bg-blue-500/10'
+                        : 'text-slate-500 border-transparent hover:text-slate-300 hover:bg-white/5'}`}
+                >
+                    <Calendar size={15} />
+                    Cronograma
                 </button>
             </div>
 
