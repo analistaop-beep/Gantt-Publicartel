@@ -5,6 +5,7 @@ import { sileo } from 'sileo';
 import { convertToWebP, getFileUrl, getFileName, isImageFile, isExcelFile, printFile, type OrderAttachment } from '../utils/fileUtils';
 import { printOrderSummaryPDF, printHoursAnalysisPDF } from '../utils/reportUtils';
 import * as XLSX from 'xlsx';
+import { OrderTasksPanel, sectorToTaskType, sectorToSection } from '../components/OrderTasksPanel';
 
 const MultiSelect = ({
     options,
@@ -155,6 +156,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
     const [isPrintingAnalysis, setIsPrintingAnalysis] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [exportDateFrom, setExportDateFrom] = useState('');
+    const [expandedOrderIds, setExpandedOrderIds] = useState<Set<string>>(new Set());
 
     const handleCloseViewingOrder = () => {
         setViewingOrder(null);
@@ -1149,8 +1151,12 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredOrders.map((order) => (
-                                        <tr key={order.id} className={`hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-all duration-300 group ${order.status === 'Terminada' ? 'opacity-40 grayscale-[20%] hover:opacity-100' : ''}`}>
+                                    filteredOrders.map((order) => {
+                                        const isExpanded = expandedOrderIds.has(order.id);
+                                        const orderLinkedTasks = allTasks.filter(t => t.opNumber?.toString().trim() === order.opNumber?.toString().trim());
+                                        return (
+                                        <React.Fragment key={order.id}>
+                                        <tr className={`hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-all duration-300 group ${order.status === 'Terminada' ? 'opacity-40 grayscale-[20%] hover:opacity-100' : ''}`}>
                                             <td className="px-4 py-2">
                                                 <span className="font-mono font-bold text-blue-400 text-xs">{order.opNumber}</span>
                                             </td>
@@ -1255,40 +1261,120 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                 </div>
                                             </td>
                                             <td className="px-4 py-2 text-right">
-                                                <div className="flex gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                <div className="flex gap-1 justify-end items-center">
+                                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                        <button
+                                                            onClick={() => {
+                                                                setIsTaggingOrder(order);
+                                                                // Si nunca fue configurado (null), pre-seleccionar todos los usuarios por defecto
+                                                                setTaggingSelection(order.followers ?? profiles.map((p: any) => p.email));
+                                                            }}
+                                                            className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-blue-400 transition-all hover:scale-110"
+                                                            title="Etiquetar usuarios"
+                                                        >
+                                                            <User size={13} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => openModal(order)}
+                                                            className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-all hover:scale-110"
+                                                            title="Editar orden"
+                                                        >
+                                                            <Edit2 size={13} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                if (confirm(`¿Eliminar la orden ${order.opNumber}?`)) {
+                                                                    deleteProductionOrder(order.id);
+                                                                }
+                                                            }}
+                                                            className="p-1 hover:bg-red-500/10 rounded text-slate-400 hover:text-red-400 transition-all hover:scale-110"
+                                                            title="Eliminar orden"
+                                                        >
+                                                            <Trash2 size={13} />
+                                                        </button>
+                                                    </div>
+                                                    {/* Expand/collapse tasks button */}
                                                     <button
-                                                        onClick={() => {
-                                                            setIsTaggingOrder(order);
-                                                            // Si nunca fue configurado (null), pre-seleccionar todos los usuarios por defecto
-                                                            setTaggingSelection(order.followers ?? profiles.map((p: any) => p.email));
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setExpandedOrderIds(prev => {
+                                                                const next = new Set(prev);
+                                                                if (next.has(order.id)) {
+                                                                    next.delete(order.id);
+                                                                } else {
+                                                                    next.add(order.id);
+                                                                }
+                                                                return next;
+                                                            });
                                                         }}
-                                                        className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-blue-400 transition-all hover:scale-110"
-                                                        title="Etiquetar usuarios"
+                                                        className={`relative p-1.5 rounded-lg border transition-all duration-200 ${
+                                                            isExpanded
+                                                                ? 'bg-blue-50 dark:bg-blue-500/15 border-blue-200 dark:border-blue-500/30 text-blue-600 dark:text-blue-400'
+                                                                : 'bg-transparent border-transparent text-slate-400 dark:text-slate-500 hover:bg-white/10 hover:text-slate-200'
+                                                        }`}
+                                                        title={isExpanded ? 'Ocultar tareas' : 'Ver / agregar tareas'}
                                                     >
-                                                        <User size={13} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => openModal(order)}
-                                                        className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-all hover:scale-110"
-                                                        title="Editar orden"
-                                                    >
-                                                        <Edit2 size={13} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            if (confirm(`¿Eliminar la orden ${order.opNumber}?`)) {
-                                                                deleteProductionOrder(order.id);
-                                                            }
-                                                        }}
-                                                        className="p-1 hover:bg-red-500/10 rounded text-slate-400 hover:text-red-400 transition-all hover:scale-110"
-                                                        title="Eliminar orden"
-                                                    >
-                                                        <Trash2 size={13} />
+                                                        <ChevronDown size={14} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                                                        {!isExpanded && orderLinkedTasks.length > 0 && (
+                                                            <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] flex items-center justify-center bg-blue-600 text-white text-[8px] font-black rounded-full px-0.5">
+                                                                {orderLinkedTasks.length}
+                                                            </span>
+                                                        )}
                                                     </button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))
+                                        {/* Expandable tasks panel */}
+                                        {isExpanded && (
+                                            <tr>
+                                                <td colSpan={8} className="p-0">
+                                                    <OrderTasksPanel
+                                                        order={order}
+                                                        linkedTasks={orderLinkedTasks}
+                                                        onAddTask={async ({ name, sector, date }) => {
+                                                            try {
+                                                                const taskType = sectorToTaskType(sector);
+                                                                const section = sectorToSection(sector);
+                                                                await addTask({
+                                                                    opNumber: order.opNumber || '',
+                                                                    name,
+                                                                    client: order.client || '',
+                                                                    address: order.address || '',
+                                                                    date: date || '',
+                                                                    totalHours: 8,
+                                                                    duration: 8,
+                                                                    teamId: null,
+                                                                    type: taskType,
+                                                                    section,
+                                                                    status: 'Para realizar',
+                                                                });
+                                                                sileo.success({ title: 'Tarea creada', description: `"${name}" agregada a ${sector}` });
+                                                            } catch (err: any) {
+                                                                sileo.error({ title: 'Error al crear tarea', description: err.message });
+                                                            }
+                                                        }}
+                                                        onUpdateTask={async (task) => {
+                                                            try {
+                                                                await updateTask(task);
+                                                            } catch (err: any) {
+                                                                sileo.error({ title: 'Error al actualizar', description: err.message });
+                                                            }
+                                                        }}
+                                                        onDeleteTask={async (taskId) => {
+                                                            try {
+                                                                await deleteTask(taskId);
+                                                                sileo.success({ title: 'Tarea eliminada' });
+                                                            } catch (err: any) {
+                                                                sileo.error({ title: 'Error al eliminar', description: err.message });
+                                                            }
+                                                        }}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        )}
+                                        </React.Fragment>
+                                    );
+                                    })
                                 )}
                             </tbody>
                         </table>

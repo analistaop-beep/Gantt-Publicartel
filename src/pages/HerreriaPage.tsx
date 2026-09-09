@@ -836,13 +836,13 @@ export const HerreriaPage: React.FC<HerreriaPageProps> = ({ onNavigateToOrder })
                 <button
                     onClick={() => setActiveView('lista')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-bold transition-all border-b-2 ${activeView === 'lista'
-                        ? 'text-blue-400 border-blue-500 bg-blue-500/10'
-                        : 'text-slate-500 border-transparent hover:text-slate-300 hover:bg-white/5'}`}
+                        ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-500 bg-blue-50 dark:bg-blue-500/10'
+                        : 'text-slate-500 border-transparent hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5'}`}
                 >
                     <ClipboardList size={15} />
                     Tareas Pendientes
                     {tasks.filter(t => (!t.date || t.date === '') && !t.completed && t.status !== 'Terminada').length > 0 && (
-                        <span className="bg-amber-500/20 text-amber-400 text-[10px] font-black px-1.5 py-0.5 rounded-full border border-amber-500/30">
+                        <span className="bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-400 text-[10px] font-black px-1.5 py-0.5 rounded-full border border-amber-300 dark:border-amber-500/30">
                             {tasks.filter(t => (!t.date || t.date === '') && !t.completed && t.status !== 'Terminada').length}
                         </span>
                     )}
@@ -850,8 +850,8 @@ export const HerreriaPage: React.FC<HerreriaPageProps> = ({ onNavigateToOrder })
                 <button
                     onClick={() => setActiveView('gantt')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-bold transition-all border-b-2 ${activeView === 'gantt'
-                        ? 'text-blue-400 border-blue-500 bg-blue-500/10'
-                        : 'text-slate-500 border-transparent hover:text-slate-300 hover:bg-white/5'}`}
+                        ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-500 bg-blue-50 dark:bg-blue-500/10'
+                        : 'text-slate-500 border-transparent hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5'}`}
                 >
                     <Calendar size={15} />
                     Cronograma

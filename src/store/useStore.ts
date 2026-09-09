@@ -27,6 +27,7 @@ interface AppState {
     corporeasTasks: any[];
     lonasTasks: any[];
     pinturaTasks: any[];
+    subtasks: any[];
     reminders: any[];
     productionOrders: any[];
     profiles: Profile[];
@@ -119,6 +120,9 @@ interface AppState {
     }) => Promise<void>;
     updateTask: (task: any) => Promise<void>;
     deleteTask: (id: string) => Promise<void>;
+    addSubtask: (subtask: { taskId: string; name: string; status?: string; date?: string }) => Promise<void>;
+    updateSubtask: (subtask: { id: string; name?: string; status?: string; date?: string }) => Promise<void>;
+    deleteSubtask: (id: string) => Promise<void>;
     clearTasksRange: (startDate: string, endDate: string, type?: string) => Promise<void>;
     resetDatabase: () => Promise<void>;
     clearError: () => void;
@@ -225,6 +229,52 @@ function removePinturaTaskExtra(taskId: string) {
     } catch {}
 }
 
+const SUBTASKS_STORAGE_KEY = 'subtasks_data';
+
+function loadAllSubtasksLocal(): Record<string, any[]> {
+    try {
+        const raw = localStorage.getItem(SUBTASKS_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch {
+        return {};
+    }
+}
+
+function saveSubtaskToLocalStorage(subtask: any) {
+    try {
+        const all = loadAllSubtasksLocal();
+        const tid = subtask.task_id || subtask.taskId;
+        if (!tid) return;
+        const currentList = all[tid] || [];
+        all[tid] = [...currentList.filter((s: any) => s.id !== subtask.id), subtask];
+        localStorage.setItem(SUBTASKS_STORAGE_KEY, JSON.stringify(all));
+    } catch {}
+}
+
+function updateSubtaskInLocalStorage(subtask: any) {
+    try {
+        const all = loadAllSubtasksLocal();
+        for (const tid of Object.keys(all)) {
+            const idx = all[tid].findIndex((s: any) => s.id === subtask.id);
+            if (idx !== -1) {
+                all[tid][idx] = { ...all[tid][idx], ...subtask };
+                localStorage.setItem(SUBTASKS_STORAGE_KEY, JSON.stringify(all));
+                break;
+            }
+        }
+    } catch {}
+}
+
+function deleteSubtaskFromLocalStorage(id: string) {
+    try {
+        const all = loadAllSubtasksLocal();
+        for (const tid of Object.keys(all)) {
+            all[tid] = all[tid].filter((s: any) => s.id !== id);
+        }
+        localStorage.setItem(SUBTASKS_STORAGE_KEY, JSON.stringify(all));
+    } catch {}
+}
+
 async function applyOpTemplateTasks(opNumber: string, client: string, address?: string, category?: string) {
     const template = getOpTemplateByCategory(category);
     if (!template || !template.defaultTasks || template.defaultTasks.length === 0) return;
@@ -295,6 +345,7 @@ export const useStore = create<AppState>((set, get) => ({
     corporeasTasks: [],
     lonasTasks: [],
     pinturaTasks: [],
+    subtasks: [],
     reminders: [],
     productionOrders: [],
     profiles: [],
@@ -339,9 +390,10 @@ export const useStore = create<AppState>((set, get) => ({
                 supabase.from('notifications').select('*').order('createdAt', { ascending: false }).limit(50),
                 supabase.from('profiles').select('*'),
                 supabase.from('disa_tasks').select('*').order('created_at', { ascending: false }),
+                supabase.from('subtasks').select('*').order('created_at', { ascending: true }),
             ]);
 
-            const [membersRes, vehiclesRes, soportesRes, teamsRes, tasksRes, remindersRes, ordersRes, notificationsRes, profilesRes, disaRes] = results;
+            const [membersRes, vehiclesRes, soportesRes, teamsRes, tasksRes, remindersRes, ordersRes, notificationsRes, profilesRes, disaRes, subtasksRes] = results;
 
             const pinturaExtras = getPinturaTaskExtras();
             const mappedTasks = (tasksRes.data || []).map(task => {
@@ -386,6 +438,15 @@ export const useStore = create<AppState>((set, get) => ({
                     ...t,
                     files: typeof t.files === 'string' ? JSON.parse(t.files) : (t.files || [])
                 })) as TareaDisa[],
+                subtasks: (() => {
+                    if (subtasksRes && !subtasksRes.error && subtasksRes.data) {
+                        return subtasksRes.data;
+                    }
+                    const local = loadAllSubtasksLocal();
+                    return Object.entries(local).flatMap(([taskId, items]) =>
+                        (items as any[]).map(item => ({ ...item, task_id: taskId }))
+                    );
+                })(),
             });
         } catch (err: any) {
             set({ error: err.message, isLoading: false });
@@ -1048,6 +1109,65 @@ export const useStore = create<AppState>((set, get) => ({
         const { error } = await supabase.from('tasks').delete().eq('id', id);
         if (error) throw error;
         await get().fetchData();
+    },
+
+    addSubtask: async ({ taskId, name, status = 'Para realizar', date = '' }) => {
+        try {
+            const id = uuidv4();
+            const newSubtask = {
+                id,
+                task_id: taskId,
+                name,
+                status,
+                date: date || '',
+                created_at: new Date().toISOString()
+            };
+
+            // Optimistic update
+            set(state => ({ subtasks: [...state.subtasks, newSubtask] }));
+
+            // Save to Supabase
+            const { error } = await supabase.from('subtasks').insert([newSubtask]);
+            if (error) {
+                console.warn('Supabase subtasks insert notice:', error.message);
+            }
+            saveSubtaskToLocalStorage(newSubtask);
+        } catch (err: any) {
+            console.error('Error adding subtask:', err);
+        }
+    },
+
+    updateSubtask: async (subtask: any) => {
+        try {
+            set(state => ({
+                subtasks: state.subtasks.map(s => s.id === subtask.id ? { ...s, ...subtask } : s)
+            }));
+
+            const { id, created_at, ...updateData } = subtask;
+            const { error } = await supabase.from('subtasks').update(updateData).eq('id', id);
+            if (error) {
+                console.warn('Supabase subtasks update notice:', error.message);
+            }
+            updateSubtaskInLocalStorage(subtask);
+        } catch (err: any) {
+            console.error('Error updating subtask:', err);
+        }
+    },
+
+    deleteSubtask: async (id: string) => {
+        try {
+            set(state => ({
+                subtasks: state.subtasks.filter(s => s.id !== id)
+            }));
+
+            const { error } = await supabase.from('subtasks').delete().eq('id', id);
+            if (error) {
+                console.warn('Supabase subtasks delete notice:', error.message);
+            }
+            deleteSubtaskFromLocalStorage(id);
+        } catch (err: any) {
+            console.error('Error deleting subtask:', err);
+        }
     },
 
     clearTasksRange: async (startDate, endDate, type = 'instalacion') => {
