@@ -92,6 +92,7 @@ interface AppState {
     updateViewPreferences: (prefs: { instalacionesViewMode: 'default' | 'gantt' }) => void;
     sendEmailNotification: (notification: Notification) => Promise<void>;
     updateEmailPreference: (enabled: boolean) => Promise<void>;
+    sendTestEmail: (targetEmail?: string) => Promise<{ success: boolean; error?: string }>;
 
     // Teams
     addTeam: (team: { name: string }) => Promise<void>;
@@ -691,21 +692,16 @@ export const useStore = create<AppState>((set, get) => ({
                         mentionedUsers = [...lastComment.text.matchAll(mentionRegex)].map((m: RegExpMatchArray) => m[1]);
                     }
 
-                    // followers === null significa "nunca configurado" → notificar a todos por defecto
-                    // followers === [] significa "explícitamente vacío" → no notificar a nadie
-                    // followers === ['a@b.com', ...] → notificar solo a esos
-                    const followersNeverSet = order.followers == null;
+                    // Si la orden tiene seguidores específicos asignados, se notifica a esos.
+                    // Si no tiene seguidores (null o array vacío []), por defecto se notifica a todos los usuarios registrados.
+                    const hasSpecificFollowers = Array.isArray(order.followers) && order.followers.length > 0;
                     const allProfiles: Profile[] = get().profiles;
 
-                    let baseTargets: string[];
-                    if (followersNeverSet) {
-                        // Por defecto: todos los usuarios registrados
-                        baseTargets = allProfiles.map(p => p.email);
-                    } else {
-                        baseTargets = order.followers as string[];
-                    }
+                    const baseTargets: string[] = hasSpecificFollowers
+                        ? (order.followers as string[])
+                        : allProfiles.map(p => p.email).filter(Boolean);
 
-                    // Unir base + mencionados (sin duplicados)
+                    // Unir base + usuarios mencionados (sin duplicados)
                     const allTargets = Array.from(new Set([...baseTargets, ...mentionedUsers]));
 
                     if (allTargets.length > 0) {
@@ -943,16 +939,12 @@ export const useStore = create<AppState>((set, get) => ({
             }
 
             // Obtener la URL base de la app para enlaces y llamadas a la API
-            const baseAppUrl = import.meta.env.VITE_APP_URL || (window.location.origin.startsWith('http') ? window.location.origin : '');
-            
-            if (!baseAppUrl) {
-                console.warn('VITE_APP_URL no configurado, omitiendo envío de correo.');
-                return;
-            }
+            const baseAppUrl = import.meta.env.VITE_APP_URL || (typeof window !== 'undefined' && window.location.origin.startsWith('http') ? window.location.origin : '');
+            const apiUrl = baseAppUrl ? `${baseAppUrl}/api/send-email` : '/api/send-email';
 
-            const htmlContent = generateNotificationHtml(notification, baseAppUrl);
+            const htmlContent = generateNotificationHtml(notification, baseAppUrl || window.location.origin);
 
-            const response = await fetch(`${baseAppUrl}/api/send-email`, {
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -974,6 +966,59 @@ export const useStore = create<AppState>((set, get) => ({
             }
         } catch (error) {
             console.error('Error en sendEmailNotification:', error);
+        }
+    },
+
+    sendTestEmail: async (targetEmail?: string) => {
+        try {
+            const token = get().session?.access_token;
+            if (!token) {
+                return { success: false, error: 'No hay una sesión activa de usuario' };
+            }
+
+            const recipient = targetEmail || get().user?.email;
+            if (!recipient) {
+                return { success: false, error: 'No se encontró una dirección de correo para enviar la prueba' };
+            }
+
+            const baseAppUrl = import.meta.env.VITE_APP_URL || (typeof window !== 'undefined' && window.location.origin.startsWith('http') ? window.location.origin : '');
+            const apiUrl = baseAppUrl ? `${baseAppUrl}/api/send-email` : '/api/send-email';
+
+            const testNotification: Notification = {
+                id: 'test-' + Date.now(),
+                title: 'Prueba de Conexión de Notificaciones',
+                message: `Este es un mensaje de comprobación para confirmar que el servicio de correo Gmail de Gantt Publicartel está funcionando de forma correcta.`,
+                type: 'new_op',
+                createdAt: new Date().toISOString(),
+                targetUsers: [recipient],
+                opNumber: 'TEST-001'
+            };
+
+            const htmlContent = generateNotificationHtml(testNotification, baseAppUrl || 'http://localhost:5173');
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    to: [recipient],
+                    subject: `[Gantt Publicartel] Correo de Prueba de Notificaciones`,
+                    html: htmlContent,
+                    text: `${testNotification.title}\n\n${testNotification.message}`
+                })
+            });
+
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                return { success: false, error: data.error || `Error del servidor (HTTP ${response.status})` };
+            }
+
+            return { success: true };
+        } catch (err: any) {
+            console.error('Error al enviar correo de prueba:', err);
+            return { success: false, error: err.message || 'Error al conectar con el servidor de correo' };
         }
     },
 

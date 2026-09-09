@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Check, LogOut, MessageSquare, Activity, ClipboardList, Mail } from 'lucide-react';
+import { Bell, Check, LogOut, MessageSquare, Activity, ClipboardList, Mail, Send, Loader2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -34,6 +34,8 @@ export const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ onNo
     const profiles = useStore(state => state.profiles);
     const signOut = useStore(state => state.signOut);
     const updateEmailPreference = useStore(state => state.updateEmailPreference);
+    const sendTestEmail = useStore(state => state.sendTestEmail);
+    const [isSendingTest, setIsSendingTest] = useState(false);
 
     // Preferencia de email del usuario actual leída desde la base de datos
     const currentProfile = profiles.find(p => p.email === user?.email);
@@ -289,6 +291,40 @@ export const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ onNo
                                             : 'No recibirás correos de notificación por email.'}
                                     </span>
                                 </label>
+
+                                {/* Botón de correo de prueba */}
+                                {emailEnabled && (
+                                    <button
+                                        onClick={async () => {
+                                            setIsSendingTest(true);
+                                            try {
+                                                const result = await sendTestEmail();
+                                                if (result.success) {
+                                                    sileo.success({
+                                                        title: '¡Correo enviado!',
+                                                        description: `Se envió un email de prueba a ${user?.email}. Revisa tu bandeja de entrada.`
+                                                    });
+                                                } else {
+                                                    sileo.error({
+                                                        title: 'Error al enviar correo',
+                                                        description: result.error || 'No se pudo enviar el correo de prueba.'
+                                                    });
+                                                }
+                                            } catch {
+                                                sileo.error({ title: 'Error inesperado', description: 'No se pudo conectar con el servidor de correo.' });
+                                            } finally {
+                                                setIsSendingTest(false);
+                                            }
+                                        }}
+                                        disabled={isSendingTest}
+                                        className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 hover:border-blue-500/30 transition-all text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isSendingTest
+                                            ? <><Loader2 size={14} className="animate-spin" /> Enviando...</>
+                                            : <><Send size={14} /> Enviar correo de prueba</>
+                                        }
+                                    </button>
+                                )}
                             </div>
                         </div>
 

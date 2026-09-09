@@ -77,6 +77,22 @@ function App() {
     }
   }, [fetchData, subscribeToChanges, user]);
 
+  // Leer parámetros de la URL al cargar (ej: /orders?opId=xxx o ?opNumber=yyy desde enlace en el correo)
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(window.location.search);
+    const urlOpId = params.get('opId');
+    const urlOpNumber = params.get('opNumber');
+
+    if (urlOpId || urlOpNumber) {
+      setActiveTab('orders');
+      if (urlOpId) setPendingOpenOrderId(urlOpId);
+      if (urlOpNumber) setPendingOpenOrderNumber(urlOpNumber);
+      // Limpiar la URL sin recargar la página
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [user]);
+
   // Auto-save when the user hides the tab or closes the window
   useEffect(() => {
     const handleAutoSave = () => {

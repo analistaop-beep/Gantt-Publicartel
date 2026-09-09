@@ -26,8 +26,8 @@ export default async function handler(req, res) {
     }
 
     const token = authHeader.split(' ')[1];
-    const supabaseUrl = process.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
         return res.status(500).json({ error: 'Configuración de Supabase faltante en el servidor' });
@@ -46,11 +46,15 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Faltan parámetros requeridos (to, subject, html/text)' });
     }
 
-    const gmailUser = process.env.GMAIL_USER;
-    const gmailPass = process.env.GMAIL_PASS;
+    const gmailUser = (process.env.GMAIL_USER || '').trim();
+    const rawGmailPass = (process.env.GMAIL_PASS || '').trim();
+    // Eliminar espacios comunes generados por Google en contraseñas de app (ej: "abcd efgh ijkl mnop")
+    const gmailPass = rawGmailPass.replace(/\s+/g, '');
 
     if (!gmailUser || !gmailPass) {
-        return res.status(500).json({ error: 'Credenciales de Gmail (GMAIL_USER/GMAIL_PASS) no configuradas en el servidor' });
+        return res.status(500).json({ 
+            error: 'Credenciales de Gmail (GMAIL_USER / GMAIL_PASS) no configuradas en el servidor.' 
+        });
     }
 
     // 3. Configurar transporte de Nodemailer usando Gmail SMTP
@@ -60,12 +64,22 @@ export default async function handler(req, res) {
             user: gmailUser,
             pass: gmailPass,
         },
+        connectionTimeout: 10000,
+        greetingTimeout: 5000,
+        socketTimeout: 15000,
     });
 
     try {
+        const recipients = Array.isArray(to) ? to.filter(Boolean) : [to];
+        if (recipients.length === 0) {
+            return res.status(400).json({ error: 'Lista de destinatarios vacía' });
+        }
+
+        // Si hay múltiples destinatarios, usamos bcc para proteger la privacidad
         const mailOptions = {
             from: `"Gantt Publicartel" <${gmailUser}>`,
-            to: Array.isArray(to) ? to.join(', ') : to,
+            to: recipients.length === 1 ? recipients[0] : gmailUser,
+            bcc: recipients.length > 1 ? recipients.join(', ') : undefined,
             subject: subject,
             text: text,
             html: html,
@@ -74,7 +88,11 @@ export default async function handler(req, res) {
         const info = await transporter.sendMail(mailOptions);
         return res.status(200).json({ success: true, messageId: info.messageId });
     } catch (emailError) {
-        console.error('Error al enviar correo:', emailError);
-        return res.status(500).json({ error: 'Error al enviar correo electrónico', details: emailError.message });
+        console.error('Error al enviar correo por Gmail SMTP:', emailError);
+        let errorMsg = emailError.message || 'Error desconocido al enviar correo';
+        if (emailError.code === 'EAUTH' || errorMsg.includes('Invalid login') || errorMsg.includes('535')) {
+            errorMsg = 'Error de autenticación en Gmail. Verifica que GMAIL_USER sea correcto y que GMAIL_PASS sea una Contraseña de Aplicación activa (16 caracteres, no tu contraseña habitual).';
+        }
+        return res.status(500).json({ error: errorMsg, details: emailError.message, code: emailError.code });
     }
 }

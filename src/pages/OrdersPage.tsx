@@ -1266,8 +1266,9 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                         <button
                                                             onClick={() => {
                                                                 setIsTaggingOrder(order);
-                                                                // Si nunca fue configurado (null), pre-seleccionar todos los usuarios por defecto
-                                                                setTaggingSelection(order.followers ?? profiles.map((p: any) => p.email));
+                                                                // Si no tiene seguidores configurados (null o vacío), pre-seleccionar todos los usuarios por defecto
+                                                                const hasFollowers = Array.isArray(order.followers) && order.followers.length > 0;
+                                                                setTaggingSelection(hasFollowers ? order.followers : profiles.map((p: any) => p.email));
                                                             }}
                                                             className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-blue-400 transition-all hover:scale-110"
                                                             title="Etiquetar usuarios"
