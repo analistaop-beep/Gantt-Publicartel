@@ -156,7 +156,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
     const [isPrintingAnalysis, setIsPrintingAnalysis] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [exportDateFrom, setExportDateFrom] = useState('');
-    const [expandedOrderIds, setExpandedOrderIds] = useState<Set<string>>(new Set());
+    const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
     const handleCloseViewingOrder = () => {
         setViewingOrder(null);
@@ -1152,7 +1152,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                     </tr>
                                 ) : (
                                     filteredOrders.map((order) => {
-                                        const isExpanded = expandedOrderIds.has(order.id);
+                                        const isExpanded = expandedOrderId === order.id;
                                         const orderLinkedTasks = allTasks.filter(t => t.opNumber?.toString().trim() === order.opNumber?.toString().trim());
                                         return (
                                         <React.Fragment key={order.id}>
@@ -1297,15 +1297,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            setExpandedOrderIds(prev => {
-                                                                const next = new Set(prev);
-                                                                if (next.has(order.id)) {
-                                                                    next.delete(order.id);
-                                                                } else {
-                                                                    next.add(order.id);
-                                                                }
-                                                                return next;
-                                                            });
+                                                            setExpandedOrderId(prev => prev === order.id ? null : order.id);
                                                         }}
                                                         className={`relative p-1.5 rounded-lg border transition-all duration-200 ${
                                                             isExpanded

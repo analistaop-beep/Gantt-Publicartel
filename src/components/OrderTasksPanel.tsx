@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Trash2, Calendar, ChevronLeft, ChevronRight, CornerDownRight } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Plus, Trash2, Calendar, ChevronLeft, ChevronRight, CornerDownRight, GripVertical } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, isToday as isTodayFn } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { type SectorTaskStatus, SECTOR_TASK_STATUSES, getStatusBadgeStyle } from '../utils/taskStatusUtils';
@@ -241,6 +241,30 @@ export interface OrderTask {
     status: SectorTaskStatus;
 }
 
+// ─── OP Tasks Ordering Helpers ───────────────────────────────────────────────
+const OP_TASKS_ORDER_KEY = 'op_tasks_order';
+
+export function getOpTasksOrder(opNumber: string): string[] {
+    try {
+        const raw = localStorage.getItem(OP_TASKS_ORDER_KEY);
+        const map = raw ? JSON.parse(raw) : {};
+        return map[opNumber] || [];
+    } catch {
+        return [];
+    }
+}
+
+export function saveOpTasksOrder(opNumber: string, order: string[]) {
+    try {
+        const raw = localStorage.getItem(OP_TASKS_ORDER_KEY);
+        const map = raw ? JSON.parse(raw) : {};
+        map[opNumber] = order;
+        localStorage.setItem(OP_TASKS_ORDER_KEY, JSON.stringify(map));
+    } catch (e) {
+        console.error('Error saving OP tasks order:', e);
+    }
+}
+
 interface OrderTasksPanelProps {
     order: {
         id: string;
@@ -260,6 +284,8 @@ interface OrderTasksPanelProps {
     onUpdateTask: (task: any) => void;
     /** Delete a task */
     onDeleteTask: (taskId: string) => void;
+    /** Callback when tasks are manually reordered */
+    onReorderTasks?: (taskIds: string[]) => void;
 }
 
 export const OrderTasksPanel: React.FC<OrderTasksPanelProps> = ({
@@ -268,6 +294,7 @@ export const OrderTasksPanel: React.FC<OrderTasksPanelProps> = ({
     onAddTask,
     onUpdateTask,
     onDeleteTask,
+    onReorderTasks,
 }) => {
     const [newName, setNewName] = useState('');
     const [newSector, setNewSector] = useState<SectorType>('Instalaciones');
@@ -275,6 +302,73 @@ export const OrderTasksPanel: React.FC<OrderTasksPanelProps> = ({
     const [calendarTaskId, setCalendarTaskId] = useState<string | null>(null); // 'new' or taskId
     const calendarAnchorRef = useRef<HTMLElement | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    // Drag and Drop state
+    const [customOrder, setCustomOrder] = useState<string[]>(() => getOpTasksOrder(order.opNumber));
+    const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+    const [dropTargetIdx, setDropTargetIdx] = useState<number | null>(null);
+
+    // Keep ordered tasks based on stored custom order
+    const orderedTasks = useMemo(() => {
+        const savedOrder = customOrder.length > 0 ? customOrder : getOpTasksOrder(order.opNumber);
+        if (!savedOrder || savedOrder.length === 0) return linkedTasks;
+        const taskMap = new Map(linkedTasks.map(t => [t.id, t]));
+        const result: any[] = [];
+        for (const id of savedOrder) {
+            if (taskMap.has(id)) {
+                result.push(taskMap.get(id)!);
+                taskMap.delete(id);
+            }
+        }
+        for (const remaining of taskMap.values()) {
+            result.push(remaining);
+        }
+        return result;
+    }, [linkedTasks, order.opNumber, customOrder]);
+
+    const handleDragStart = (e: React.DragEvent, index: number) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('select, button, input')) {
+            e.preventDefault();
+            return;
+        }
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(index));
+        setDraggedIdx(index);
+    };
+
+    const handleDragOver = (e: React.DragEvent, index: number) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (dropTargetIdx !== index) {
+            setDropTargetIdx(index);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+        e.preventDefault();
+        if (draggedIdx === null || draggedIdx === targetIndex) {
+            setDraggedIdx(null);
+            setDropTargetIdx(null);
+            return;
+        }
+        const updated = [...orderedTasks];
+        const [moved] = updated.splice(draggedIdx, 1);
+        updated.splice(targetIndex, 0, moved);
+        const newOrderIds = updated.map(t => t.id);
+        saveOpTasksOrder(order.opNumber, newOrderIds);
+        setCustomOrder(newOrderIds);
+        setDraggedIdx(null);
+        setDropTargetIdx(null);
+        if (onReorderTasks) {
+            onReorderTasks(newOrderIds);
+        }
+    };
+
+    const handleDragEnd = () => {
+        setDraggedIdx(null);
+        setDropTargetIdx(null);
+    };
 
     // Calendar for the "add new" date button
     const [showNewCalendar, setShowNewCalendar] = useState(false);
@@ -309,25 +403,53 @@ export const OrderTasksPanel: React.FC<OrderTasksPanelProps> = ({
             {/* Stepped container */}
             <div className="max-w-xl sm:max-w-3xl ml-2 sm:ml-4 pl-3.5 border-l-2 border-blue-400/50 dark:border-blue-500/40 space-y-2">
                 {/* Section Header */}
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pb-0.5">
-                    <span>Tareas de OP {order.opNumber}</span>
-                    <span className="bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full text-[9px] font-black">
-                        {linkedTasks.length}
-                    </span>
+                <div className="flex items-center justify-between gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pb-0.5">
+                    <div className="flex items-center gap-1.5">
+                        <span>Tareas de OP {order.opNumber}</span>
+                        <span className="bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full text-[9px] font-black">
+                            {orderedTasks.length}
+                        </span>
+                    </div>
+                    {orderedTasks.length > 1 && (
+                        <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500 lowercase">
+                            arrastrá para reordenar
+                        </span>
+                    )}
                 </div>
 
                 {/* Task list */}
-                {linkedTasks.length > 0 && (
+                {orderedTasks.length > 0 && (
                     <div className="space-y-1.5">
-                        {linkedTasks.map((task) => {
+                        {orderedTasks.map((task, index) => {
+                            const isDragging = draggedIdx === index;
+                            const isDropTarget = dropTargetIdx === index;
                             const currentSector = normalizeSector(task.section, task.type);
                             const sc = getSectorColor(currentSector);
                             const style = getStatusBadgeStyle(task.status || 'Para realizar');
                             return (
                                 <div
                                     key={task.id}
-                                    className="flex items-center gap-2 group/sub bg-white dark:bg-slate-800/80 rounded-lg px-2.5 py-1.5 border border-slate-200/80 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/15 shadow-sm dark:shadow-none transition-all flex-wrap sm:flex-nowrap"
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, index)}
+                                    onDragOver={(e) => handleDragOver(e, index)}
+                                    onDrop={(e) => handleDrop(e, index)}
+                                    onDragEnd={handleDragEnd}
+                                    className={`flex items-center gap-2 group/sub bg-white dark:bg-slate-800/80 rounded-lg px-2.5 py-1.5 border transition-all flex-wrap sm:flex-nowrap cursor-grab active:cursor-grabbing select-none ${
+                                        isDragging
+                                            ? 'opacity-30 scale-[0.99] border-dashed border-blue-500 bg-blue-50/20 dark:bg-blue-500/10'
+                                            : isDropTarget
+                                                ? 'border-t-2 border-t-blue-500 dark:border-t-blue-400 bg-blue-50/10 dark:bg-blue-500/5'
+                                                : 'border-slate-200/80 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/15 shadow-sm dark:shadow-none'
+                                    }`}
                                 >
+                                    {/* Drag handle */}
+                                    <div
+                                        className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 cursor-grab active:cursor-grabbing p-0.5 -ml-1 rounded hover:bg-slate-100 dark:hover:bg-white/10 transition-colors shrink-0"
+                                        title="Arrastrar para reordenar"
+                                    >
+                                        <GripVertical size={13} />
+                                    </div>
+
                                     {/* Tree branch indicator */}
                                     <CornerDownRight size={13} className="text-blue-500/70 dark:text-blue-400/70 shrink-0" />
 
