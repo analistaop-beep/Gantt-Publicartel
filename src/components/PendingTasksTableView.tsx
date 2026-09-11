@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from 'react';
-import { Search, Plus, ChevronUp, ChevronDown, ClipboardList } from 'lucide-react';
-import { format } from 'date-fns';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { Search, Plus, ChevronUp, ChevronDown, ClipboardList, Filter, Check, X, Calendar } from 'lucide-react';
+import { format, addDays, isWeekend } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { sileo } from 'sileo';
 import { type SectorTaskStatus, SECTOR_TASK_STATUSES, getTaskStatus, getStatusBadgeStyle } from '../utils/taskStatusUtils';
 import { SubtasksPanel, getSubtasksCount } from './SubtasksPanel';
+import { MiniCalendar } from './OrderTasksPanel';
 
 import { useStore } from '../store/useStore';
 
@@ -22,10 +24,56 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
     onStatusChange,
     onNewPendingClick
 }) => {
-    const { productionOrders, subtasks = [] } = useStore();
+    const { productionOrders, subtasks = [], updateTaskLocal } = useStore();
     const [search, setSearch] = useState('');
+    const [selectedStatuses, setSelectedStatuses] = useState<SectorTaskStatus[]>([]);
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const filterRef = useRef<HTMLDivElement>(null);
     const [sort, setSort] = useState<{ col: string; dir: 'asc' | 'desc' }>({ col: 'date', dir: 'asc' });
     const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+
+    // Calendar modal state
+    const [activeCalendarTaskId, setActiveCalendarTaskId] = useState<string | null>(null);
+    const calendarAnchorRef = useRef<HTMLElement | null>(null);
+
+    const handleDateChange = (task: any, newDate: string) => {
+        if (task._isMultiDayGroup && task._groupTasks && task._groupTasks.length > 0) {
+            if (!newDate) {
+                task._groupTasks.forEach((gt: any) => {
+                    updateTaskLocal({ ...gt, date: '' });
+                });
+            } else {
+                const sortedTasks = [...task._groupTasks].sort((a: any, b: any) => (a.date || '').localeCompare(b.date || ''));
+                let currDate = new Date(newDate + 'T12:00:00');
+                sortedTasks.forEach((gt: any) => {
+                    updateTaskLocal({ ...gt, date: format(currDate, 'yyyy-MM-dd') });
+                    do {
+                        currDate = addDays(currDate, 1);
+                    } while (isWeekend(currDate));
+                });
+            }
+        } else {
+            updateTaskLocal({ ...task, date: newDate });
+        }
+
+        if (newDate) {
+            const formatted = format(new Date(newDate + 'T00:00:00'), "dd 'de' MMMM yyyy", { locale: es });
+            sileo.success({ title: `Fecha de ejecución asignada: ${formatted}` });
+        } else {
+            sileo.success({ title: 'Fecha de ejecución removida' });
+        }
+        setActiveCalendarTaskId(null);
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+                setIsFilterOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const toggleExpand = (taskId: string) => {
         setExpandedTasks(prev => {
@@ -38,6 +86,29 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
             return next;
         });
     };
+
+    const toggleStatus = (status: SectorTaskStatus) => {
+        setSelectedStatuses(prev =>
+            prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
+        );
+    };
+
+    const statusCounts = useMemo(() => {
+        const counts: Record<SectorTaskStatus, number> = {
+            'Para realizar': 0,
+            'Detenida': 0,
+            'Agendada': 0,
+            'En proceso': 0,
+            'Terminada': 0,
+        };
+        (tasks || []).forEach(t => {
+            const st = getTaskStatus(t);
+            if (counts[st] !== undefined) {
+                counts[st]++;
+            }
+        });
+        return counts;
+    }, [tasks]);
 
     const opAddressMap = useMemo(() => {
         const map = new Map<string, string>();
@@ -59,7 +130,15 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
 
     const filteredTasks = useMemo(() => {
         const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        let list = tasks.filter(t => !t.completed && t.status !== 'Terminada');
+        
+        let list = selectedStatuses.includes('Terminada')
+            ? tasks
+            : tasks.filter(t => !t.completed && t.status !== 'Terminada');
+
+        if (selectedStatuses.length > 0) {
+            list = list.filter(t => selectedStatuses.includes(getTaskStatus(t)));
+        }
+
         if (search.trim()) {
             const q = normalize(search);
             list = list.filter(t =>
@@ -70,7 +149,37 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
                 normalize(getTaskStatus(t)).includes(q)
             );
         }
-        list.sort((a, b) => {
+
+        // Group task fragments by groupId (or task id) so multi-day tasks are represented by 1 single row
+        const groupedMap = new Map<string, { mainTask: any; groupTasks: any[] }>();
+        list.forEach(t => {
+            const key = t.groupId || t.id;
+            if (!groupedMap.has(key)) {
+                groupedMap.set(key, { mainTask: t, groupTasks: [t] });
+            } else {
+                groupedMap.get(key)!.groupTasks.push(t);
+            }
+        });
+
+        const groupedList = Array.from(groupedMap.values()).map(({ mainTask, groupTasks }) => {
+            if (groupTasks.length === 1) return mainTask;
+            
+            const datesWithValues = groupTasks.map(gt => gt.date).filter(Boolean).sort();
+            const minDate = datesWithValues[0] || '';
+            const maxDate = datesWithValues[datesWithValues.length - 1] || '';
+
+            return {
+                ...mainTask,
+                date: minDate,
+                _isMultiDayGroup: true,
+                _groupTasks: groupTasks,
+                _minDate: minDate,
+                _maxDate: maxDate,
+                _daysCount: groupTasks.length,
+            };
+        });
+
+        groupedList.sort((a, b) => {
             let valA: any, valB: any;
             if (sort.col === 'date') {
                 valA = a.date || 'zzzzz';
@@ -98,13 +207,14 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
             if (valA > valB) return sort.dir === 'asc' ? 1 : -1;
             return 0;
         });
-        return list;
-    }, [tasks, search, sort, opAddressMap]);
+
+        return groupedList;
+    }, [tasks, search, sort, selectedStatuses, opAddressMap]);
 
     return (
         <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#0b1120] rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden shadow-xl dark:shadow-2xl">
             {/* Top Toolbar */}
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-4 bg-slate-50/90 dark:bg-slate-900/60 backdrop-blur-sm">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-4 bg-slate-50/90 dark:bg-slate-900/60 backdrop-blur-sm relative z-30">
                 <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 flex items-center justify-center">
                         <ClipboardList className="text-blue-600 dark:text-blue-400" size={18} />
@@ -128,9 +238,103 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
                             placeholder="Buscar por OP, cliente, tarea o estado..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="bg-white dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 rounded-lg pl-9 pr-4 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 w-72 transition-all shadow-sm dark:shadow-none"
+                            className="bg-white dark:bg-slate-800/80 border border-slate-300 dark:border-white/10 rounded-lg pl-9 pr-4 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 w-64 sm:w-72 transition-all shadow-sm dark:shadow-none"
                         />
                     </div>
+
+                    {/* Status Multi-select Filter */}
+                    <div className="relative" ref={filterRef}>
+                        <button
+                            onClick={() => setIsFilterOpen(!isFilterOpen)}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all border shadow-sm ${
+                                selectedStatuses.length > 0
+                                    ? 'bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/40'
+                                    : 'bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-800'
+                            }`}
+                        >
+                            <Filter size={14} className={selectedStatuses.length > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'} />
+                            <span>Estado</span>
+                            {selectedStatuses.length > 0 && (
+                                <span className="bg-blue-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-black">
+                                    {selectedStatuses.length}
+                                </span>
+                            )}
+                            {selectedStatuses.length > 0 && (
+                                <span
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedStatuses([]);
+                                    }}
+                                    className="hover:bg-blue-200 dark:hover:bg-blue-500/40 p-0.5 rounded-full text-blue-700 dark:text-blue-300 transition-colors ml-0.5"
+                                    title="Limpiar filtro de estado"
+                                >
+                                    <X size={12} />
+                                </span>
+                            )}
+                        </button>
+
+                        {isFilterOpen && (
+                            <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 p-3 space-y-2.5 animate-in fade-in zoom-in-95 duration-100">
+                                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                                    <span className="text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                                        <Filter size={13} className="text-blue-500" />
+                                        Filtrar por estado
+                                    </span>
+                                    {selectedStatuses.length > 0 ? (
+                                        <button
+                                            onClick={() => setSelectedStatuses([])}
+                                            className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                                        >
+                                            Limpiar ({selectedStatuses.length})
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => setSelectedStatuses([...SECTOR_TASK_STATUSES])}
+                                            className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"
+                                        >
+                                            Todos
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="space-y-1 max-h-60 overflow-y-auto custom-scrollbar">
+                                    {SECTOR_TASK_STATUSES.map(st => {
+                                        const isChecked = selectedStatuses.includes(st);
+                                        const style = getStatusBadgeStyle(st);
+                                        const count = statusCounts[st] || 0;
+                                        return (
+                                            <div
+                                                key={st}
+                                                onClick={() => toggleStatus(st)}
+                                                className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer select-none transition-colors ${
+                                                    isChecked
+                                                        ? 'bg-blue-50/70 dark:bg-blue-500/10'
+                                                        : 'hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                                                        isChecked
+                                                            ? 'bg-blue-600 border-blue-600 text-white'
+                                                            : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'
+                                                    }`}>
+                                                        {isChecked && <Check size={11} strokeWidth={3} />}
+                                                    </div>
+                                                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${style.badge}`}>
+                                                        {st}
+                                                    </span>
+                                                </div>
+                                                <span className="text-[11px] font-mono font-medium text-slate-400 dark:text-slate-500">
+                                                    {count}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     <button
                         onClick={onNewPendingClick}
                         className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3.5 py-2 rounded-lg transition-all flex items-center gap-2 shadow-md hover:shadow-lg shadow-blue-500/20"
@@ -147,8 +351,21 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
                     <div className="flex flex-col items-center justify-center h-64 text-center text-slate-400 dark:text-slate-500 space-y-2">
                         <ClipboardList size={36} className="opacity-30 text-slate-400 dark:text-slate-500" />
                         <p className="text-sm italic">
-                            {search.trim() ? 'No se encontraron tareas con esa búsqueda.' : `No hay tareas pendientes para ${sectorName}.`}
+                            {search.trim() || selectedStatuses.length > 0
+                                ? 'No se encontraron tareas con los filtros aplicados.'
+                                : `No hay tareas pendientes para ${sectorName}.`}
                         </p>
+                        {(search.trim() || selectedStatuses.length > 0) && (
+                            <button
+                                onClick={() => {
+                                    setSearch('');
+                                    setSelectedStatuses([]);
+                                }}
+                                className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline pt-1"
+                            >
+                                Limpiar filtros
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <table className="table-fixed w-full text-left text-xs border-collapse">
@@ -227,7 +444,14 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
                                                 <div className="relative inline-flex items-center">
                                                     <select
                                                         value={currentStatus}
-                                                        onChange={(e) => onStatusChange(task, e.target.value as SectorTaskStatus)}
+                                                        onChange={(e) => {
+                                                            const newSt = e.target.value as SectorTaskStatus;
+                                                            if (task._isMultiDayGroup && task._groupTasks) {
+                                                                task._groupTasks.forEach((gt: any) => onStatusChange(gt, newSt));
+                                                            } else {
+                                                                onStatusChange(task, newSt);
+                                                            }
+                                                        }}
                                                         className={`text-[11px] font-bold pl-2.5 pr-6 py-0.5 rounded-full border cursor-pointer appearance-none focus:outline-none transition-all ${style.badge} bg-white dark:bg-[#0f172a] shadow-sm dark:shadow-none hover:brightness-105 dark:hover:brightness-125`}
                                                     >
                                                         {SECTOR_TASK_STATUSES.map(st => (
@@ -241,16 +465,42 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-3 py-2 align-middle">
+                                            <td
+                                                className="px-3 py-2 align-middle cursor-pointer group/date"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    calendarAnchorRef.current = e.currentTarget;
+                                                    setActiveCalendarTaskId(prev => prev === task.id ? null : task.id);
+                                                }}
+                                                title="Hacé clic para asignar o cambiar la fecha de ejecución"
+                                            >
                                                 {hasPendingDate ? (
-                                                    <span className="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-300/80 dark:border-amber-500/20">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                    <span className="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] font-bold px-2.5 py-1 rounded-full border border-amber-300/80 dark:border-amber-500/20 group-hover/date:border-amber-400 group-hover/date:bg-amber-100/80 dark:group-hover/date:bg-amber-500/20 transition-all shadow-sm">
+                                                        <Calendar size={11} className="text-amber-600 dark:text-amber-400" />
                                                         Pendiente de fecha
                                                     </span>
+                                                ) : task._isMultiDayGroup && task._minDate && task._maxDate && task._minDate !== task._maxDate ? (
+                                                    <span className="text-slate-700 dark:text-slate-300 font-medium text-xs whitespace-nowrap flex items-center gap-1.5 group-hover/date:text-blue-600 dark:group-hover/date:text-blue-400 transition-colors">
+                                                        <Calendar size={13} className="text-blue-500 flex-shrink-0" />
+                                                        {format(new Date(task._minDate + 'T00:00:00'), "dd/MM", { locale: es })} — {format(new Date(task._maxDate + 'T00:00:00'), "dd/MM/yyyy", { locale: es })}
+                                                        <span className="bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300 text-[10px] font-black px-1.5 py-0.5 rounded-full border border-blue-300 dark:border-blue-500/30">
+                                                            {task._daysCount} días
+                                                        </span>
+                                                    </span>
                                                 ) : (
-                                                    <span className="text-slate-700 dark:text-slate-300 font-medium text-xs whitespace-nowrap">
+                                                    <span className="text-slate-700 dark:text-slate-300 font-medium text-xs whitespace-nowrap flex items-center gap-1.5 group-hover/date:text-blue-600 dark:group-hover/date:text-blue-400 transition-colors">
+                                                        <Calendar size={13} className="text-blue-500 flex-shrink-0" />
                                                         {format(new Date(task.date + 'T00:00:00'), "dd 'de' MMMM yyyy", { locale: es })}
                                                     </span>
+                                                )}
+
+                                                {activeCalendarTaskId === task.id && (
+                                                    <MiniCalendar
+                                                        value={task.date || ''}
+                                                        onSelect={(newDate) => handleDateChange(task, newDate)}
+                                                        onClose={() => setActiveCalendarTaskId(null)}
+                                                        anchorRef={calendarAnchorRef}
+                                                    />
                                                 )}
                                             </td>
                                             {/* Expand/collapse subtasks button */}

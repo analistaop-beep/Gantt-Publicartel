@@ -1077,7 +1077,7 @@ export const useStore = create<AppState>((set, get) => ({
                 ...taskData,
                 estimatedHours: taskData.estimatedHours ?? taskData.totalHours,
                 additionalJobs,
-                groupId: taskData.date ? taskId : (taskData as any).groupId || taskId
+                groupId: (taskData as any).groupId || taskId
             });
 
             const { error: taskError } = await supabase.from('tasks').insert([payload]);

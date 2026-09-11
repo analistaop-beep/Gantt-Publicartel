@@ -94,14 +94,14 @@ function getSectorColor(sector: string) {
 }
 
 // ─── Mini Calendar Modal ─────────────────────────────────────────────────────
-interface MiniCalendarProps {
+export interface MiniCalendarProps {
     value: string; // YYYY-MM-DD or ''
     onSelect: (date: string) => void;
     onClose: () => void;
     anchorRef: React.RefObject<HTMLElement | null>;
 }
 
-const MiniCalendar: React.FC<MiniCalendarProps> = ({ value, onSelect, onClose, anchorRef }) => {
+export const MiniCalendar: React.FC<MiniCalendarProps> = ({ value, onSelect, onClose, anchorRef }) => {
     const [viewMonth, setViewMonth] = useState(() => {
         if (value) return startOfMonth(new Date(value + 'T12:00:00'));
         return startOfMonth(new Date());
