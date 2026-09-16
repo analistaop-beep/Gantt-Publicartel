@@ -26,7 +26,7 @@ interface HerreriaPageProps {
 
 export const HerreriaPage: React.FC<HerreriaPageProps> = ({ onNavigateToOrder }) => {
     const {
-        teams, tasks: instalacionTasks, herreriaTasks: tasks, corporeasTasks, lonasTasks, pinturaTasks, members, vehicles, reminders,
+        teams, tasks: instalacionTasks, herreriaTasks: tasks, carpinteriaTasks, corporeasTasks, lonasTasks, pinturaTasks, members, vehicles, reminders,
         addTask, addMember, addVehicle, updateTask,
         updateTaskLocal, deleteTaskLocal, addTaskLocal,
         saveAllChanges, hasPendingChanges, isSaving,
@@ -185,11 +185,12 @@ export const HerreriaPage: React.FC<HerreriaPageProps> = ({ onNavigateToOrder })
         return [
             ...(instalacionTasks || []),
             ...tasks,
+            ...(carpinteriaTasks || []),
             ...(corporeasTasks || []),
             ...(lonasTasks || []),
             ...(pinturaTasks || [])
         ];
-    }, [instalacionTasks, tasks, corporeasTasks, lonasTasks, pinturaTasks]);
+    }, [instalacionTasks, tasks, carpinteriaTasks, corporeasTasks, lonasTasks, pinturaTasks]);
 
     // Filter pending tasks (tasks with no date)
     const pendingTasks = useMemo(() => {

@@ -36,12 +36,17 @@ export const MembersSidebar: React.FC = () => {
                 if (memberId && sourceTaskId) {
                     e.preventDefault();
                     const state = useStore.getState();
-                    const tasks = state.tasks || [];
-                    const herreriaTasks = state.herreriaTasks || [];
+                    const allTasks = [
+                        ...(state.tasks || []),
+                        ...(state.herreriaTasks || []),
+                        ...(state.carpinteriaTasks || []),
+                        ...(state.corporeasTasks || []),
+                        ...(state.lonasTasks || []),
+                        ...(state.pinturaTasks || [])
+                    ];
                     const updateTask = state.updateTask;
 
-                    const task = tasks.find((t: any) => t.id === sourceTaskId) ||
-                        herreriaTasks.find((t: any) => t.id === sourceTaskId);
+                    const task = allTasks.find((t: any) => t.id === sourceTaskId);
 
                     if (task) {
                         try {

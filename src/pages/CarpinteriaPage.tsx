@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+﻿﻿import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { sileo } from 'sileo';
 import { Plus, Minus, Calendar, ChevronLeft, ChevronRight, Trash2, LayoutGrid, Users, Truck, Bell, ArrowDownToLine, Copy, Search, Save, Loader2, ClipboardList } from 'lucide-react';
@@ -20,13 +20,13 @@ import { PendingTasksTableView } from '../components/PendingTasksTableView';
 import { TaskDetailModal } from '../components/TaskDetailModal';
 import { TaskCompletionModal } from '../components/TaskCompletionModal';
 
-interface CorporeasPageProps {
+interface CarpinteriaPageProps {
     onNavigateToOrder?: (opNumber: string) => void;
 }
 
-export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder }) => {
+export const CarpinteriaPage: React.FC<CarpinteriaPageProps> = ({ onNavigateToOrder }) => {
     const {
-        teams, tasks: instalacionTasks, corporeasTasks: tasks, herreriaTasks, carpinteriaTasks, lonasTasks, pinturaTasks, members, vehicles, reminders,
+        teams, tasks: instalacionTasks, carpinteriaTasks: tasks, herreriaTasks, corporeasTasks, lonasTasks, pinturaTasks, members, vehicles, reminders,
         addTask, addMember, addVehicle, updateTask,
         updateTaskLocal, deleteTaskLocal, addTaskLocal,
         saveAllChanges, hasPendingChanges, isSaving,
@@ -59,11 +59,11 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
         additionalJobs: [] as Array<{ description: string; client: string }>,
         date: '',
         teamId: null as string | null,
-        section: 'Corpóreas',
+        section: 'Carpintería',
         blockedBy: null as string | null
     });
 
-    const [quickMemberData, setQuickMemberData] = useState({ name: '', role: '', sector: 'Corpóreas' });
+    const [quickMemberData, setQuickMemberData] = useState({ name: '', role: '', sector: 'Carpintería' });
     const [quickVehicleData, setQuickVehicleData] = useState({ name: '', plate: '' });
     const [reminderFormData, setReminderFormData] = useState({
         opNumber: '',
@@ -90,6 +90,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
 
 
     const [isCapacityOpen, setIsCapacityOpen] = useState(false);
+    const [manualHours, setManualHours] = useState('');
 
     // View mode: 'gantt' = cronograma, 'lista' = pending tasks table
     const [activeView, setActiveView] = useState<'gantt' | 'lista'>('lista');
@@ -185,15 +186,15 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
             ...(instalacionTasks || []),
             ...tasks,
             ...(herreriaTasks || []),
-            ...(carpinteriaTasks || []),
+            ...(corporeasTasks || []),
             ...(lonasTasks || []),
             ...(pinturaTasks || [])
         ];
-    }, [instalacionTasks, tasks, herreriaTasks, carpinteriaTasks, lonasTasks, pinturaTasks]);
+    }, [instalacionTasks, tasks, herreriaTasks, corporeasTasks, lonasTasks, pinturaTasks]);
 
     // Filter pending tasks (tasks with no date)
     const pendingTasks = useMemo(() => {
-        let pts = tasks.filter(t => !t.date || t.date === '');
+        let pts = tasks.filter(t => (!t.date || t.date === '') && !t.completed);
         
         // A blocked task only appears in Pendientes when its blocker has been
         // scheduled on a date strictly BEFORE today (already executed).
@@ -227,8 +228,10 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
             if (e.key === 'Escape') {
                 if (isTaskModalOpen) {
                     setIsTaskModalOpen(false);
-                    setEditingTask(null);
                     setSelectedContext(null);
+                    setEditingTask(null);
+                    setMemberSearch('');
+                    setManualHours('');
                 } else if (isFragmentModalOpen) {
                     setIsFragmentModalOpen(false);
                     setFragmentTargetTask(null);
@@ -331,6 +334,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
                 await updateTask({
                     ...editingTask,
                     ...formData,
+                    estimatedHours: editingTask?.estimatedHours ?? formData.estimatedHours,
                     date: dateToUse,
                     teamId: teamIdToUse || null,
                     blockedBy: formData.blockedBy || null
@@ -341,8 +345,8 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
                     ...formData,
                     date: dateToUse,
                     teamId: teamIdToUse || null,
-                    type: 'corporeas',
-                    section: formData.section || 'Herrería',
+                    type: 'carpinteria',
+                    section: formData.section || 'Carpintería',
                     blockedBy: formData.blockedBy || null
                 });
                 sileo.success({ title: 'Tarea creada con éxito' });
@@ -350,6 +354,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
             setIsTaskModalOpen(false);
             setEditingTask(null);
             setSelectedContext(null);
+            setManualHours('');
             setFormData({
                 opNumber: '',
                 name: '',
@@ -363,7 +368,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
                 additionalJobs: [],
                 date: '',
                 teamId: teams[0]?.id || null,
-                section: 'Corpóreas',
+                section: 'Carpintería',
                 blockedBy: null
             });
             setMemberSearch('');
@@ -381,7 +386,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
             client: task.client || '',
             address: task.address || 'Montevideo',
             totalHours: task.totalHours || 0,
-            estimatedHours: task.estimatedHours || 0,
+            estimatedHours: task.estimatedHours || task.totalHours || 0,
             duration: task.duration || 0,
             vehicles: task.vehicles || [],
             members: Array.isArray(task.members) && typeof task.members[0] === 'object'
@@ -390,7 +395,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
             additionalJobs: task.additionalJobs || [],
             date: task.date || '',
             teamId: task.teamId || '',
-            section: task.section || 'Herrería',
+            section: task.section || 'Carpintería',
             blockedBy: task.blockedBy || null
         });
         setIsTaskModalOpen(true);
@@ -538,6 +543,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
 
         try {
             const originalTotalHours = fragmentTargetTask.totalHours || 0;
+            // Redondear a 2 decimales para evitar problemas de precisión
             const dividedHours = parseFloat((originalTotalHours / fragmentDays).toFixed(2));
             const remainderHours = parseFloat((originalTotalHours - (dividedHours * (fragmentDays - 1))).toFixed(2));
 
@@ -558,14 +564,14 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
 
                 addTaskLocal({
                     ...fragmentTargetTask,
-                    id: undefined,
+                    id: undefined, // Nueva ID para la copia
                     date: currentDay,
                     totalHours: isLast ? remainderHours : dividedHours,
                     duration: isLast ? remainderHours : dividedHours,
-                    type: 'corporeas',
-                    members: [], // Sin integrantes en los fragmentos nuevos
+                    type: 'carpinteria',
+                    members: [], // Las tareas fragmentadas nuevas comienzan sin integrantes asignados
                     groupId: fragmentTargetTask.groupId || fragmentTargetTask.id,
-                    section: fragmentTargetTask.section || 'Corpóreas'
+                    section: fragmentTargetTask.section || 'Carpintería'
                 });
             }
 
@@ -589,7 +595,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
         e.preventDefault();
         await addMember(quickMemberData);
         setQuickAddType(null);
-        setQuickMemberData({ name: '', role: '', sector: 'Corpóreas' });
+        setQuickMemberData({ name: '', role: '', sector: 'Carpintería' });
     };
 
     const handleQuickAddVehicle = async (e: React.FormEvent) => {
@@ -625,7 +631,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
             additionalJobs: [],
             date: '', // Make it pending by default
             teamId: teams[0]?.id || null,
-            section: 'Corpóreas'
+            section: 'Carpintería'
         });
         setIsTaskModalOpen(true);
         setIsRemindersListOpen(false);
@@ -638,7 +644,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
         const startDate = format(allDaysInWeek[0], 'yyyy-MM-dd');
         const endDate = format(allDaysInWeek[5], 'yyyy-MM-dd');
         try {
-            await clearTasksRange(startDate, endDate, 'corporeas');
+            await clearTasksRange(startDate, endDate, 'carpinteria');
         } catch (err) {
             // Error handled by store
         }
@@ -652,11 +658,11 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
 
         const weekDays = allDaysInWeek.map(d => format(d, 'yyyy-MM-dd'));
 
-        // Filter members by sector Herrería
-        const sectorMembers = members.filter(m => m.sector === 'Corpóreas');
+        // Filter members by sector Carpintería
+        const sectorMembers = members.filter(m => m.sector === 'Carpintería');
 
         weekDays.forEach(dayStr => {
-            const dayTasks = tasks.filter(t => t.date === dayStr && t.type === 'corporeas');
+            const dayTasks = tasks.filter(t => t.date === dayStr && t.type === 'carpinteria');
 
             sectorMembers.forEach(member => {
                 const memberTasks = dayTasks.filter(t => t.members?.some((m: any) => (typeof m === 'string' ? m : m.id) === member.id));
@@ -675,7 +681,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
             });
         });
 
-        exportToExcel(headers, rows, `Reporte_Corporeas_${startDate}_al_${endDate}`);
+        exportToExcel(headers, rows, `Reporte_Carpinteria_${startDate}_al_${endDate}`);
         sileo.success({ title: 'Reporte generado con éxito' });
     };
 
@@ -699,7 +705,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
                     </div>
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <h1 className="text-xl font-black text-white tracking-tight uppercase">Corpóreas + Iluminación</h1>
+                            <h1 className="text-xl font-black text-white tracking-tight uppercase">Carpintería</h1>
                         </div>
                         <p className="text-slate-500 font-bold text-sm tracking-wide flex items-center gap-2">
                             Semana <span className="text-blue-400/80">{weekLabel}</span>
@@ -871,7 +877,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
                                     <div
                                         key={day.toString()}
                                         className={`p-3 text-center border-r border-white/5 flex flex-col items-center gap-1 transition-all duration-700 ${isWeekend(day) ? 'bg-white/5' : ''
-                                            } ${isToday(day) ? 'bg-blue-500/[0.05]' : ''} ${isZoomed ? 'scale-100' : 'scale-100'}`}
+                                            } ${isToday(day) ? 'bg-blue-500/[0.05]' : ''}`}
                                     >
                                         <span className={`uppercase font-bold text-slate-400 transition-all ${isZoomed ? 'text-xs' : 'text-[10px]'}`}>
                                             {format(day, 'EEE', { locale: es })}
@@ -948,24 +954,24 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
                                                                     return;
                                                                 }
 
-                                                                    // If it comes from another task, remove it from there first
-                                                                    if (sourceTaskId) {
-                                                                        const sourceTask = (sourceTaskId.startsWith('temp-') ? [] : tasks).find(t => t.id === sourceTaskId) || instalacionTasks.find(t => t.id === sourceTaskId);
-                                                                        if (sourceTask) {
-                                                                            updateTaskLocal({
-                                                                                ...sourceTask,
-                                                                                members: sourceTask.members.filter((m: any) => (typeof m === 'string' ? m : m.id) !== memberId)
-                                                                            });
-                                                                        }
+                                                                // If it comes from another task, remove it from there first
+                                                                if (sourceTaskId) {
+                                                                    const sourceTask = (sourceTaskId.startsWith('temp-') ? [] : tasks).find(t => t.id === sourceTaskId) || instalacionTasks.find(t => t.id === sourceTaskId);
+                                                                    if (sourceTask) {
+                                                                        updateTaskLocal({
+                                                                            ...sourceTask,
+                                                                            members: sourceTask.members.filter((m: any) => (typeof m === 'string' ? m : m.id) !== memberId)
+                                                                        });
                                                                     }
+                                                                }
 
-                                                                    const newMembers = [...currentMembers, { id: memberId, hours: 8 }];
-                                                                    updateTaskLocal({
-                                                                        ...task,
-                                                                        members: newMembers,
-                                                                        totalHours: task.totalHours || 8
-                                                                    });
-                                                                    sileo.success({ title: `Integrante re-asignado a OP: ${task.opNumber}` });
+                                                                const newMembers = [...currentMembers, { id: memberId, hours: 8 }];
+                                                                updateTaskLocal({
+                                                                    ...task,
+                                                                    members: newMembers,
+                                                                    totalHours: task.totalHours || 8
+                                                                });
+                                                                sileo.success({ title: `Integrante re-asignado a OP: ${task.opNumber}` });
                                                             } else if (draggedTaskId) {
                                                                 handleTaskDropOnTask(e, task);
                                                             }
@@ -1138,7 +1144,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
                                 <div className="grid grid-cols-6 w-full">
                                     {allDaysInWeek.map((day) => {
                                         const dayStr = format(day, 'yyyy-MM-dd');
-                                        const availableOnDay = (membersByDay[dayStr] || []).filter(m => m.sector === 'Corpóreas');
+                                        const availableOnDay = (membersByDay[dayStr] || []).filter(m => m.sector === 'Carpintería');
 
                                         return (
                                             <div
@@ -1219,7 +1225,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
             {activeView === 'lista' && (
                 <PendingTasksTableView
                     tasks={tasks}
-                    sectorName="Corpóreas"
+                    sectorName="Carpintería"
                     onSelectTask={(task) => {
                         setSelectedTaskDetail(task);
                         setTaskDetailPhoto(task.photo || null);
@@ -1241,7 +1247,7 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
                             additionalJobs: [],
                             date: '',
                             teamId: teams[0]?.id || null,
-                            section: 'Corpóreas',
+                            section: 'Carpintería',
                             blockedBy: null
                         });
                         setIsTaskModalOpen(true);
@@ -1251,475 +1257,520 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
 
             {/* Modals */}
             {
-    isTaskModalOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-            <div className="glass p-6 rounded-[1.25rem] w-full max-w-[80vw] max-h-[95vh] flex flex-col shadow-2xl border-white/20 animate-in fade-in zoom-in-95 duration-300">
-                <div className="mb-4 flex justify-between items-start">
-                    <div>
-                        <h3 className="text-2xl font-bold">{editingTask ? 'Editar Tarea' : 'Asignar Tarea'}</h3>
-                        <p className="text-slate-400 text-sm mt-1">
-                            {editingTask
-                                ? `Editando tarea existente`
-                                : (selectedContext
-                                    ? `Asignando para el ${format(selectedContext.date, 'dd/MM/yyyy')}`
-                                    : `Configura los detalles de la asignación`)
-                            }
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => {
-                            setIsTaskModalOpen(false);
-                            setSelectedContext(null);
-                            setEditingTask(null);
-                            setMemberSearch('');
-                        }}
-                        className="p-2 hover:bg-white/10 rounded-full text-slate-400 transition-all"
-                    >
-                        <Plus className="rotate-45" size={24} />
-                    </button>
-                </div>
-
-                <form onSubmit={handleTaskSubmit} className="flex flex-col gap-4 overflow-hidden">
-                    <div className="flex-1 pr-2 overflow-y-auto custom-scrollbar pb-1 space-y-4">
-                        {/* Top Section: Conditional Columns */}
-                        <div className={`grid grid-cols-1 ${formData.date !== '' ? 'lg:grid-cols-2' : ''} gap-4`}>
-                            <div className="space-y-4">
-                                {/* Column 1: Core Data */}
-                                <div className="p-4 bg-white/5 rounded-[1rem] border border-white/5 space-y-4">
-                                    <h4 className="text-xs font-black uppercase tracking-widest text-blue-400 mb-1">Datos de Obra</h4>
-
-                                    {formData.date !== '' && !selectedContext && !editingTask && (
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Fecha</label>
-                                                <input
-                                                    type="date"
-                                                    className="input-sm w-full"
-                                                    value={formData.date}
-                                                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Equipo</label>
-                                                <select
-                                                    className="input-sm w-full"
-                                                    value={formData.teamId || ''}
-                                                    onChange={(e) => setFormData({ ...formData, teamId: e.target.value || null })}
-                                                    required
-                                                >
-                                                    <option value="" disabled>Equipo...</option>
-                                                    {teams.map(t => (
-                                                        <option key={t.id} value={t.id}>{t.name}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Sección</label>
-                                        <select
-                                            className="input-sm w-full"
-                                            value={formData.section}
-                                            onChange={(e) => setFormData({ ...formData, section: e.target.value })}
-                                            required
-                                        >
-                                            <option value="Instalaciones">Instalaciones</option>
-                                            <option value="Herrería">Herrería</option>
-                                            <option value="Vinilos">Vinilos</option>
-                                            <option value="Pintura">Pintura</option>
-                                            <option value="Impresión">Impresión</option>
-                                            <option value="Lonas">Lonas</option>
-                                            <option value="Carpintería">Carpintería</option>
-                                            <option value="Corpóreas">Corpóreas</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Bloqueada por (Tarea previa)</label>
-                                        <select
-                                            className="input-sm w-full"
-                                            value={formData.blockedBy || ''}
-                                            onChange={(e) => setFormData({ ...formData, blockedBy: e.target.value || null })}
-                                        >
-                                            <option value="">Ninguna</option>
-                                            {allTasks
-                                                .filter(at => at.opNumber && at.opNumber.toString().trim() === formData.opNumber.toString().trim() && at.id !== editingTask?.id)
-                                                .map(at => {
-                                                    const sectionLabels: Record<string, string> = {
-                                                        instalacion: 'Instalaciones',
-                                                        herreria: 'Herrería',
-                                                        corporeas: 'Corpóreas',
-                                                        lonas: 'Lonas',
-                                                        pintura: 'Pintura'
-                                                    };
-                                                    const sec = sectionLabels[at.type || 'instalacion'] || at.section || 'General';
-                                                    return (
-                                                        <option key={at.id} value={at.id}>
-                                                            {sec}: {at.name} {at.date ? `(Agendada: ${at.date})` : '(Pendiente)'}
-                                                        </option>
-                                                    );
-                                                })
-                                            }
-                                        </select>
-                                    </div>
-
-                                    <div className="grid grid-cols-3 gap-3">
-                                        <div className="col-span-1 space-y-1">
-                                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">OP</label>
-                                            <input
-                                                className="input-sm w-full font-bold text-blue-400"
-                                                placeholder="0000"
-                                                value={formData.opNumber}
-                                                onChange={(e) => setFormData({ ...formData, opNumber: e.target.value })}
-                                                required
-                                            />
-                                        </div>
-                                        <div className="col-span-2 space-y-1">
-                                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Descripción</label>
-                                            <input
-                                                className="input-sm w-full"
-                                                placeholder="Instalación..."
-                                                value={formData.name}
-                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Cliente</label>
-                                            <input
-                                                className="input-sm w-full"
-                                                placeholder="Nombre del cliente"
-                                                value={formData.client}
-                                                onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-                                                required
-                                            />
-                                        </div>
-                                        {formData.date !== '' && (
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Ubicación</label>
-                                                <input
-                                                    className="input-sm w-full"
-                                                    placeholder="Calle, Ciudad..."
-                                                    value={formData.address}
-                                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                                    required
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
+                isTaskModalOpen && (
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
+                        <div className="glass p-6 rounded-[1.25rem] w-full max-w-[80vw] max-h-[95vh] flex flex-col shadow-2xl border-white/20 animate-in fade-in zoom-in-95 duration-300">
+                            <div className="mb-4 flex justify-between items-start">
+                                <div>
+                                    <h3 className="text-2xl font-bold">{editingTask ? 'Editar Tarea' : 'Asignar Tarea'}</h3>
+                                    <p className="text-slate-400 text-sm mt-1">
+                                        {editingTask
+                                            ? `Editando tarea existente`
+                                            : (selectedContext
+                                                ? `Asignando para el ${format(selectedContext.date, 'dd/MM/yyyy')}`
+                                                : `Configura los detalles de la asignación`)
+                                        }
+                                    </p>
                                 </div>
-
-                                {/* Hours & Vehicles Selection */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="p-4 bg-blue-500/5 rounded-[1rem] border border-blue-500/10 space-y-4">
-                                        <h4 className="text-xs font-black uppercase tracking-widest text-blue-400 mb-1">Carga de Horas</h4>
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Horas Previstas</label>
-                                            <input
-                                                type="number" step="0.1" className="input w-full font-mono font-bold text-emerald-400 text-xl"
-                                                value={formData.totalHours}
-                                                onChange={(e) => {
-                                                    const total = parseFloat(e.target.value) || 0;
-                                                    setFormData({ ...formData, totalHours: total, duration: total });
-                                                }}
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="p-4 bg-orange-500/5 rounded-[1rem] border border-orange-500/10 space-y-4">
-                                        <h4 className="text-xs font-black uppercase tracking-widest text-orange-400 mb-1">Vehículos Asignados</h4>
-                                        <div className="space-y-2">
-                                            <select 
-                                                className="input-sm w-full"
-                                                value=""
-                                                onChange={(e) => {
-                                                    const vehicleId = e.target.value;
-                                                    if (vehicleId && !formData.vehicles.includes(vehicleId)) {
-                                                        setFormData({ ...formData, vehicles: [...formData.vehicles, vehicleId] });
-                                                    }
-                                                }}
-                                            >
-                                                <option value="">Añadir vehículo...</option>
-                                                {vehicles.map(v => {
-                                                    const isBusy = busyVehiclesOnDate.has(v.id);
-                                                    const isSelected = formData.vehicles.includes(v.id);
-                                                    return (
-                                                        <option 
-                                                            key={v.id} 
-                                                            value={v.id} 
-                                                            disabled={isBusy || isSelected}
-                                                        >
-                                                            {v.name} {isBusy ? '(OCUPADO)' : ''}
-                                                        </option>
-                                                    );
-                                                })}
-                                            </select>
-                                            
-                                            <div className="flex flex-wrap gap-2 min-h-[30px]">
-                                                {formData.vehicles.map(vId => {
-                                                    const vehicle = vehicles.find(v => v.id === vId);
-                                                    if (!vehicle) return null;
-                                                    return (
-                                                        <div key={vId} className="flex items-center gap-2 px-2 py-1 bg-white/5 border border-white/10 rounded-md text-[10px] font-bold text-slate-300 uppercase">
-                                                            {vehicle.name}
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => setFormData({ ...formData, vehicles: formData.vehicles.filter(id => id !== vId) })}
-                                                                className="text-red-500 hover:text-red-400"
-                                                            >
-                                                                <Plus size={12} className="rotate-45" />
-                                                            </button>
-                                                        </div>
-                                                    );
-                                                })}
-                                                {formData.vehicles.length === 0 && (
-                                                    <span className="text-[9px] text-slate-500 italic mt-2">Sin vehículos</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <button
+                                    onClick={() => {
+                                        setIsTaskModalOpen(false);
+                                        setSelectedContext(null);
+                                        setEditingTask(null);
+                                        setMemberSearch('');
+                                    }}
+                                    className="p-2 hover:bg-white/10 rounded-full text-slate-400 transition-all"
+                                >
+                                    <Plus className="rotate-45" size={24} />
+                                </button>
                             </div>
 
-                            {/* Right Column: Personnel */}
-                            {formData.date !== '' && (
-                                <div className="p-4 bg-white/5 rounded-[1rem] border border-white/5 space-y-4 flex flex-col h-full">
-                                    <h4 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-1">Personal Asignado</h4>
+                            <form onSubmit={handleTaskSubmit} className="flex flex-col gap-4 overflow-hidden">
+                                <div className="flex-1 pr-2 overflow-y-auto custom-scrollbar pb-1 space-y-4">
+                                    {/* Top Section: Conditional Columns */}
+                                    <div className={`grid grid-cols-1 ${formData.date !== '' ? 'lg:grid-cols-2' : ''} gap-4`}>
+                                        <div className="space-y-4">
+                                            {/* Column 1: Core Data */}
+                                            <div className="p-4 bg-white/5 rounded-[1rem] border border-white/5 space-y-4">
+                                                <h4 className="text-xs font-black uppercase tracking-widest text-blue-400 mb-1">Datos de Obra</h4>
 
-                                    <div className="space-y-2 flex-1 pt-1">
-                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Personal</label>
+                                                {formData.date !== '' && !selectedContext && !editingTask && (
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div className="space-y-1">
+                                                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Fecha</label>
+                                                            <input
+                                                                type="date"
+                                                                className="input-sm w-full"
+                                                                value={formData.date}
+                                                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Equipo</label>
+                                                            <select
+                                                                className="input-sm w-full"
+                                                                value={formData.teamId || ''}
+                                                                onChange={(e) => setFormData({ ...formData, teamId: e.target.value || null })}
+                                                                required
+                                                            >
+                                                                <option value="" disabled>Equipo...</option>
+                                                                {teams.map(t => (
+                                                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                )}
 
-                                        <div className="relative mb-2">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={12} />
-                                            <input
-                                                type="text"
-                                                placeholder="Buscar empleado..."
-                                                className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-[10px] focus:border-blue-500/50 outline-none transition-colors"
-                                                value={memberSearch}
-                                                onChange={(e) => setMemberSearch(e.target.value)}
-                                            />
-                                        </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Sección</label>
+                                                    <select
+                                                        className="input-sm w-full"
+                                                        value={formData.section}
+                                                        onChange={(e) => setFormData({ ...formData, section: e.target.value })}
+                                                        required
+                                                    >
+                                                        <option value="Instalaciones">Instalaciones</option>
+                                                        <option value="Carpintería">Carpintería</option>
+                                                        <option value="Vinilos">Vinilos</option>
+                                                        <option value="Pintura">Pintura</option>
+                                                        <option value="Impresión">Impresión</option>
+                                                        <option value="Lonas">Lonas</option>
+                                                        <option value="Carpintería">Carpintería</option>
+                                                        <option value="Corpóreas">Corpóreas</option>
+                                                    </select>
+                                                </div>
 
-                                        <div className="glass rounded-md p-3 h-[500px] overflow-y-auto custom-scrollbar space-y-1">
-                                            {members
-                                                .filter(m => m.sector === formData.section && m.name.toLowerCase().includes(memberSearch.toLowerCase()))
-                                                .filter(m => {
-                                                    const isAlreadyInTask = formData.members.some(am => am.id === m.id);
-                                                    const originalTaskMember = editingTask?.members?.find((am: any) => am.id === m.id);
-                                                    const originalHoursInThisTask = originalTaskMember ? (originalTaskMember.hours || 8) : 0;
-                                                    const otherHours = (dailyMemberHours[formData.date]?.[m.id] || 0) - originalHoursInThisTask;
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Bloqueada por (Tarea previa)</label>
+                                                    <select
+                                                        className="input-sm w-full"
+                                                        value={formData.blockedBy || ''}
+                                                        onChange={(e) => setFormData({ ...formData, blockedBy: e.target.value || null })}
+                                                    >
+                                                        <option value="">Ninguna</option>
+                                                        {allTasks
+                                                            .filter(at => at.opNumber && at.opNumber.toString().trim() === formData.opNumber.toString().trim() && at.id !== editingTask?.id)
+                                                            .map(at => {
+                                                                const sectionLabels: Record<string, string> = {
+                                                                    instalacion: 'Instalaciones',
+                                                                    Carpinteria: 'Carpintería',
+                                                                    corporeas: 'Corpóreas',
+                                                                    lonas: 'Lonas',
+                                                                    pintura: 'Pintura'
+                                                                };
+                                                                const sec = sectionLabels[at.type || 'instalacion'] || at.section || 'General';
+                                                                return (
+                                                                    <option key={at.id} value={at.id}>
+                                                                        {sec}: {at.name} {at.date ? `(Agendada: ${at.date})` : '(Pendiente)'}
+                                                                    </option>
+                                                                );
+                                                            })
+                                                        }
+                                                    </select>
+                                                </div>
 
-                                                    return isAlreadyInTask || otherHours < 8;
-                                                })
-                                                .sort((a, b) => {
-                                                    const aChecked = formData.members.some(am => am.id === a.id);
-                                                    const bChecked = formData.members.some(am => am.id === b.id);
-                                                    if (aChecked && !bChecked) return -1;
-                                                    if (!aChecked && bChecked) return 1;
-                                                    return a.name.localeCompare(b.name);
-                                                })
-                                                .map(m => {
-                                                    const assignedMember = formData.members.find(am => am.id === m.id);
-                                                    const isChecked = !!assignedMember;
-                                                    return (
-                                                        <div key={m.id} className="flex items-center justify-between gap-3 px-3 py-2 hover:bg-white/10 rounded-lg transition-colors group/member">
-                                                            <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500"
-                                                                    checked={isChecked}
-                                                                    onChange={(e) => {
-                                                                        const newMembers = e.target.checked
-                                                                            ? [...formData.members, { id: m.id, hours: 8 }]
-                                                                            : formData.members.filter(am => am.id !== m.id);
-                                                                        setFormData({
-                                                                            ...formData,
-                                                                            members: newMembers
-                                                                        });
-                                                                    }}
-                                                                />
-                                                                <span className="text-sm member-name uppercase truncate">{m.name}</span>
-                                                            </label>
-                                                            {isChecked && (
-                                                                <div className="flex items-center gap-1 animate-in slide-in-from-right-2 duration-200">
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    <div className="col-span-1 space-y-1">
+                                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">OP</label>
+                                                        <input
+                                                            className="input-sm w-full font-bold text-blue-400"
+                                                            placeholder="0000"
+                                                            value={formData.opNumber}
+                                                            onChange={(e) => setFormData({ ...formData, opNumber: e.target.value })}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-2 space-y-1">
+                                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Descripción</label>
+                                                        <input
+                                                            className="input-sm w-full"
+                                                            placeholder="Instalación..."
+                                                            value={formData.name}
+                                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Cliente</label>
+                                                        <input
+                                                            className="input-sm w-full"
+                                                            placeholder="Nombre del cliente"
+                                                            value={formData.client}
+                                                            onChange={(e) => setFormData({ ...formData, client: e.target.value })}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    {formData.date !== '' && (
+                                                        <div className="space-y-1">
+                                                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Ubicación</label>
+                                                            <input
+                                                                className="input-sm w-full"
+                                                                placeholder="Calle, Ciudad..."
+                                                                value={formData.address}
+                                                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                                                required
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Hours & Vehicles Selection */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="p-4 bg-blue-500/5 rounded-[1rem] border border-blue-500/10 space-y-4">
+                                                    <h4 className="text-xs font-black uppercase tracking-widest text-blue-400 mb-1">Carga de Horas</h4>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Horas Previstas</label>
+                                                        <input
+                                                            type="number" step="0.1" className="input w-full font-mono font-bold text-emerald-400 text-xl"
+                                                            value={formData.totalHours}
+                                                            onChange={(e) => {
+                                                                const total = parseFloat(e.target.value) || 0;
+                                                                setFormData({ ...formData, totalHours: total, duration: total });
+                                                            }}
+                                                            required
+                                                        />
+                                                    </div>
+
+                                                    {/* Manual Hours + Tarea Realizada (solo para tareas pendientes) */}
+                                                    {editingTask && (!editingTask.date || editingTask.date === '') && (
+                                                        <div className="mt-4 pt-4 border-t border-blue-500/10 space-y-2">
+                                                            <div className="space-y-1">
+                                                                <label className="text-[10px] uppercase font-bold text-emerald-500 ml-1">Ingresar horas manual</label>
+                                                                <div className="flex gap-2">
                                                                     <input
                                                                         type="number"
                                                                         step="0.5"
                                                                         min="0"
-                                                                        className="w-16 h-8 bg-blue-500/10 border border-blue-500/30 rounded text-sm text-center font-bold text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
-                                                                        value={assignedMember.hours}
-                                                                        onChange={(e) => {
-                                                                            const hours = parseFloat(e.target.value) || 0;
-                                                                            const newMembers = formData.members.map(am =>
-                                                                                am.id === m.id ? { ...am, hours } : am
-                                                                            );
-                                                                            setFormData({ ...formData, members: newMembers });
-                                                                        }}
+                                                                        className="input w-1/3 font-mono font-bold text-emerald-400 text-sm py-2 px-3"
+                                                                        placeholder="Ej: 8.5"
+                                                                        value={manualHours}
+                                                                        onChange={(e) => setManualHours(e.target.value)}
                                                                     />
-                                                                    <span className="text-[10px] font-bold text-slate-500 uppercase">h</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={!manualHours || parseFloat(manualHours) <= 0}
+                                                                        onClick={async () => {
+                                                                            if (!editingTask || !manualHours || parseFloat(manualHours) <= 0) return;
+                                                                            if (!confirm(`¿Marcar esta tarea como realizada con ${manualHours}h reales?`)) return;
+                                                                            try {
+                                                                                await updateTask({
+                                                                                    ...editingTask,
+                                                                                    totalHours: parseFloat(manualHours),
+                                                                                    realHours: parseFloat(manualHours),
+                                                                                    completed: true
+                                                                                });
+                                                                                sileo.success({ title: 'Tarea marcada como realizada' });
+                                                                                setIsTaskModalOpen(false);
+                                                                                setEditingTask(null);
+                                                                                setManualHours('');
+                                                                            } catch (err) {
+                                                                                sileo.error({ title: 'Error al marcar la tarea' });
+                                                                            }
+                                                                        }}
+                                                                        className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black uppercase tracking-wider rounded-lg transition-all shadow-lg shadow-emerald-600/20 text-[10px]"
+                                                                    >
+                                                                        ✓ Realizada
+                                                                    </button>
                                                                 </div>
+                                                                <p className="text-[9px] text-slate-500 ml-1 mt-1">Sustituye la suma de horas asignadas en el calendario.</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="p-4 bg-orange-500/5 rounded-[1rem] border border-orange-500/10 space-y-4">
+                                                    <h4 className="text-xs font-black uppercase tracking-widest text-orange-400 mb-1">Vehículos Asignados</h4>
+                                                    <div className="space-y-2">
+                                                        <select 
+                                                            className="input-sm w-full"
+                                                            value=""
+                                                            onChange={(e) => {
+                                                                const vehicleId = e.target.value;
+                                                                if (vehicleId && !formData.vehicles.includes(vehicleId)) {
+                                                                    setFormData({ ...formData, vehicles: [...formData.vehicles, vehicleId] });
+                                                                }
+                                                            }}
+                                                        >
+                                                            <option value="">Añadir vehículo...</option>
+                                                            {vehicles.map(v => {
+                                                                const isBusy = busyVehiclesOnDate.has(v.id);
+                                                                const isSelected = formData.vehicles.includes(v.id);
+                                                                return (
+                                                                    <option 
+                                                                        key={v.id} 
+                                                                        value={v.id} 
+                                                                        disabled={isBusy || isSelected}
+                                                                    >
+                                                                        {v.name} {isBusy ? '(OCUPADO)' : ''}
+                                                                    </option>
+                                                                );
+                                                            })}
+                                                        </select>
+                                                        
+                                                        <div className="flex flex-wrap gap-2 min-h-[30px]">
+                                                            {formData.vehicles.map(vId => {
+                                                                const vehicle = vehicles.find(v => v.id === vId);
+                                                                if (!vehicle) return null;
+                                                                return (
+                                                                    <div key={vId} className="flex items-center gap-2 px-2 py-1 bg-white/5 border border-white/10 rounded-md text-[10px] font-bold text-slate-300 uppercase">
+                                                                        {vehicle.name}
+                                                                        <button 
+                                                                            type="button"
+                                                                            onClick={() => setFormData({ ...formData, vehicles: formData.vehicles.filter(id => id !== vId) })}
+                                                                            className="text-red-500 hover:text-red-400"
+                                                                        >
+                                                                            <Plus size={12} className="rotate-45" />
+                                                                        </button>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                            {formData.vehicles.length === 0 && (
+                                                                <span className="text-[9px] text-slate-500 italic mt-2">Sin vehículos</span>
                                                             )}
                                                         </div>
-                                                    );
-                                                })}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
+
+                                        {/* Right Column: Personnel */}
+                                        {formData.date !== '' && (
+                                            <div className="p-4 bg-white/5 rounded-[1rem] border border-white/5 space-y-4 flex flex-col h-full">
+                                                <h4 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-1">Personal Asignado</h4>
+
+                                                <div className="space-y-2 flex-1 pt-1">
+                                                    <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Personal</label>
+
+                                                    <div className="relative mb-2">
+                                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={12} />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Buscar empleado..."
+                                                            className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-[10px] focus:border-blue-500/50 outline-none transition-colors"
+                                                            value={memberSearch}
+                                                            onChange={(e) => setMemberSearch(e.target.value)}
+                                                        />
+                                                    </div>
+
+                                                    <div className="glass rounded-md p-3 h-[500px] overflow-y-auto custom-scrollbar space-y-1">
+                                                        {members
+                                                            .filter(m => m.sector === formData.section && m.name.toLowerCase().includes(memberSearch.toLowerCase()))
+                                                            .filter(m => {
+                                                                const isAlreadyInTask = formData.members.some(am => am.id === m.id);
+                                                                const originalTaskMember = editingTask?.members?.find((am: any) => am.id === m.id);
+                                                                const originalHoursInThisTask = originalTaskMember ? (originalTaskMember.hours || 8) : 0;
+                                                                const otherHours = (dailyMemberHours[formData.date]?.[m.id] || 0) - originalHoursInThisTask;
+
+                                                                return isAlreadyInTask || otherHours < 8;
+                                                            })
+                                                            .sort((a, b) => {
+                                                                const aChecked = formData.members.some(am => am.id === a.id);
+                                                                const bChecked = formData.members.some(am => am.id === b.id);
+                                                                if (aChecked && !bChecked) return -1;
+                                                                if (!aChecked && bChecked) return 1;
+                                                                return a.name.localeCompare(b.name);
+                                                            })
+                                                            .map(m => {
+                                                                const assignedMember = formData.members.find(am => am.id === m.id);
+                                                                const isChecked = !!assignedMember;
+                                                                return (
+                                                                    <div key={m.id} className="flex items-center justify-between gap-3 px-3 py-2 hover:bg-white/10 rounded-lg transition-colors group/member">
+                                                                        <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                className="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500"
+                                                                                checked={isChecked}
+                                                                                onChange={(e) => {
+                                                                                    const newMembers = e.target.checked
+                                                                                        ? [...formData.members, { id: m.id, hours: 8 }]
+                                                                                        : formData.members.filter(am => am.id !== m.id);
+                                                                                    setFormData({
+                                                                                        ...formData,
+                                                                                        members: newMembers
+                                                                                    });
+                                                                                }}
+                                                                            />
+                                                                            <span className="text-sm member-name uppercase truncate">{m.name}</span>
+                                                                        </label>
+                                                                        {isChecked && (
+                                                                            <div className="flex items-center gap-1 animate-in slide-in-from-right-2 duration-200">
+                                                                                <input
+                                                                                    type="number"
+                                                                                    step="0.5"
+                                                                                    min="0"
+                                                                                    className="w-16 h-8 bg-blue-500/10 border border-blue-500/30 rounded text-sm text-center font-bold text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                                                                                    value={assignedMember.hours}
+                                                                                    onChange={(e) => {
+                                                                                        const hours = parseFloat(e.target.value) || 0;
+                                                                                        const newMembers = formData.members.map(am =>
+                                                                                            am.id === m.id ? { ...am, hours } : am
+                                                                                        );
+                                                                                        setFormData({ ...formData, members: newMembers });
+                                                                                    }}
+                                                                                />
+                                                                                <span className="text-[10px] font-bold text-slate-500 uppercase">h</span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
+
                                 </div>
-                            )}
+
+                                <div className="flex gap-4 pt-4 border-t border-white/5">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsTaskModalOpen(false);
+                                            setSelectedContext(null);
+                                            setEditingTask(null);
+                                        }}
+                                        className="btn btn-secondary flex-1 rounded-lg"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button type="submit" className="btn btn-primary flex-[2] rounded-lg shadow-blue-500/30 text-lg py-2">
+                                        {editingTask ? 'Guardar Cambios' : 'Asignar Tarea'}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
+                    </div >
+                )
+            }
 
+            {
+                quickAddType === 'member' && (
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
+                        <div className="glass p-8 rounded-[1.25rem] w-full max-w-[80vw] space-y-6 shadow-2xl border-white/20">
+                            <h3 className="text-2xl font-bold flex items-center gap-2">
+                                <Users size={24} className="text-blue-500" /> Nuevo Integrante
+                            </h3>
+                            <form onSubmit={handleQuickAddMember} className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-400 ml-1">Nombre</label>
+                                    <input
+                                        className="input w-full"
+                                        value={quickMemberData.name}
+                                        onChange={(e) => setQuickMemberData({ ...quickMemberData, name: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-400 ml-1">Sector</label>
+                                    <select
+                                        className="input w-full"
+                                        value={quickMemberData.sector}
+                                        onChange={(e) => setQuickMemberData({ ...quickMemberData, sector: e.target.value })}
+                                        required
+                                    >
+                                        <option value="Instalaciones">Instalaciones</option>
+                                        <option value="Carpintería">Carpintería</option>
+                                        <option value="Vinilos">Vinilos</option>
+                                        <option value="Pintura">Pintura</option>
+                                        <option value="Lonas">Lonas</option>
+                                        <option value="Impresión">Impresión</option>
+                                        <option value="Carpintería">Carpintería</option>
+                                        <option value="Corpóreas">Corpóreas</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-400 ml-1">Rol</label>
+                                    <input
+                                        className="input w-full"
+                                        value={quickMemberData.role}
+                                        onChange={(e) => setQuickMemberData({ ...quickMemberData, role: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="flex gap-4 pt-4">
+                                    <button type="button" onClick={() => setQuickAddType(null)} className="btn btn-secondary flex-1">Cancelar</button>
+                                    <button type="submit" className="btn btn-primary flex-1">Guardar</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
+                )
+            }
 
-                    <div className="flex gap-4 pt-4 border-t border-white/5">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setIsTaskModalOpen(false);
-                                setSelectedContext(null);
-                                setEditingTask(null);
-                            }}
-                            className="btn btn-secondary flex-1 rounded-lg"
-                        >
-                            Cancelar
-                        </button>
-                        <button type="submit" className="btn btn-primary flex-[2] rounded-lg shadow-blue-500/30 text-lg py-2">
-                            {editingTask ? 'Guardar Cambios' : 'Asignar Tarea'}
-                        </button>
+            {
+                quickAddType === 'vehicle' && (
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
+                        <div className="glass p-8 rounded-[1.25rem] w-full max-w-[80vw] space-y-6 shadow-2xl border-white/20">
+                            <h3 className="text-2xl font-bold flex items-center gap-2">
+                                <Truck size={24} className="text-orange-500" /> Nuevo Vehículo
+                            </h3>
+                            <form onSubmit={handleQuickAddVehicle} className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-400 ml-1">Modelo / Nombre</label>
+                                    <input
+                                        className="input w-full"
+                                        value={quickVehicleData.name}
+                                        onChange={(e) => setQuickVehicleData({ ...quickVehicleData, name: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-400 ml-1">Patente</label>
+                                    <input
+                                        className="input w-full"
+                                        value={quickVehicleData.plate}
+                                        onChange={(e) => setQuickVehicleData({ ...quickVehicleData, plate: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="flex gap-4 pt-4">
+                                    <button type="button" onClick={() => setQuickAddType(null)} className="btn btn-secondary flex-1">Cancelar</button>
+                                    <button type="submit" className="btn btn-primary flex-1">Guardar</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </form>
-            </div>
-        </div >
-    )
-}
+                )
+            }
+            {
+                isErrorModalOpen && error && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-[100] p-4 animate-in fade-in zoom-in duration-300">
+                        <div className="glass p-10 rounded-[3rem] w-full max-w-[80vw] space-y-8 shadow-2xl border-white/20 text-center relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]"></div>
 
-{
-    quickAddType === 'member' && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-            <div className="glass p-8 rounded-[1.25rem] w-full max-w-[80vw] space-y-6 shadow-2xl border-white/20">
-                <h3 className="text-2xl font-bold flex items-center gap-2">
-                    <Users size={24} className="text-blue-500" /> Nuevo Integrante
-                </h3>
-                <form onSubmit={handleQuickAddMember} className="space-y-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-400 ml-1">Nombre</label>
-                        <input
-                            className="input w-full"
-                            value={quickMemberData.name}
-                            onChange={(e) => setQuickMemberData({ ...quickMemberData, name: e.target.value })}
-                            required
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-400 ml-1">Sector</label>
-                        <select
-                            className="input w-full"
-                            value={quickMemberData.sector}
-                            onChange={(e) => setQuickMemberData({ ...quickMemberData, sector: e.target.value })}
-                            required
-                        >
-                            <option value="Instalaciones">Instalaciones</option>
-                            <option value="Herrería">Herrería</option>
-                            <option value="Vinilos">Vinilos</option>
-                            <option value="Pintura">Pintura</option>
-                            <option value="Lonas">Lonas</option>
-                            <option value="Impresión">Impresión</option>
-                            <option value="Carpintería">Carpintería</option>
-                            <option value="Corpóreas">Corpóreas</option>
-                        </select>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-400 ml-1">Rol</label>
-                        <input
-                            className="input w-full"
-                            value={quickMemberData.role}
-                            onChange={(e) => setQuickMemberData({ ...quickMemberData, role: e.target.value })}
-                            required
-                        />
-                    </div>
-                    <div className="flex gap-4 pt-4">
-                        <button type="button" onClick={() => setQuickAddType(null)} className="btn btn-secondary flex-1">Cancelar</button>
-                        <button type="submit" className="btn btn-primary flex-1">Guardar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    )
-}
+                            <div className="mx-auto w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center border border-red-500/20">
+                                <Plus size={48} className="text-red-500 rotate-45" />
+                            </div>
 
-{
-    quickAddType === 'vehicle' && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-            <div className="glass p-8 rounded-[1.25rem] w-full max-w-[80vw] space-y-6 shadow-2xl border-white/20">
-                <h3 className="text-2xl font-bold flex items-center gap-2">
-                    <Truck size={24} className="text-orange-500" /> Nuevo Vehículo
-                </h3>
-                <form onSubmit={handleQuickAddVehicle} className="space-y-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-400 ml-1">Modelo / Nombre</label>
-                        <input
-                            className="input w-full"
-                            value={quickVehicleData.name}
-                            onChange={(e) => setQuickVehicleData({ ...quickVehicleData, name: e.target.value })}
-                            required
-                        />
+                            <div className="space-y-4">
+                                <h3 className="text-3xl font-black tracking-tight text-white uppercase italic">
+                                    Límite de horas <span className="text-red-500">Excedido</span>
+                                </h3>
+                                <p className="text-slate-300 text-lg leading-relaxed px-4">
+                                    {error}
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    setIsErrorModalOpen(false);
+                                    clearError();
+                                }}
+                                className="w-full btn bg-red-500 hover:bg-red-600 text-white rounded-[1.5rem] py-5 text-xl font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all"
+                            >
+                                Entendido
+                            </button>
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-400 ml-1">Patente</label>
-                        <input
-                            className="input w-full"
-                            value={quickVehicleData.plate}
-                            onChange={(e) => setQuickVehicleData({ ...quickVehicleData, plate: e.target.value })}
-                            required
-                        />
-                    </div>
-                    <div className="flex gap-4 pt-4">
-                        <button type="button" onClick={() => setQuickAddType(null)} className="btn btn-secondary flex-1">Cancelar</button>
-                        <button type="submit" className="btn btn-primary flex-1">Guardar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    )
-}
-{
-    isErrorModalOpen && error && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-[100] p-4 animate-in fade-in zoom-in duration-300">
-            <div className="glass p-10 rounded-[3rem] w-full max-w-[80vw] space-y-8 shadow-2xl border-white/20 text-center relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]"></div>
-
-                <div className="mx-auto w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center border border-red-500/20">
-                    <Plus size={48} className="text-red-500 rotate-45" />
-                </div>
-
-                <div className="space-y-4">
-                    <h3 className="text-3xl font-black tracking-tight text-white uppercase italic">
-                        Límite de horas <span className="text-red-500">Excedido</span>
-                    </h3>
-                    <p className="text-slate-300 text-lg leading-relaxed px-4">
-                        {error}
-                    </p>
-                </div>
-
-                <button
-                    onClick={() => {
-                        setIsErrorModalOpen(false);
-                        clearError();
-                    }}
-                    className="w-full btn bg-red-500 hover:bg-red-600 text-white rounded-[1.5rem] py-5 text-xl font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all"
-                >
-                    Entendido
-                </button>
-            </div>
-        </div>
-    )
-}
-
+                )
+            }
 
             {/* Task Detail Modal */}
             <TaskDetailModal
@@ -1749,287 +1800,287 @@ export const CorporeasPage: React.FC<CorporeasPageProps> = ({ onNavigateToOrder 
                 }}
             />
 
-{/* Floating Zoom and Navigation Controls */ }
+            {/* Floating Zoom and Navigation Controls */}
 
 
 
-{/* Reminders List Modal */ }
-{
-    isRemindersListOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-            <div className="glass p-8 rounded-[1.25rem] w-full max-w-[80vw] space-y-6 shadow-2xl border-white/20">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-2xl font-bold flex items-center gap-2">
-                        <Bell size={24} className="text-purple-500" /> Recordatorios / Plantillas
-                    </h3>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => {
-                                setEditingReminder(null);
-                                setReminderFormData({ opNumber: '', name: '', client: '', address: '', totalHours: 1 });
-                                setQuickAddType('reminder');
-                            }}
-                            className="bg-purple-600/20 text-purple-400 px-4 py-2 rounded-md border border-purple-500/30 text-sm font-medium hover:bg-purple-600/30 transition-all flex items-center gap-2"
-                        >
-                            <Plus size={16} /> Nuevo
-                        </button>
-                        <button onClick={() => setIsRemindersListOpen(false)} className="p-2 hover:bg-white/10 rounded-md transition-all">
-                            <ChevronRight size={20} className="rotate-45" />
-                        </button>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto p-1 custom-scrollbar">
-                    {reminders.length === 0 && (
-                        <div className="col-span-full p-10 text-center text-slate-500 border border-dashed border-white/10 rounded-lg">
-                            No hay recordatorios guardados. Crea uno para empezar.
-                        </div>
-                    )}
-                    {reminders.map((r: any) => (
-                        <div key={r.id} className="glass p-5 rounded-lg border-white/5 hover:border-purple-500/30 group transition-all relative">
-                            <div className="font-black text-purple-400 text-xs mb-1">OP: {r.opNumber}</div>
-                            <div className="font-bold text-white text-sm truncate">{r.client}</div>
-                            <div className="text-slate-400 text-xs truncate mb-3">{r.name}</div>
-                            <div className="flex justify-between items-center mt-2">
-                                <span className="text-xs font-mono text-slate-500">{r.totalHours}h totales</span>
+            {/* Reminders List Modal */}
+            {
+                isRemindersListOpen && (
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[70] p-4">
+                        <div className="glass p-8 rounded-[1.25rem] w-full max-w-[80vw] space-y-6 shadow-2xl border-white/20">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-2xl font-bold flex items-center gap-2">
+                                    <Bell size={24} className="text-purple-500" /> Recordatorios / Plantillas
+                                </h3>
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => {
-                                            setEditingReminder(r);
-                                            setReminderFormData({
-                                                opNumber: r.opNumber,
-                                                name: r.name,
-                                                client: r.client,
-                                                address: r.address,
-                                                totalHours: r.totalHours
-                                            });
+                                            setEditingReminder(null);
+                                            setReminderFormData({ opNumber: '', name: '', client: '', address: '', totalHours: 1 });
                                             setQuickAddType('reminder');
                                         }}
-                                        className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all"
+                                        className="bg-purple-600/20 text-purple-400 px-4 py-2 rounded-md border border-purple-500/30 text-sm font-medium hover:bg-purple-600/30 transition-all flex items-center gap-2"
                                     >
-                                        <LayoutGrid size={14} />
+                                        <Plus size={16} /> Nuevo
                                     </button>
-                                    <button
-                                        onClick={() => deleteReminder(r.id)}
-                                        className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-400 hover:text-red-400 transition-all"
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
-                                    <button
-                                        onClick={() => handleScheduleFromReminder(r)}
-                                        className="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-lg text-[10px] font-bold transition-all shadow-lg shadow-purple-500/20"
-                                    >
-                                        AGENDAR
+                                    <button onClick={() => setIsRemindersListOpen(false)} className="p-2 hover:bg-white/10 rounded-md transition-all">
+                                        <ChevronRight size={20} className="rotate-45" />
                                     </button>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-    )
-}
 
-{/* Add/Edit Reminder Modal */ }
-{
-    quickAddType === 'reminder' && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[80] p-4">
-            <div className="glass p-8 rounded-[1.25rem] w-full max-w-[80vw] space-y-6 shadow-2xl border-white/20">
-                <h3 className="text-2xl font-bold flex items-center gap-2">
-                    <Bell size={24} className="text-purple-500" /> {editingReminder ? 'Editar Recordatorio' : 'Nuevo Recordatorio'}
-                </h3>
-                <form onSubmit={handleReminderSubmit} className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
-                        <div className="col-span-1 space-y-2">
-                            <label className="text-sm font-medium text-slate-400 ml-1">N° OP</label>
-                            <input
-                                className="input w-full font-bold text-purple-400"
-                                value={reminderFormData.opNumber}
-                                onChange={(e) => setReminderFormData({ ...reminderFormData, opNumber: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div className="col-span-2 space-y-2">
-                            <label className="text-sm font-medium text-slate-400 ml-1">Descripción</label>
-                            <input
-                                className="input w-full"
-                                value={reminderFormData.name}
-                                onChange={(e) => setReminderFormData({ ...reminderFormData, name: e.target.value })}
-                                required
-                            />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-400 ml-1">Cliente</label>
-                        <input
-                            className="input w-full"
-                            value={reminderFormData.client}
-                            onChange={(e) => setReminderFormData({ ...reminderFormData, client: e.target.value })}
-                            required
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-400 ml-1">Horas Totales</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                className="input w-full font-mono font-bold"
-                                value={reminderFormData.totalHours}
-                                onChange={(e) => setReminderFormData({ ...reminderFormData, totalHours: parseFloat(e.target.value) || 0 })}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-400 ml-1">Dirección (Opcional)</label>
-                            <input
-                                className="input w-full text-xs"
-                                value={reminderFormData.address}
-                                onChange={(e) => setReminderFormData({ ...reminderFormData, address: e.target.value })}
-                            />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto p-1 custom-scrollbar">
+                                {reminders.length === 0 && (
+                                    <div className="col-span-full p-10 text-center text-slate-500 border border-dashed border-white/10 rounded-lg">
+                                        No hay recordatorios guardados. Crea uno para empezar.
+                                    </div>
+                                )}
+                                {reminders.map((r: any) => (
+                                    <div key={r.id} className="glass p-5 rounded-lg border-white/5 hover:border-purple-500/30 group transition-all relative">
+                                        <div className="font-black text-purple-400 text-xs mb-1">OP: {r.opNumber}</div>
+                                        <div className="font-bold text-white text-sm truncate">{r.client}</div>
+                                        <div className="text-slate-400 text-xs truncate mb-3">{r.name}</div>
+                                        <div className="flex justify-between items-center mt-2">
+                                            <span className="text-xs font-mono text-slate-500">{r.totalHours}h totales</span>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setEditingReminder(r);
+                                                        setReminderFormData({
+                                                            opNumber: r.opNumber,
+                                                            name: r.name,
+                                                            client: r.client,
+                                                            address: r.address,
+                                                            totalHours: r.totalHours
+                                                        });
+                                                        setQuickAddType('reminder');
+                                                    }}
+                                                    className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all"
+                                                >
+                                                    <LayoutGrid size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteReminder(r.id)}
+                                                    className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-400 hover:text-red-400 transition-all"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleScheduleFromReminder(r)}
+                                                    className="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-lg text-[10px] font-bold transition-all shadow-lg shadow-purple-500/20"
+                                                >
+                                                    AGENDAR
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
-                    <div className="flex gap-4 pt-4">
-                        <button type="button" onClick={() => setQuickAddType(null)} className="btn btn-secondary flex-1">Cancelar</button>
-                        <button type="submit" className="btn bg-purple-600 hover:bg-purple-700 text-white flex-1">Guardar</button>
+                )
+            }
+
+            {/* Add/Edit Reminder Modal */}
+            {
+                quickAddType === 'reminder' && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[80] p-4">
+                        <div className="glass p-8 rounded-[1.25rem] w-full max-w-[80vw] space-y-6 shadow-2xl border-white/20">
+                            <h3 className="text-2xl font-bold flex items-center gap-2">
+                                <Bell size={24} className="text-purple-500" /> {editingReminder ? 'Editar Recordatorio' : 'Nuevo Recordatorio'}
+                            </h3>
+                            <form onSubmit={handleReminderSubmit} className="space-y-4">
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="col-span-1 space-y-2">
+                                        <label className="text-sm font-medium text-slate-400 ml-1">N° OP</label>
+                                        <input
+                                            className="input w-full font-bold text-purple-400"
+                                            value={reminderFormData.opNumber}
+                                            onChange={(e) => setReminderFormData({ ...reminderFormData, opNumber: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="col-span-2 space-y-2">
+                                        <label className="text-sm font-medium text-slate-400 ml-1">Descripción</label>
+                                        <input
+                                            className="input w-full"
+                                            value={reminderFormData.name}
+                                            onChange={(e) => setReminderFormData({ ...reminderFormData, name: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-400 ml-1">Cliente</label>
+                                    <input
+                                        className="input w-full"
+                                        value={reminderFormData.client}
+                                        onChange={(e) => setReminderFormData({ ...reminderFormData, client: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-400 ml-1">Horas Totales</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            className="input w-full font-mono font-bold"
+                                            value={reminderFormData.totalHours}
+                                            onChange={(e) => setReminderFormData({ ...reminderFormData, totalHours: parseFloat(e.target.value) || 0 })}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-400 ml-1">Dirección (Opcional)</label>
+                                        <input
+                                            className="input w-full text-xs"
+                                            value={reminderFormData.address}
+                                            onChange={(e) => setReminderFormData({ ...reminderFormData, address: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex gap-4 pt-4">
+                                    <button type="button" onClick={() => setQuickAddType(null)} className="btn btn-secondary flex-1">Cancelar</button>
+                                    <button type="submit" className="btn bg-purple-600 hover:bg-purple-700 text-white flex-1">Guardar</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </form>
-            </div>
-        </div>
-    )
-}
+                )
+            }
 
-{/* Context Menu */ }
-{
-    contextMenu && (
-        <div
-            className="fixed z-[200] bg-slate-800/90 backdrop-blur-xl border border-white/10 rounded-md shadow-2xl py-1 w-48 animate-in fade-in zoom-in duration-200"
-            style={{ left: contextMenu.x, top: contextMenu.y }}
-            onClick={(e) => e.stopPropagation()}
-        >
-            <button
-                onClick={handleFragmentClick}
-                className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors"
-            >
-                <LayoutGrid size={14} className="text-blue-400" /> Fragmentar
-            </button>
-            <button
-                onClick={handleDuplicateTask}
-                className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors"
-            >
-                <Copy size={14} className="text-emerald-400" /> Duplicar
-            </button>
-                <button
-                    onClick={() => {
-                        setEditingTask(contextMenu.task);
-                        setFormData({
-                            opNumber: contextMenu.task.opNumber?.toString() ?? '',
-                            name: contextMenu.task.name?.toString() ?? '',
-                            client: contextMenu.task.client?.toString() ?? '',
-                            address: contextMenu.task.address?.toString() ?? 'Montevideo',
-                            totalHours: Number(contextMenu.task.totalHours) || 0,
-                            estimatedHours: Number(contextMenu.task.estimatedHours) || 0,
-                            duration: Number(contextMenu.task.duration) || 0,
-                            vehicles: (contextMenu.task.vehicles ?? []).map(String),
-                            members: (contextMenu.task.members ?? []),
-                            additionalJobs: (contextMenu.task.additionalJobs ?? []),
-                            date: contextMenu.task.date?.toString() ?? '',
-                            teamId: contextMenu.task.teamId ?? null,
-                            section: contextMenu.task.section?.toString() ?? 'Herrería',
-                            blockedBy: contextMenu.task.blockedBy || null
-                        });
-                        setIsTaskModalOpen(true);
-                        setContextMenu(null);
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors"
-                >
-                    <Calendar size={14} /> Editar
-                </button>
-                <button
-                    onClick={async () => {
-                        const task = contextMenu.task;
-                        setContextMenu(null);
-                        try {
-                            await exportTaskToPDF(task, members, vehicles);
-                            sileo.success({ title: 'Reporte PDF generado' });
-                        } catch (err) {
-                            sileo.error({ title: 'Error al generar el PDF' });
-                        }
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors border-t border-white/5"
-                >
-                    <FileText size={14} className="text-orange-400" /> Generar Reporte
-                </button>
-                <button
-                    onClick={async () => {
-                        const task = contextMenu.task;
-                        setContextMenu(null);
-                        try {
-                            await exportTaskToPDF(task, members, vehicles, true);
-                            sileo.success({ title: 'Orden de Trabajo generada' });
-                        } catch (err) {
-                            sileo.error({ title: 'Error al generar el PDF' });
-                        }
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors border-t border-white/5"
-                >
-                    <Printer size={14} className="text-blue-400" /> Imprimir Orden
-                </button>
-            </div>
-        )
-    }
-
-{/* Fragment Modal */ }
-{
-    isFragmentModalOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[150] p-4">
-            <div className="glass p-8 rounded-[1.25rem] w-full max-w-[80vw] space-y-6 shadow-2xl border-white/20 animate-in slide-in-from-bottom duration-300">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-2xl font-bold flex items-center gap-2">
-                        <LayoutGrid size={24} className="text-blue-500" /> Fragmentar Tarea
-                    </h3>
-                </div>
-
-                <div className="space-y-4">
-                    <p className="text-slate-400 text-sm">
-                        Indica en cuántos días totales deseas dividir esta tarea. Las horas se distribuirán proporcionalmente.
-                    </p>
-
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Cantidad de días a dividir</label>
-                        <input
-                            type="number"
-                            min="1"
-                            max="30"
-                            value={fragmentDays}
-                            onChange={(e) => setFragmentDays(parseInt(e.target.value) || 1)}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-mono"
-                        />
-                    </div>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                    <button
-                        onClick={() => {
-                            setIsFragmentModalOpen(false);
-                            setFragmentTargetTask(null);
-                        }}
-                        className="flex-1 px-6 py-4 rounded-lg font-bold text-slate-400 hover:bg-white/5 transition-all text-sm border border-white/10"
+            {/* Context Menu */}
+            {
+                contextMenu && (
+                    <div
+                        className="fixed z-[200] bg-slate-800/90 backdrop-blur-xl border border-white/10 rounded-md shadow-2xl py-1 w-48 animate-in fade-in zoom-in duration-200"
+                        style={{ left: contextMenu.x, top: contextMenu.y }}
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        Cancelar
-                    </button>
-                    <button
-                        onClick={confirmFragment}
-                        className="flex-[2] bg-blue-600 hover:bg-blue-500 text-white px-6 py-4 rounded-lg font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95 text-sm flex items-center justify-center gap-2"
-                    >
-                        Confirmar Fragmentación
-                    </button>
-                </div>
-            </div>
-        </div>
-    )}
+                        <button
+                            onClick={handleFragmentClick}
+                            className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors"
+                        >
+                            <LayoutGrid size={14} className="text-blue-400" /> Fragmentar
+                        </button>
+                        <button
+                            onClick={handleDuplicateTask}
+                            className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors"
+                        >
+                            <Copy size={14} className="text-emerald-400" /> Duplicar
+                        </button>
+                        <button
+                            onClick={() => {
+                                setEditingTask(contextMenu.task);
+                                setFormData({
+                                    opNumber: contextMenu.task.opNumber || '',
+                                    name: contextMenu.task.name || '',
+                                    client: contextMenu.task.client || '',
+                                    address: contextMenu.task.address || 'Montevideo',
+                                    totalHours: contextMenu.task.totalHours || 0,
+                                    estimatedHours: contextMenu.task.estimatedHours || contextMenu.task.totalHours || 0,
+                                    duration: contextMenu.task.duration || 0,
+                                    vehicles: contextMenu.task.vehicles || [],
+                                    members: contextMenu.task.members || [],
+                                    additionalJobs: contextMenu.task.additionalJobs || [],
+                                    date: contextMenu.task.date || '',
+                                    teamId: contextMenu.task.teamId || null,
+                                    section: contextMenu.task.section || 'Carpintería',
+                                    blockedBy: contextMenu.task.blockedBy || null
+                                });
+                                setIsTaskModalOpen(true);
+                                setContextMenu(null);
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors"
+                        >
+                            <Calendar size={14} /> Editar
+                        </button>
+                        <button
+                            onClick={async () => {
+                                const task = contextMenu.task;
+                                setContextMenu(null);
+                                try {
+                                    await exportTaskToPDF(task, members, vehicles);
+                                    sileo.success({ title: 'Reporte PDF generado' });
+                                } catch (err) {
+                                    sileo.error({ title: 'Error al generar el PDF' });
+                                }
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors border-t border-white/5"
+                        >
+                            <FileText size={14} className="text-orange-400" /> Generar Reporte
+                        </button>
+                        <button
+                            onClick={async () => {
+                                const task = contextMenu.task;
+                                setContextMenu(null);
+                                try {
+                                    await exportTaskToPDF(task, members, vehicles, true);
+                                    sileo.success({ title: 'Orden de Trabajo generada' });
+                                } catch (err) {
+                                    sileo.error({ title: 'Error al generar el PDF' });
+                                }
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-white/5 text-slate-300 font-bold text-xs flex items-center gap-2 transition-colors border-t border-white/5"
+                        >
+                            <Printer size={14} className="text-blue-400" /> Imprimir Orden
+                        </button>
+                    </div>
+                )
+            }
 
-</div>
-);
-};
+            {/* Fragment Modal */}
+            {
+                isFragmentModalOpen && (
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[150] p-4">
+                        <div className="glass p-8 rounded-[1.25rem] w-full max-w-[80vw] space-y-6 shadow-2xl border-white/20 animate-in slide-in-from-bottom duration-300">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-2xl font-bold flex items-center gap-2">
+                                    <LayoutGrid size={24} className="text-blue-500" /> Fragmentar Tarea
+                                </h3>
+                            </div>
+
+                            <div className="space-y-4">
+                                <p className="text-slate-400 text-sm">
+                                    Indica en cuántos días totales deseas dividir esta tarea. Las horas se distribuirán proporcionalmente.
+                                </p>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Cantidad de días a dividir</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="30"
+                                        value={fragmentDays}
+                                        onChange={(e) => setFragmentDays(parseInt(e.target.value) || 1)}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-mono"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    onClick={() => {
+                                        setIsFragmentModalOpen(false);
+                                        setFragmentTargetTask(null);
+                                    }}
+                                    className="flex-1 px-6 py-4 rounded-lg font-bold text-slate-400 hover:bg-white/5 transition-all text-sm border border-white/10"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={confirmFragment}
+                                    className="flex-[2] bg-blue-600 hover:bg-blue-500 text-white px-6 py-4 rounded-lg font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95 text-sm flex items-center justify-center gap-2"
+                                >
+                                    Confirmar Fragmentación
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+            </div>
+        );
+    };

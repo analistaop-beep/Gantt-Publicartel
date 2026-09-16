@@ -28,7 +28,7 @@ interface PinturaPageProps {
 
 export const PinturaPage: React.FC<PinturaPageProps> = ({ onNavigateToOrder }) => {
     const {
-        teams, tasks: instalacionTasks, pinturaTasks: tasks, herreriaTasks, corporeasTasks, lonasTasks, members, vehicles, reminders,
+        teams, tasks: instalacionTasks, pinturaTasks: tasks, herreriaTasks, carpinteriaTasks, corporeasTasks, lonasTasks, members, vehicles, reminders,
         addTask, addMember, addVehicle, updateTask,
         updateTaskLocal, deleteTaskLocal, addTaskLocal,
         saveAllChanges, hasPendingChanges, isSaving,
@@ -162,10 +162,11 @@ export const PinturaPage: React.FC<PinturaPageProps> = ({ onNavigateToOrder }) =
             ...(instalacionTasks || []),
             ...tasks,
             ...(herreriaTasks || []),
+            ...(carpinteriaTasks || []),
             ...(corporeasTasks || []),
             ...(lonasTasks || [])
         ];
-    }, [instalacionTasks, tasks, herreriaTasks, corporeasTasks, lonasTasks]);
+    }, [instalacionTasks, tasks, herreriaTasks, carpinteriaTasks, corporeasTasks, lonasTasks]);
 
     // Filter pending tasks (tasks with no date)
     const pendingTasks = useMemo(() => {

@@ -5,21 +5,23 @@ import { es } from 'date-fns/locale';
 import { type SectorTaskStatus, SECTOR_TASK_STATUSES, getStatusBadgeStyle } from '../utils/taskStatusUtils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-export type SectorType = 'Instalaciones' | 'Herrería' | 'Corpóreas' | 'Lonas + Vinilos' | 'Pintura';
+export type SectorType = 'Instalaciones' | 'Herrería' | 'Carpintería' | 'Corpóreas' | 'Lonas + Vinilos' | 'Pintura';
 
 export const SECTORS: SectorType[] = [
     'Instalaciones',
     'Herrería',
+    'Carpintería',
     'Corpóreas',
     'Lonas + Vinilos',
     'Pintura',
 ];
 
-/** Normalizes any sector or task type string from the database to one of the 5 canonical SectorTypes */
+/** Normalizes any sector or task type string from the database to one of the canonical SectorTypes */
 export function normalizeSector(sector?: string | null, type?: string | null): SectorType {
     const s = (sector || '').trim().toLowerCase();
     const t = (type || '').trim().toLowerCase();
     if (s.includes('herr') || t === 'herreria') return 'Herrería';
+    if (s.includes('carpin') || s.includes('carp') || t === 'carpinteria') return 'Carpintería';
     if (s.includes('corp') || t === 'corporeas') return 'Corpóreas';
     if (s.includes('lona') || s.includes('vinil') || t === 'lonas') return 'Lonas + Vinilos';
     if (s.includes('pint') || t === 'pintura') return 'Pintura';
@@ -27,10 +29,11 @@ export function normalizeSector(sector?: string | null, type?: string | null): S
 }
 
 /** Maps display sector to the task `type` key used in useStore */
-export function sectorToTaskType(sector: string): 'instalacion' | 'herreria' | 'corporeas' | 'lonas' | 'pintura' {
+export function sectorToTaskType(sector: string): 'instalacion' | 'herreria' | 'carpinteria' | 'corporeas' | 'lonas' | 'pintura' {
     const normalized = normalizeSector(sector);
     switch (normalized) {
         case 'Herrería': return 'herreria';
+        case 'Carpintería': return 'carpinteria';
         case 'Corpóreas': return 'corporeas';
         case 'Lonas + Vinilos': return 'lonas';
         case 'Pintura': return 'pintura';
@@ -61,6 +64,13 @@ function getSectorColor(sector: string) {
                 text: 'text-orange-700 dark:text-orange-400',
                 border: 'border-orange-300 dark:border-orange-500/30',
                 dot: 'bg-orange-500',
+            };
+        case 'Carpintería':
+            return {
+                bg: 'bg-amber-100 dark:bg-amber-500/15',
+                text: 'text-amber-700 dark:text-amber-400',
+                border: 'border-amber-300 dark:border-amber-500/30',
+                dot: 'bg-amber-500',
             };
         case 'Corpóreas':
             return {

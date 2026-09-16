@@ -101,6 +101,14 @@ export interface Notification {
     targetUsers?: string[] | null; // null if broadcast, array of emails if targeted
     opId?: string | null;          // ID de la OP relacionada (para navegar al hacer click)
     opNumber?: string | null;      // Número de OP legible
+    // Campos extra para el mail de nueva OP
+    opClient?: string | null;
+    opSubject?: string | null;
+    opDescription?: string | null;
+    opAddress?: string | null;
+    opFiles?: (string | OrderAttachment)[] | null;
+    opSeller?: string | null;
+    opCategory?: string | null;
 }
 
 // ─── Disa ───────────────────────────────────────────────────────────────────
@@ -126,7 +134,7 @@ export interface TareaDisa {
 
 export interface OpTemplateTask {
     section: string; // 'Lonas', 'Instalaciones', etc.
-    type: 'lonas' | 'instalacion' | 'herreria' | 'corporeas' | 'pintura';
+    type: 'lonas' | 'instalacion' | 'herreria' | 'carpinteria' | 'corporeas' | 'pintura';
     name: string; // Descripción de tarea
     estimatedHours?: number;
     totalHours?: number;

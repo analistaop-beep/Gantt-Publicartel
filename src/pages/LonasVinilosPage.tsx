@@ -26,7 +26,7 @@ interface LonasVinilosPageProps {
 
 export const LonasVinilosPage: React.FC<LonasVinilosPageProps> = ({ onNavigateToOrder }) => {
     const {
-        teams, tasks: instalacionTasks, lonasTasks: tasks, herreriaTasks, corporeasTasks, pinturaTasks, members, vehicles, reminders,
+        teams, tasks: instalacionTasks, lonasTasks: tasks, herreriaTasks, carpinteriaTasks, corporeasTasks, pinturaTasks, members, vehicles, reminders,
         addTask, addMember, addVehicle, updateTask,
         updateTaskLocal, deleteTaskLocal, addTaskLocal,
         saveAllChanges, hasPendingChanges, isSaving,
@@ -186,10 +186,11 @@ export const LonasVinilosPage: React.FC<LonasVinilosPageProps> = ({ onNavigateTo
             ...(instalacionTasks || []),
             ...tasks,
             ...(herreriaTasks || []),
+            ...(carpinteriaTasks || []),
             ...(corporeasTasks || []),
             ...(pinturaTasks || [])
         ];
-    }, [instalacionTasks, tasks, herreriaTasks, corporeasTasks, pinturaTasks]);
+    }, [instalacionTasks, tasks, herreriaTasks, carpinteriaTasks, corporeasTasks, pinturaTasks]);
 
     // Filter pending tasks (tasks with no date)
     const pendingTasks = useMemo(() => {

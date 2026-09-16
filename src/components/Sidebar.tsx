@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Truck, CalendarDays, Lock, X, Hammer, Sun, Moon, Layers, Image, Palette, ClipboardList, Signpost, Zap } from 'lucide-react';
+import { Users, Truck, CalendarDays, Lock, X, Hammer, Sun, Moon, Layers, Image, Palette, ClipboardList, Signpost, Zap, Ruler } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTheme } from '../context/ThemeContext';
 
@@ -17,6 +17,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     const mainMenuItems = [
         { id: 'gantt', label: 'Instalaciones', icon: CalendarDays },
         { id: 'herreria', label: 'Herrería', icon: Hammer },
+        { id: 'carpinteria', label: 'Carpintería', icon: Ruler },
         { id: 'corporeas', label: 'Corpóreas', icon: Layers },
         { id: 'lonas', label: 'Lonas + Vinilos', icon: Image },
         { id: 'pintura', label: 'Pintura', icon: Palette },

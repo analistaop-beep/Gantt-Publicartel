@@ -133,6 +133,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
         uploadFile,
         tasks,
         herreriaTasks,
+        carpinteriaTasks,
         corporeasTasks,
         lonasTasks,
         pinturaTasks,
@@ -720,11 +721,12 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
         return [
             ...(tasks || []).map(t => ({ ...t, section: t.section || 'Instalaciones', type: t.type || 'instalacion' })),
             ...(herreriaTasks || []).map(t => ({ ...t, section: 'Herrería', type: t.type || 'herreria' })),
+            ...(carpinteriaTasks || []).map(t => ({ ...t, section: 'Carpintería', type: t.type || 'carpinteria' })),
             ...(corporeasTasks || []).map(t => ({ ...t, section: 'Corpóreas', type: t.type || 'corporeas' })),
             ...(lonasTasks || []).map(t => ({ ...t, section: 'Lonas', type: t.type || 'lonas' })),
             ...(pinturaTasks || []).map(t => ({ ...t, section: 'Pintura', type: t.type || 'pintura' }))
         ];
-    }, [tasks, herreriaTasks, corporeasTasks, lonasTasks, pinturaTasks]);
+    }, [tasks, herreriaTasks, carpinteriaTasks, corporeasTasks, lonasTasks, pinturaTasks]);
 
     const linkedTasks = React.useMemo(() => {
         const opNum = viewingOrder?.opNumber || taskFormData.opNumber;
@@ -865,6 +867,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
             const sectionToType: Record<string, string> = {
                 'Instalaciones': 'instalacion',
                 'Herrería': 'herreria',
+                'Carpintería': 'carpinteria',
                 'Corpóreas': 'corporeas',
                 'Lonas': 'lonas',
                 'Pintura': 'pintura'
@@ -1239,6 +1242,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                             
                                                             if (section === 'Instalaciones') { letter = 'I'; colorClass = 'bg-emerald-600/10 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 border-emerald-600/20 dark:border-emerald-400/20 hover:bg-emerald-600/20 dark:hover:bg-emerald-400/20'; }
                                                             else if (section === 'Herrería') { letter = 'H'; colorClass = 'bg-orange-400/10 text-orange-400 border-orange-400/20 hover:bg-orange-400/20'; }
+                                                             else if (section === 'Carpintería') { letter = 'CP'; colorClass = 'bg-amber-400/10 text-amber-400 border-amber-400/20 hover:bg-amber-400/20'; }
                                                             else if (section === 'Corpóreas') { letter = 'C'; colorClass = 'bg-indigo-400/10 text-indigo-400 border-indigo-400/20 hover:bg-indigo-400/20'; }
                                                             else if (section === 'Lonas') { letter = 'L'; colorClass = 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20 hover:bg-cyan-400/20'; }
                                                             else if (section === 'Pintura') { letter = 'P'; colorClass = 'bg-pink-400/10 text-pink-400 border-pink-400/20 hover:bg-pink-400/20'; }
@@ -2039,6 +2043,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                             {linkedTasks.map((task: any) => {
                                                 let badgeColor = 'text-blue-600 bg-blue-400/10 border-blue-400/20 dark:text-blue-400 dark:bg-blue-400/10 dark:border-blue-400/20';
                                                 if (task.section === 'Herrería') badgeColor = 'text-orange-600 bg-orange-400/10 border-orange-400/20 dark:text-orange-400 dark:bg-orange-400/10 dark:border-orange-400/20';
+                                                 if (task.section === 'Carpintería') badgeColor = 'text-amber-600 bg-amber-400/10 border-amber-400/20 dark:text-amber-400 dark:bg-amber-400/10 dark:border-amber-400/20';
                                                 if (task.section === 'Corpóreas') badgeColor = 'text-purple-600 bg-purple-400/10 border-purple-400/20 dark:text-purple-400 dark:bg-purple-400/10 dark:border-purple-400/20';
                                                 if (task.section === 'Lonas') badgeColor = 'text-pink-600 bg-pink-400/10 border-pink-400/20 dark:text-pink-400 dark:bg-pink-400/10 dark:border-pink-400/20';
                                                 if (task.section === 'Pintura') badgeColor = 'text-teal-600 bg-teal-400/10 border-teal-400/20 dark:text-teal-400 dark:bg-teal-400/10 dark:border-teal-400/20';
@@ -2618,6 +2623,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                     >
                                                         <option value="Instalaciones">Instalaciones</option>
                                                         <option value="Herrería">Herrería</option>
+                                                         <option value="Carpintería">Carpintería</option>
                                                         <option value="Corpóreas">Corpóreas</option>
                                                         <option value="Lonas">Lonas</option>
                                                         <option value="Pintura">Pintura</option>
@@ -2681,6 +2687,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                         const sectionLabels: Record<string, string> = {
                                                             instalacion: 'Instalaciones',
                                                             herreria: 'Herrería',
+                                                             carpinteria: 'Carpintería',
                                                             corporeas: 'Corpóreas',
                                                             lonas: 'Lonas',
                                                             pintura: 'Pintura'

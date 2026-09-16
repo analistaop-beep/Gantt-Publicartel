@@ -11,6 +11,7 @@ const MembersPage = lazy(() => import('./pages/MembersPage').then(m => ({ defaul
 const VehiclesPage = lazy(() => import('./pages/VehiclesPage').then(m => ({ default: m.VehiclesPage })));
 const GanttPage = lazy(() => import('./pages/GanttPage').then(m => ({ default: m.GanttPage })));
 const HerreriaPage = lazy(() => import('./pages/HerreriaPage').then(m => ({ default: m.HerreriaPage })));
+const CarpinteriaPage = lazy(() => import('./pages/CarpinteriaPage').then(m => ({ default: m.CarpinteriaPage })));
 const CorporeasPage = lazy(() => import('./pages/CorporeasPage').then(m => ({ default: m.CorporeasPage })));
 const LonasVinilosPage = lazy(() => import('./pages/LonasVinilosPage').then(m => ({ default: m.LonasVinilosPage })));
 const PinturaPage = lazy(() => import('./pages/PinturaPage').then(m => ({ default: m.PinturaPage })));
@@ -137,6 +138,7 @@ function App() {
         case 'disa': return <DisaPage />;
         case 'gantt': return <GanttPage onNavigateToOrder={navigateToOrder} />;
         case 'herreria': return <HerreriaPage onNavigateToOrder={navigateToOrder} />;
+        case 'carpinteria': return <CarpinteriaPage onNavigateToOrder={navigateToOrder} />;
         case 'corporeas': return <CorporeasPage onNavigateToOrder={navigateToOrder} />;
         case 'lonas': return <LonasVinilosPage onNavigateToOrder={navigateToOrder} />;
         case 'pintura': return <PinturaPage onNavigateToOrder={navigateToOrder} />;
@@ -203,7 +205,7 @@ function App() {
       </button>
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <div className={`flex-1 min-h-0 ${['gantt', 'herreria', 'corporeas', 'lonas', 'pintura', 'members', 'vehicles', 'soportes', 'disa', 'orders'].includes(activeTab) ? '' : 'p-4 md:p-8 overflow-auto'} transition-all duration-300`}>
+        <div className={`flex-1 min-h-0 ${['gantt', 'herreria', 'carpinteria', 'corporeas', 'lonas', 'pintura', 'members', 'vehicles', 'soportes', 'disa', 'orders'].includes(activeTab) ? '' : 'p-4 md:p-8 overflow-auto'} transition-all duration-300`}>
           {renderContent()}
         </div>
       </main>

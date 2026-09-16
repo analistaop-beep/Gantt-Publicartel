@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-export const SECTIONS = ['Instalaciones', 'Herrería', 'Corpóreas', 'Lonas', 'Pintura'] as const;
+export const SECTIONS = ['Instalaciones', 'Herrería', 'Carpintería', 'Corpóreas', 'Lonas', 'Pintura'] as const;
 export type Section = typeof SECTIONS[number];
 
 export type SectionRates = Partial<Record<Section, number>>;

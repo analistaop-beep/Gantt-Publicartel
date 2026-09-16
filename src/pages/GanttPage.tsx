@@ -27,7 +27,7 @@ interface GanttPageProps {
 
 export const GanttPage: React.FC<GanttPageProps> = ({ onNavigateToOrder }) => {
     const {
-        teams, tasks, herreriaTasks, corporeasTasks, lonasTasks, pinturaTasks, members, vehicles, reminders,
+        teams, tasks, herreriaTasks, carpinteriaTasks, corporeasTasks, lonasTasks, pinturaTasks, members, vehicles, reminders,
         addTask, addMember, addVehicle, updateTask,
         updateTaskLocal, deleteTaskLocal, addTaskLocal,
         saveAllChanges, hasPendingChanges, isSaving,
@@ -192,11 +192,12 @@ export const GanttPage: React.FC<GanttPageProps> = ({ onNavigateToOrder }) => {
         return [
             ...tasks,
             ...herreriaTasks,
+            ...(carpinteriaTasks || []),
             ...(corporeasTasks || []),
             ...(lonasTasks || []),
             ...(pinturaTasks || [])
         ];
-    }, [tasks, herreriaTasks, corporeasTasks, lonasTasks, pinturaTasks]);
+    }, [tasks, herreriaTasks, carpinteriaTasks, corporeasTasks, lonasTasks, pinturaTasks]);
 
     // Filter pending tasks (tasks with no date)
     const pendingTasks = useMemo(() => {

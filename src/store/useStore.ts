@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿﻿import { create } from 'zustand';
 import { supabase } from '../utils/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import type { Team, ProductionOrder, Notification, Profile, Soporte, TareaDisa, DisaEstado } from '../types';
@@ -24,6 +24,7 @@ interface AppState {
     teams: Team[];
     tasks: any[];
     herreriaTasks: any[];
+    carpinteriaTasks: any[];
     corporeasTasks: any[];
     lonasTasks: any[];
     pinturaTasks: any[];
@@ -113,7 +114,7 @@ interface AppState {
         vehicles?: string[];
         members?: Array<{ id: string, hours: number }>;
         additionalJobs?: Array<{ description: string; client: string }>;
-        type?: 'instalacion' | 'herreria' | 'corporeas' | 'lonas' | 'pintura';
+        type?: 'instalacion' | 'herreria' | 'carpinteria' | 'corporeas' | 'lonas' | 'pintura';
         section?: string;
         blockedBy?: string | null;
         photo?: string | null;
@@ -142,9 +143,10 @@ interface AppState {
 }
 
 // Helper: categorize a task into the correct state bucket based on its type
-function getTaskListKey(type: string): 'tasks' | 'herreriaTasks' | 'corporeasTasks' | 'lonasTasks' | 'pinturaTasks' {
+function getTaskListKey(type: string): 'tasks' | 'herreriaTasks' | 'carpinteriaTasks' | 'corporeasTasks' | 'lonasTasks' | 'pinturaTasks' {
     switch (type) {
         case 'herreria': return 'herreriaTasks';
+        case 'carpinteria': return 'carpinteriaTasks';
         case 'corporeas': return 'corporeasTasks';
         case 'lonas': return 'lonasTasks';
         case 'pintura': return 'pinturaTasks';
@@ -343,6 +345,7 @@ export const useStore = create<AppState>((set, get) => ({
     teams: [],
     tasks: [],
     herreriaTasks: [],
+    carpinteriaTasks: [],
     corporeasTasks: [],
     lonasTasks: [],
     pinturaTasks: [],
@@ -419,6 +422,7 @@ export const useStore = create<AppState>((set, get) => ({
                 teams: teamsRes.data || [],
                 tasks: mappedTasks.filter(t => t.type === 'instalacion'),
                 herreriaTasks: mappedTasks.filter(t => t.type === 'herreria'),
+                carpinteriaTasks: mappedTasks.filter(t => t.type === 'carpinteria'),
                 corporeasTasks: mappedTasks.filter(t => t.type === 'corporeas'),
                 lonasTasks: mappedTasks.filter(t => t.type === 'lonas'),
                 pinturaTasks: mappedTasks.filter(t => t.type === 'pintura'),
@@ -643,9 +647,24 @@ export const useStore = create<AppState>((set, get) => ({
             type: 'new_op' as const,
             targetUsers: null,
             opId: newId,
-            opNumber: order.opNumber
+            opNumber: order.opNumber,
+            opClient: order.client || null,
+            opSubject: order.subject || null,
+            opDescription: order.description || null,
+            opAddress: order.address || null,
+            opFiles: order.files && order.files.length > 0 ? order.files : null,
+            opSeller: order.seller || null,
+            opCategory: order.category || null,
         };
-        await supabase.from('notifications').insert([notification]);
+        await supabase.from('notifications').insert([{
+            id: notification.id,
+            title: notification.title,
+            message: notification.message,
+            type: notification.type,
+            targetUsers: notification.targetUsers,
+            opId: notification.opId,
+            opNumber: notification.opNumber,
+        }]);
         
         await get().sendEmailNotification({
             ...notification,
@@ -1296,7 +1315,7 @@ export const useStore = create<AppState>((set, get) => ({
 
         // Remove from all task lists
         const updates: any = {};
-        for (const key of ['tasks', 'herreriaTasks', 'corporeasTasks', 'lonasTasks', 'pinturaTasks'] as const) {
+        for (const key of ['tasks', 'herreriaTasks', 'carpinteriaTasks', 'corporeasTasks', 'lonasTasks', 'pinturaTasks'] as const) {
             const filtered = state[key].filter((t: any) => t.id !== id);
             if (filtered.length !== state[key].length) {
                 updates[key] = filtered;
@@ -1459,159 +1478,143 @@ export const useStore = create<AppState>((set, get) => ({
 
 function generateNotificationHtml(notification: Notification, origin: string): string {
     const opLink = notification.opId ? `${origin}/orders?opId=${notification.opId}` : `${origin}/orders`;
-    const capitalizedType = notification.type === 'new_op' 
-        ? 'Nueva Orden de Producción' 
-        : notification.type === 'status_change' 
-        ? 'Cambio de Estado' 
+    const capitalizedType = notification.type === 'new_op'
+        ? 'Nueva Orden de Producción'
+        : notification.type === 'status_change'
+        ? 'Cambio de Estado'
         : 'Nuevo Comentario';
 
-    return `
-<!DOCTYPE html>
-<html>
+    const isNewOp = notification.type === 'new_op';
+
+    // ── Helper: fila de tabla de detalles ────────────────────────────────────
+    const row = (label: string, value: string | null | undefined, isLast = false) => {
+        if (!value) return '';
+        const b = isLast ? '' : 'border-bottom: 1px solid #e2e8f0;';
+        return `
+        <tr>
+            <td style="padding:12px 0 12px 16px;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;${b}vertical-align:top;white-space:nowrap;">${label}</td>
+            <td style="padding:12px 16px 12px 8px;font-size:14px;color:#0f172a;font-weight:600;text-align:right;${b}vertical-align:top;">${value}</td>
+        </tr>`;
+    };
+
+    // ── Adjuntos: imágenes y otros archivos ──────────────────────────────────
+    const IMAGE_EXT = /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i;
+    const PDF_EXT   = /\.pdf(\?|$)/i;
+
+    let attachmentsHtml = '';
+    if (isNewOp && notification.opFiles && notification.opFiles.length > 0) {
+        const images: string[] = [];
+        const others: { url: string; name: string }[] = [];
+
+        notification.opFiles.forEach((f: any) => {
+            const url  = typeof f === 'string' ? f : f.url;
+            const name = typeof f === 'string'
+                ? (url.split('/').pop() || 'Archivo')
+                : (f.name || url.split('/').pop() || 'Archivo');
+            if (IMAGE_EXT.test(url)) { images.push(url); }
+            else { others.push({ url, name }); }
+        });
+
+        const pct = images.length === 1 ? '100%' : images.length === 2 ? '50%' : '33%';
+
+        const imageGrid = images.length > 0 ? `
+        <div style="margin-bottom:${others.length > 0 ? '16px' : '0'};">
+            <table width="100%" cellpadding="4" cellspacing="0" role="presentation">
+                <tr>${images.slice(0, 3).map(url => `
+                    <td style="width:${pct};vertical-align:top;">
+                        <a href="${url}" target="_blank">
+                            <img src="${url}" alt="Foto adjunta" width="100%" style="border-radius:8px;display:block;object-fit:cover;max-height:180px;border:1px solid #e2e8f0;" />
+                        </a>
+                    </td>`).join('')}
+                </tr>
+            </table>
+            ${images.length > 3 ? `<p style="font-size:11px;color:#64748b;text-align:center;margin:8px 0 0;">+${images.length - 3} fotos más — <a href="${opLink}" style="color:#2563eb;">ver en el sistema</a></p>` : ''}
+        </div>` : '';
+
+        const otherLinks = others.length > 0 ? `
+        <div>${others.map(f => `
+            <a href="${f.url}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0;text-decoration:none;margin-bottom:6px;font-size:13px;color:#2563eb;font-weight:600;">
+                ${PDF_EXT.test(f.url) ? '📄' : '📎'} ${f.name}
+            </a>`).join('')}
+        </div>` : '';
+
+        if (images.length > 0 || others.length > 0) {
+            attachmentsHtml = `
+        <div style="margin-bottom:28px;">
+            <p style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 12px;">Archivos adjuntos</p>
+            ${imageGrid}${otherLinks}
+        </div>`;
+        }
+    }
+
+    // ── Bloque de descripción ────────────────────────────────────────────────
+    const descriptionHtml = (isNewOp && notification.opDescription)
+        ? `<div style="background:#f1f5f9;border-radius:10px;padding:16px 20px;margin-bottom:28px;border-left:3px solid #2563eb;">
+            <p style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 8px;">Descripción</p>
+            <p style="font-size:14px;color:#1e293b;line-height:1.6;margin:0;white-space:pre-wrap;">${notification.opDescription}</p>
+           </div>`
+        : '';
+
+    // ── Filas de la tabla ────────────────────────────────────────────────────
+    const opNumberRow   = notification.opNumber ? row('Número de OP', `#${notification.opNumber}`) : '';
+    const opSubjectRow  = isNewOp ? row('Asunto',     notification.opSubject)    : '';
+    const opClientRow   = isNewOp ? row('Cliente',    notification.opClient)     : '';
+    const opSellerRow   = isNewOp ? row('Vendedor',   notification.opSeller)     : '';
+    const opCategoryRow = isNewOp ? row('Categoría',  notification.opCategory)   : '';
+    const opAddressRow  = isNewOp ? row('Ubicación',  notification.opAddress)    : '';
+    const eventRow      = row('Evento', capitalizedType);
+    const dateRow       = row('Fecha', new Date(notification.createdAt).toLocaleDateString('es-UY', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    }), true);
+
+    const badgeHtml = isNewOp
+        ? `<span style="display:inline-block;margin-top:14px;background:rgba(255,255,255,0.18);color:#e0f2fe;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;padding:4px 14px;border-radius:999px;">Nueva Orden de Producción</span>`
+        : '';
+
+    return `<!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${notification.title}</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f8fafc;
-            color: #1e293b;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #ffffff;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e2e8f0;
-        }
-        .header {
-            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
-            padding: 30px 20px;
-            text-align: center;
-        }
-        .logo-text {
-            color: #ffffff;
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            margin: 0;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .content {
-            padding: 32px 24px;
-        }
-        .title {
-            font-size: 20px;
-            font-weight: 800;
-            color: #0f172a;
-            margin-top: 0;
-            margin-bottom: 12px;
-            line-height: 1.3;
-        }
-        .message {
-            font-size: 15px;
-            color: #475569;
-            line-height: 1.6;
-            margin-bottom: 28px;
-        }
-        .details-table {
-            background-color: #f1f5f9;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 28px;
-            border-collapse: collapse;
-            width: 100%;
-        }
-        .details-label {
-            padding: 12px 0 12px 12px;
-            font-size: 11px;
-            color: #64748b;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .details-value {
-            padding: 12px 12px 12px 0;
-            font-size: 14px;
-            color: #0f172a;
-            font-weight: 700;
-            text-align: right;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .details-row-last .details-label,
-        .details-row-last .details-value {
-            border-bottom: none;
-        }
-        .btn-container {
-            text-align: center;
-            margin-top: 32px;
-            margin-bottom: 8px;
-        }
-        .btn {
-            display: inline-block;
-            background-color: #2563eb;
-            color: #ffffff !important;
-            text-decoration: none;
-            padding: 14px 30px;
-            font-size: 14px;
-            font-weight: 700;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
-            transition: all 0.2s ease;
-        }
-        .footer {
-            background-color: #f8fafc;
-            padding: 24px;
-            text-align: center;
-            font-size: 11px;
-            color: #94a3b8;
-            border-top: 1px solid #e2e8f0;
-            line-height: 1.5;
-        }
-    </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1 class="logo-text">Publicartel</h1>
-        </div>
-        <div class="content">
-            <h2 class="title">${notification.title}</h2>
-            <p class="message">${notification.message}</p>
-            
-            <table class="details-table" width="100%" cellpadding="0" cellspacing="0">
-                ${notification.opNumber ? `
-                <tr>
-                    <td class="details-label" style="padding: 12px 0 12px 12px; font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #e2e8f0;">Número de OP</td>
-                    <td class="details-value" style="padding: 12px 12px 12px 0; font-size: 14px; color: #0f172a; font-weight: 700; text-align: right; border-bottom: 1px solid #e2e8f0;">#${notification.opNumber}</td>
-                </tr>` : ''}
-                <tr>
-                    <td class="details-label" style="padding: 12px 0 12px 12px; font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #e2e8f0;">Evento</td>
-                    <td class="details-value" style="padding: 12px 12px 12px 0; font-size: 14px; color: #0f172a; font-weight: 700; text-align: right; border-bottom: 1px solid #e2e8f0;">${capitalizedType}</td>
-                </tr>
-                <tr class="details-row-last">
-                    <td class="details-label" style="padding: 12px 0 12px 12px; font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;">Fecha</td>
-                    <td class="details-value" style="padding: 12px 12px 12px 0; font-size: 14px; color: #0f172a; font-weight: 700; text-align: right;">${new Date(notification.createdAt).toLocaleDateString('es-UY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-                </tr>
-            </table>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background-color:#f1f5f9;color:#1e293b;margin:0;padding:32px 16px;">
+<div style="max-width:600px;margin:0 auto;">
 
-            <div class="btn-container">
-                <a href="${opLink}" class="btn" target="_blank" style="color: #ffffff;">Ver en el Sistema</a>
-            </div>
-        </div>
-        <div class="footer">
-            Este es un correo automático generado por la plataforma de gestión Gantt Publicartel.<br>
-            Por favor, no respondas a este mensaje.
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 100%);border-radius:16px 16px 0 0;padding:32px 24px;text-align:center;">
+        <p style="color:#93c5fd;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.2em;margin:0 0 8px;">Sistema de Gestión</p>
+        <h1 style="color:#ffffff;font-size:26px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;margin:0;text-shadow:0 2px 8px rgba(0,0,0,0.15);">Publicartel</h1>
+        ${badgeHtml}
+    </div>
+
+    <!-- Body -->
+    <div style="background:#ffffff;padding:36px 28px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;">
+        <h2 style="font-size:20px;font-weight:800;color:#0f172a;margin:0 0 6px;line-height:1.3;">${notification.title}</h2>
+        <p style="font-size:15px;color:#475569;line-height:1.6;margin:0 0 28px;">${notification.message}</p>
+
+        ${descriptionHtml}
+
+        <!-- Tabla de detalles -->
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f8fafc;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;margin-bottom:28px;">
+            ${opNumberRow}${opSubjectRow}${opClientRow}${opSellerRow}${opCategoryRow}${opAddressRow}${eventRow}${dateRow}
+        </table>
+
+        ${attachmentsHtml}
+
+        <!-- Botón CTA -->
+        <div style="text-align:center;margin-top:8px;">
+            <a href="${opLink}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#ffffff;text-decoration:none;padding:15px 36px;font-size:14px;font-weight:700;border-radius:10px;box-shadow:0 4px 14px rgba(37,99,235,0.35);letter-spacing:0.02em;">Ver Orden en el Sistema &rarr;</a>
         </div>
     </div>
+
+    <!-- Footer -->
+    <div style="background:#f8fafc;border-radius:0 0 16px 16px;padding:22px 24px;text-align:center;font-size:11px;color:#94a3b8;border:1px solid #e2e8f0;border-top:none;line-height:1.6;">
+        Este es un correo automático generado por la plataforma de gestión <strong>Gantt Publicartel</strong>.<br>
+        Por favor, no respondas a este mensaje.
+    </div>
+
+</div>
 </body>
-</html>
-    `;
+</html>`;
 }
