@@ -702,7 +702,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
             ];
 
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, '�rdenes de Producción');
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Órdenes de Producción');
 
             const dateLabel = exportDateFrom
                 ? `_desde_${exportDateFrom}`
@@ -981,7 +981,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         {bothSidebarsHidden && (
                             <h2 className="text-2xl font-bold whitespace-nowrap flex items-center gap-3">
                                 <ClipboardList className="text-blue-400" />
-                                �rdenes de Producción
+                                Órdenes de Producción
                             </h2>
                         )}
 
@@ -1055,7 +1055,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                         </div>
                                         <div>
                                             <h3 className="text-base font-bold text-white">Exportar a Excel</h3>
-                                            <p className="text-xs text-slate-400">Resumen de �rdenes de Producción</p>
+                                            <p className="text-xs text-slate-400">Resumen de Órdenes de Producción</p>
                                         </div>
                                     </div>
                                     <button
@@ -1090,7 +1090,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                         max={new Date().toISOString().slice(0, 10)}
                                     />
                                     {!exportDateFrom && (
-                                        <p className="text-[11px] text-slate-500">Sin filtro � se exportarán todas las órdenes visibles.</p>
+                                        <p className="text-[11px] text-slate-500">Sin filtro — se exportarán todas las órdenes visibles.</p>
                                     )}
                                     {exportDateFrom && (
                                         <p className="text-[11px] text-emerald-400">
@@ -1389,7 +1389,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         <div className="flex justify-between items-center mb-8">
                             <h3 className="text-xl font-bold flex items-center gap-3">
                                 {isEditing ? <Edit2 className="text-blue-400" size={20} /> : <Plus className="text-blue-400" size={20} />}
-                                {isEditing ? 'EDITAR ORDEN DE PRODUCCI�N' : 'NUEVA ORDEN DE PRODUCCI�N'}
+                                {isEditing ? 'EDITAR ORDEN DE PRODUCCIÓN' : 'NUEVA ORDEN DE PRODUCCIÓN'}
                             </h3>
                             <button onClick={closeModal} className="p-2 hover:bg-white/5 transition-colors text-slate-400 hover:text-white">
                                 <X size={20} />
@@ -1740,7 +1740,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                             <>
                                                 <Upload size={24} className="text-slate-400" />
                                                 <span className="text-sm font-bold">Click para subir archivos</span>
-                                                <span className="text-[10px] text-slate-500">Imágenes �  WebP · PDF · Excel (.xls, .xlsx)</span>
+                                                <span className="text-[10px] text-slate-500">Imágenes · WebP · PDF · Excel (.xls, .xlsx)</span>
                                             </>
                                         )}
                                     </button>
@@ -1857,7 +1857,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/8 flex-shrink-0 bg-slate-50/80 dark:bg-[#0f172a]/80 backdrop-blur-sm">
                             <div className="flex-1">
                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 mb-0.5 block">
-                                    ORDEN DE PRODUCCI�N
+                                    ORDEN DE PRODUCCIÓN
                                 </span>
                                 <h3 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
                                     OP <span className="text-blue-600 dark:text-blue-400">#{viewingOrder.opNumber}</span>
@@ -1882,7 +1882,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                             onClick={() => navigateOrder(-1)}
                                             disabled={viewingOrderIndex <= 0}
                                             className="px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/8 transition-colors text-slate-400 hover:text-slate-700 dark:hover:text-white disabled:opacity-25 disabled:cursor-not-allowed"
-                                            title="OP anterior (� �)"
+                                            title="OP anterior (←)"
                                         >
                                             <ChevronDown size={16} className="rotate-90" />
                                         </button>
@@ -1893,7 +1893,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                             onClick={() => navigateOrder(1)}
                                             disabled={viewingOrderIndex >= filteredOrders.length - 1}
                                             className="px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/8 transition-colors text-slate-400 hover:text-slate-700 dark:hover:text-white disabled:opacity-25 disabled:cursor-not-allowed"
-                                            title="OP siguiente (� )"
+                                            title="OP siguiente (→)"
                                         >
                                             <ChevronDown size={16} className="-rotate-90" />
                                         </button>
@@ -1912,7 +1912,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         <div className="px-6 py-4 border-b border-slate-100 dark:border-white/5 flex-shrink-0 bg-sky-50/30 dark:bg-white/[0.015]">
                             <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
                                 <div>
-                                    <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-0.5">DIRECCI�N</label>
+                                    <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-0.5">DIRECCIÓN</label>
                                     <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{viewingOrder.address || 'No especificada'}</p>
                                 </div>
                                 <div>
@@ -2001,7 +2001,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                             </div>
                         </div>
 
-                        {/* Body � two columns */}
+                        {/* Body — two columns */}
                         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_380px]">
 
                             {/* Left: Description + Comments */}
@@ -2010,7 +2010,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
                                 {/* Description */}
                                 <div>
-                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">DESCRIPCI�N DEL PROYECTO</label>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">DESCRIPCIÓN DEL PROYECTO</label>
                                     <div className="p-5 bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-xl text-slate-800 dark:text-slate-300 leading-relaxed min-h-[120px] text-sm">
                                         {viewingOrder.description ? (
                                             renderFormattedText(viewingOrder.description)
@@ -2482,7 +2482,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
                         {/* Footer info */}
                         <div className="px-6 py-2.5 border-t border-white/5 bg-[#0a1120]/70 flex-shrink-0 flex items-center justify-between text-[10px] text-slate-400">
-                            <span>�xx� <strong>Visor Microsoft Office Web:</strong> Visualización exacta con formatos de celda, colores, fuentes, anchos de columna y solapas en la parte inferior.</span>
+                            <span>ℹ️ <strong>Visor Microsoft Office Web:</strong> Visualización exacta con formatos de celda, colores, fuentes, anchos de columna y solapas en la parte inferior.</span>
                             <span className="text-slate-500 italic hidden sm:inline">Usá el botón "Imprimir" para enviar a la impresora.</span>
                         </div>
                     </div>
@@ -2517,7 +2517,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                             <button
                                 onClick={(e) => { e.stopPropagation(); lightboxPrev(); }}
                                 className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/8 hover:bg-white/18 text-white rounded-full transition-all border border-white/10 hover:scale-110 active:scale-95 cursor-pointer z-10"
-                                title="Anterior (� �)"
+                                title="Anterior (←)"
                             >
                                 <ChevronDown size={22} className="rotate-90" />
                             </button>
@@ -2537,7 +2537,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                             <button
                                 onClick={(e) => { e.stopPropagation(); lightboxNext(); }}
                                 className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/8 hover:bg-white/18 text-white rounded-full transition-all border border-white/10 hover:scale-110 active:scale-95 cursor-pointer z-10"
-                                title="Siguiente (� )"
+                                title="Siguiente (→)"
                             >
                                 <ChevronDown size={22} className="-rotate-90" />
                             </button>
@@ -2615,7 +2615,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                         <div className="bg-white/[0.015] border border-white/5 p-3 rounded-xl space-y-2">
                                             <div className="grid grid-cols-2 gap-2">
                                                 <div className="space-y-0.5">
-                                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">SECCI�N</label>
+                                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">SECCIÓN</label>
                                                     <select
                                                         className="input w-full text-sm py-1.5"
                                                         value={taskFormData.section}
@@ -2642,7 +2642,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                             </div>
 
                                             <div className="space-y-0.5">
-                                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">DESCRIPCI�N / TAREA</label>
+                                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">DESCRIPCIÓN / TAREA</label>
                                                 <input
                                                     type="text"
                                                     className="input w-full text-sm py-1.5"
@@ -2665,7 +2665,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                     />
                                                 </div>
                                                 <div className="space-y-0.5">
-                                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">DIRECCI�N</label>
+                                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">DIRECCIÓN</label>
                                                     <input
                                                         type="text"
                                                         className="input w-full text-sm py-1.5"
@@ -2738,7 +2738,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                                     <span className="text-xs font-normal text-slate-500">hs</span>
                                                                     {estimated > 0 && (
                                                                         <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${isOver ? 'bg-red-500/20 text-red-400' : isUnder ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                                                                            {isOver ? `+${(realHoursComputed - estimated).toFixed(1)} sobre` : isUnder ? `-${(estimated - realHoursComputed).toFixed(1)} faltan` : '�S OK'}
+                                                                            {isOver ? `+${(realHoursComputed - estimated).toFixed(1)} sobre` : isUnder ? `-${(estimated - realHoursComputed).toFixed(1)} faltan` : '✓ OK'}
                                                                         </span>
                                                                     )}
                                                                 </div>
@@ -2895,7 +2895,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
                             <h3 className="text-sm font-bold text-white flex items-center gap-2">
                                 <User size={16} className="text-blue-400" />
-                                Etiquetar Usuarios � OP {isTaggingOrder.opNumber}
+                                Etiquetar Usuarios — OP {isTaggingOrder.opNumber}
                             </h3>
                             <button onClick={() => setIsTaggingOrder(null)} className="text-slate-400 hover:text-white transition-colors">
                                 <X size={18} />
