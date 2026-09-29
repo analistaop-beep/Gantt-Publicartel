@@ -109,6 +109,7 @@ export interface Notification {
     opFiles?: (string | OrderAttachment)[] | null;
     opSeller?: string | null;
     opCategory?: string | null;
+    opComment?: string | null; // Texto completo del comentario (para notificaciones de tipo 'comment')
 }
 
 // ─── Disa ───────────────────────────────────────────────────────────────────

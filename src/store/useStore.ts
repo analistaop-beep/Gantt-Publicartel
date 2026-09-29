@@ -1,4 +1,4 @@
-﻿﻿import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import { supabase } from '../utils/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 import type { Team, ProductionOrder, Notification, Profile, Soporte, TareaDisa, DisaEstado } from '../types';
@@ -693,6 +693,24 @@ export const useStore = create<AppState>((set, get) => ({
             // verificar si las tareas ya fueron creadas y crear las que falten.
             await applyOpTemplateTasks(order.opNumber, order.client, order.address, order.category);
 
+            // Si la OP pasó a estado "Terminada", marcar todas sus tareas asociadas como terminadas
+            if (previousOrder && previousOrder.status !== 'Terminada' && order.status === 'Terminada') {
+                const opNum = order.opNumber?.toString().trim();
+                if (opNum) {
+                    const { data: linkedTasks } = await supabase
+                        .from('tasks')
+                        .select('id')
+                        .eq('opNumber', opNum);
+                    if (linkedTasks && linkedTasks.length > 0) {
+                        const taskIds = linkedTasks.map((t: any) => t.id);
+                        await supabase
+                            .from('tasks')
+                            .update({ completed: true, status: 'Terminada' })
+                            .in('id', taskIds);
+                    }
+                }
+            }
+
             if (previousOrder) {
                 const statusChanged = previousOrder.status !== order.status;
                 const newCommentAdded = order.comments && previousOrder.comments && order.comments.length > previousOrder.comments.length;
@@ -737,7 +755,8 @@ export const useStore = create<AppState>((set, get) => ({
                         await get().sendEmailNotification({
                             ...notification,
                             targetUsers: allTargets,
-                            createdAt: new Date().toISOString()
+                            createdAt: new Date().toISOString(),
+                            opComment: newCommentAdded && lastComment?.text ? lastComment.text : null
                         });
                     } else if (statusChanged) {
                         // Si cambia el estado pero no hay followers ni menciones, notificar igual (broadcast)
@@ -1555,7 +1574,15 @@ function generateNotificationHtml(notification: Notification, origin: string): s
            </div>`
         : '';
 
-    // ── Filas de la tabla ────────────────────────────────────────────────────
+    // Bloque de comentario completo
+    const commentHtml = (notification.type === 'comment' && notification.opComment)
+        ? `<div style="background:#eff6ff;border-radius:10px;padding:16px 20px;margin-bottom:28px;border-left:3px solid #3b82f6;">
+            <p style="font-size:11px;color:#3b82f6;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 8px;">&#128172; Comentario</p>
+            <p style="font-size:14px;color:#1e293b;line-height:1.7;margin:0;white-space:pre-wrap;">${notification.opComment.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+           </div>`
+        : '';
+
+    // Filas de la tabla
     const opNumberRow   = notification.opNumber ? row('Número de OP', `#${notification.opNumber}`) : '';
     const opSubjectRow  = isNewOp ? row('Asunto',     notification.opSubject)    : '';
     const opClientRow   = isNewOp ? row('Cliente',    notification.opClient)     : '';
@@ -1594,6 +1621,8 @@ function generateNotificationHtml(notification: Notification, origin: string): s
         <p style="font-size:15px;color:#475569;line-height:1.6;margin:0 0 28px;">${notification.message}</p>
 
         ${descriptionHtml}
+
+        ${commentHtml}
 
         <!-- Tabla de detalles -->
         <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f8fafc;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;margin-bottom:28px;">
