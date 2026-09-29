@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Plus, ChevronUp, ChevronDown, ClipboardList, Filter, Check, X, Calendar, Clock } from 'lucide-react';
 import { format, addDays, isWeekend } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -24,7 +24,7 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
     onStatusChange,
     onNewPendingClick
 }) => {
-    const { productionOrders, subtasks = [], updateTaskLocal, updateTask } = useStore();
+    const { productionOrders, subtasks = [], updateTaskLocal } = useStore();
     const [search, setSearch] = useState('');
     const [selectedStatuses, setSelectedStatuses] = useState<SectorTaskStatus[]>([]);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
