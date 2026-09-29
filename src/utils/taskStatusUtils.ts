@@ -1,7 +1,15 @@
 import { format } from 'date-fns';
 
 export type SectorTaskStatus = 'Para realizar' | 'Detenida' | 'Agendada' | 'En proceso' | 'Terminada';
-export const SECTOR_TASK_STATUSES: SectorTaskStatus[] = ['Para realizar', 'Detenida', 'Agendada', 'En proceso', 'Terminada'];
+export const SECTOR_TASK_STATUSES: SectorTaskStatus[] = ['Agendada', 'En proceso', 'Para realizar', 'Detenida', 'Terminada'];
+
+export const STATUS_PRIORITY: Record<SectorTaskStatus, number> = {
+    'Agendada': 1,
+    'En proceso': 2,
+    'Para realizar': 3,
+    'Detenida': 4,
+    'Terminada': 5,
+};
 
 export const getTaskStatus = (task: any): SectorTaskStatus => {
     if (task.completed || task.status === 'Terminada') return 'Terminada';

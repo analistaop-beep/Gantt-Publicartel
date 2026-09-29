@@ -165,11 +165,11 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
         onCloseViewingOrder?.();
     };
 
-    // Abrir OP automáticamente al navegar desde una notificación o desde otra vista
+    // Abrir OP automÃ¡ticamente al navegar desde una notificaciÃ³n o desde otra vista
     React.useEffect(() => {
         if (!(openOrderId || openOrderNumber) || productionOrders.length === 0) return;
         
-        // Buscar por ID exacto primero, luego por número de OP como fallback
+        // Buscar por ID exacto primero, luego por nÃºmero de OP como fallback
         const target = openOrderId
             ? productionOrders.find(o => o.id === openOrderId)
             : productionOrders.find(o => o.opNumber?.toString().trim() === openOrderNumber?.toString().trim());
@@ -178,7 +178,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
             setViewingOrder(target);
             onOpenOrderIdConsumed?.();
         } else if (isModalOnly) {
-            sileo.error({ title: `No se encontró la OP #${openOrderNumber}` });
+            sileo.error({ title: `No se encontrÃ³ la OP #${openOrderNumber}` });
             handleCloseViewingOrder();
         }
     }, [openOrderId, openOrderNumber, productionOrders, isModalOnly]);
@@ -186,8 +186,8 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
     const [taggingSelection, setTaggingSelection] = useState<string[]>([]);
     const categories = ['Proyectos', 'Outdoor', 'Digital', 'Mantenimiento', 'Petroleras', 'Reclamos', 'Otros'];
     const statuses = [
-        'En Proceso', 'En Diseño', 'Detenido Comercial', 'Detenido SST', 'En Herrería',
-        'En Pintura', 'En Corpóreas', 'En Impresión', 'Para Relevar',
+        'En Proceso', 'En DiseÃ±o', 'Detenido Comercial', 'Detenido SST', 'En HerrerÃ­a',
+        'En Pintura', 'En CorpÃ³reas', 'En ImpresiÃ³n', 'Para Relevar',
         'Para Instalar', 'Para Entregar', 'Para Facturar', 'Terminada', 'En muestras de color', 
         'Soldando lona'
     ];
@@ -289,7 +289,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
             (order.category || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (order.description || '').toLowerCase().includes(searchQuery.toLowerCase());
             
-        const currentStatus = order.status === 'Gestión de Acopio' ? 'En Proceso' : (order.status || 'En Proceso');
+        const currentStatus = order.status === 'GestiÃ³n de Acopio' ? 'En Proceso' : (order.status || 'En Proceso');
         const matchesStatus = statusFilter.includes(currentStatus);
         const matchesSeller = sellerFilter.includes(order.seller);
         const matchesCategory = categoryFilter.includes(order.category || 'Proyectos');
@@ -325,21 +325,21 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                 await updateProductionOrder({ id: isEditing, ...formData });
                 if (formData.category === 'Outdoor') {
                     sileo.success({ 
-                        title: "Orden de producción actualizada", 
-                        description: "Se aplicó el Modelo Outdoor (tareas pendientes verificadas y creadas si no existían)."
+                        title: "Orden de producciÃ³n actualizada", 
+                        description: "Se aplicÃ³ el Modelo Outdoor (tareas pendientes verificadas y creadas si no existÃ­an)."
                     });
                 } else {
-                    sileo.success({ title: "Orden de producción actualizada" });
+                    sileo.success({ title: "Orden de producciÃ³n actualizada" });
                 }
             } else {
                 await addProductionOrder(formData);
                 if (formData.category === 'Outdoor') {
                     sileo.success({ 
-                        title: "Orden de producción creada", 
-                        description: "Se aplicó el Modelo Outdoor (4 tareas cargadas automáticamente)."
+                        title: "Orden de producciÃ³n creada", 
+                        description: "Se aplicÃ³ el Modelo Outdoor (4 tareas cargadas automÃ¡ticamente)."
                     });
                 } else {
-                    sileo.success({ title: "Orden de producción creada" });
+                    sileo.success({ title: "Orden de producciÃ³n creada" });
                 }
             }
             closeModal();
@@ -653,7 +653,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
         try {
             await printHoursAnalysisPDF(order, allTasks);
         } catch (err: any) {
-            sileo.error({ title: 'Error al generar Análisis', description: err.message });
+            sileo.error({ title: 'Error al generar AnÃ¡lisis', description: err.message });
         } finally {
             setIsPrintingAnalysis(false);
         }
@@ -670,19 +670,19 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
             });
 
             if (ordersToExport.length === 0) {
-                sileo.error({ title: 'Sin resultados', description: 'No hay órdenes en el rango de fecha seleccionado.' });
+                sileo.error({ title: 'Sin resultados', description: 'No hay Ã³rdenes en el rango de fecha seleccionado.' });
                 return;
             }
 
             const rows = ordersToExport.map(order => ({
-                'N° OP': order.opNumber || '',
+                'NÂ° OP': order.opNumber || '',
                 'Cliente': order.client || '',
                 'Sector': order.category || '',
                 'Comercial': order.seller || '',
                 'Moneda': order.currency === 'USD' ? 'USD' : 'UYU',
                 'Monto': order.price || 0,
-                'Estado': order.status === 'Gestión de Acopio' ? 'En Proceso' : (order.status || 'En Proceso'),
-                'Fecha de creación': order.createdAt
+                'Estado': order.status === 'GestiÃ³n de Acopio' ? 'En Proceso' : (order.status || 'En Proceso'),
+                'Fecha de creaciÃ³n': order.createdAt
                     ? new Date(order.createdAt).toLocaleDateString('es-UY', { day: '2-digit', month: '2-digit', year: 'numeric' })
                     : ''
             }));
@@ -691,25 +691,25 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
             // Column widths
             worksheet['!cols'] = [
-                { wch: 10 }, // N° OP
+                { wch: 10 }, // NÂ° OP
                 { wch: 30 }, // Cliente
                 { wch: 18 }, // Sector
                 { wch: 20 }, // Comercial
                 { wch: 8 },  // Moneda
                 { wch: 14 }, // Monto
                 { wch: 22 }, // Estado
-                { wch: 18 }, // Fecha de creación
+                { wch: 18 }, // Fecha de creaciÃ³n
             ];
 
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Órdenes de Producción');
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Ã“rdenes de ProducciÃ³n');
 
             const dateLabel = exportDateFrom
                 ? `_desde_${exportDateFrom}`
                 : `_${new Date().toISOString().slice(0, 10)}`;
             XLSX.writeFile(workbook, `Ordenes_Produccion${dateLabel}.xlsx`);
 
-            sileo.success({ title: `Reporte exportado`, description: `${ordersToExport.length} órdenes exportadas correctamente.` });
+            sileo.success({ title: `Reporte exportado`, description: `${ordersToExport.length} Ã³rdenes exportadas correctamente.` });
             setIsExportModalOpen(false);
         } catch (err: any) {
             sileo.error({ title: 'Error al exportar', description: err.message });
@@ -720,9 +720,9 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
     const allTasks = React.useMemo(() => {
         return [
             ...(tasks || []).map(t => ({ ...t, section: t.section || 'Instalaciones', type: t.type || 'instalacion' })),
-            ...(herreriaTasks || []).map(t => ({ ...t, section: 'Herrería', type: t.type || 'herreria' })),
-            ...(carpinteriaTasks || []).map(t => ({ ...t, section: 'Carpintería', type: t.type || 'carpinteria' })),
-            ...(corporeasTasks || []).map(t => ({ ...t, section: 'Corpóreas', type: t.type || 'corporeas' })),
+            ...(herreriaTasks || []).map(t => ({ ...t, section: 'HerrerÃ­a', type: t.type || 'herreria' })),
+            ...(carpinteriaTasks || []).map(t => ({ ...t, section: 'CarpinterÃ­a', type: t.type || 'carpinteria' })),
+            ...(corporeasTasks || []).map(t => ({ ...t, section: 'CorpÃ³reas', type: t.type || 'corporeas' })),
             ...(lonasTasks || []).map(t => ({ ...t, section: 'Lonas', type: t.type || 'lonas' })),
             ...(pinturaTasks || []).map(t => ({ ...t, section: 'Pintura', type: t.type || 'pintura' }))
         ];
@@ -866,9 +866,9 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
         try {
             const sectionToType: Record<string, string> = {
                 'Instalaciones': 'instalacion',
-                'Herrería': 'herreria',
-                'Carpintería': 'carpinteria',
-                'Corpóreas': 'corporeas',
+                'HerrerÃ­a': 'herreria',
+                'CarpinterÃ­a': 'carpinteria',
+                'CorpÃ³reas': 'corporeas',
                 'Lonas': 'lonas',
                 'Pintura': 'pintura'
             };
@@ -905,10 +905,10 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                 } else {
                     await updateTask({ ...taskPayload, id: isEditingTask });
                 }
-                sileo.success({ title: 'Tarea actualizada con éxito' });
+                sileo.success({ title: 'Tarea actualizada con Ã©xito' });
             } else {
                 await addTask(taskPayload);
-                sileo.success({ title: 'Tarea registrada con éxito' });
+                sileo.success({ title: 'Tarea registrada con Ã©xito' });
             }
 
             setIsTaskModalOpen(false);
@@ -925,15 +925,15 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
         const ids = task.ids || [task.id || task];
         const isGroup = task.ids && task.ids.length > 1;
         const confirmMsg = isGroup 
-            ? `¿Estás seguro de que deseas eliminar esta tarea y sus ${task.ids.length} días programados?`
-            : '¿Estás seguro de que deseas eliminar esta tarea?';
+            ? `Â¿EstÃ¡s seguro de que deseas eliminar esta tarea y sus ${task.ids.length} dÃ­as programados?`
+            : 'Â¿EstÃ¡s seguro de que deseas eliminar esta tarea?';
 
         if (confirm(confirmMsg)) {
             try {
                 for (const id of ids) {
                     await deleteTask(id);
                 }
-                sileo.success({ title: 'Tarea eliminada con éxito' });
+                sileo.success({ title: 'Tarea eliminada con Ã©xito' });
             } catch (err: any) {
                 sileo.error({
                     title: 'Error al eliminar tarea',
@@ -962,10 +962,10 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
             
             setViewingOrder(updatedOrder);
             setNewComment('');
-            sileo.success({ title: "Comentario añadido" });
+            sileo.success({ title: "Comentario aÃ±adido" });
         } catch (err: any) {
             sileo.error({
-                title: "Error al añadir comentario",
+                title: "Error al aÃ±adir comentario",
                 description: err.message || "No se pudo procesar la solicitud"
             });
         }
@@ -981,7 +981,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         {bothSidebarsHidden && (
                             <h2 className="text-2xl font-bold whitespace-nowrap flex items-center gap-3">
                                 <ClipboardList className="text-blue-400" />
-                                Órdenes de Producción
+                                Ã“rdenes de ProducciÃ³n
                             </h2>
                         )}
 
@@ -1017,7 +1017,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                 options={categories}
                                 selectedOptions={categoryFilter}
                                 onChange={setCategoryFilter}
-                                placeholder="Categoría"
+                                placeholder="CategorÃ­a"
                                 icon={Layers}
                             />
                         </div>
@@ -1055,7 +1055,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                         </div>
                                         <div>
                                             <h3 className="text-base font-bold text-white">Exportar a Excel</h3>
-                                            <p className="text-xs text-slate-400">Resumen de Órdenes de Producción</p>
+                                            <p className="text-xs text-slate-400">Resumen de Ã“rdenes de ProducciÃ³n</p>
                                         </div>
                                     </div>
                                     <button
@@ -1070,7 +1070,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                 <div className="rounded-xl bg-white/5 border border-white/10 p-3">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Columnas incluidas</p>
                                     <div className="flex flex-wrap gap-1.5">
-                                        {['N° OP', 'Cliente', 'Sector', 'Comercial', 'Moneda', 'Monto', 'Estado', 'Fecha de creación'].map(col => (
+                                        {['NÂ° OP', 'Cliente', 'Sector', 'Comercial', 'Moneda', 'Monto', 'Estado', 'Fecha de creaciÃ³n'].map(col => (
                                             <span key={col} className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{col}</span>
                                         ))}
                                     </div>
@@ -1080,7 +1080,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                 <div className="flex flex-col gap-2">
                                     <label className="text-xs font-semibold text-slate-300 flex items-center gap-2">
                                         <Calendar size={14} className="text-slate-400" />
-                                        Mostrar órdenes desde (fecha mínima)
+                                        Mostrar Ã³rdenes desde (fecha mÃ­nima)
                                     </label>
                                     <input
                                         type="date"
@@ -1090,11 +1090,11 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                         max={new Date().toISOString().slice(0, 10)}
                                     />
                                     {!exportDateFrom && (
-                                        <p className="text-[11px] text-slate-500">Sin filtro — se exportarán todas las órdenes visibles.</p>
+                                        <p className="text-[11px] text-slate-500">Sin filtro â€” se exportarÃ¡n todas las Ã³rdenes visibles.</p>
                                     )}
                                     {exportDateFrom && (
                                         <p className="text-[11px] text-emerald-400">
-                                            Se exportarán órdenes creadas desde el {new Date(exportDateFrom + 'T00:00:00').toLocaleDateString('es-UY', { day: '2-digit', month: 'long', year: 'numeric' })}.
+                                            Se exportarÃ¡n Ã³rdenes creadas desde el {new Date(exportDateFrom + 'T00:00:00').toLocaleDateString('es-UY', { day: '2-digit', month: 'long', year: 'numeric' })}.
                                         </p>
                                     )}
                                 </div>
@@ -1103,7 +1103,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                 <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2 flex items-start gap-2">
                                     <Download size={13} className="text-blue-400 mt-0.5 flex-shrink-0" />
                                     <p className="text-[11px] text-blue-300">
-                                        Se exportarán los <strong className="text-white">{exportDateFrom
+                                        Se exportarÃ¡n los <strong className="text-white">{exportDateFrom
                                             ? filteredOrders.filter(o => o.createdAt && new Date(o.createdAt).getTime() >= new Date(exportDateFrom).getTime()).length
                                             : filteredOrders.length}</strong> registros actualmente visibles (con los filtros aplicados).
                                     </p>
@@ -1136,9 +1136,9 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         <table className="w-full text-left border-collapse orders-table">
                             <thead>
                                 <tr className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10">
-                                    <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500">N° OP</th>
+                                    <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500">NÂ° OP</th>
                                     <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500">Cliente</th>
-                                    <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500">Categoría</th>
+                                    <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500">CategorÃ­a</th>
                                     <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Estado</th>
                                     <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500">Vendedor</th>
                                     <th className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Precio Venta</th>
@@ -1150,7 +1150,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                 {filteredOrders.length === 0 ? (
                                     <tr>
                                         <td colSpan={8} className="px-4 py-12 text-center text-slate-500 italic">
-                                            {searchQuery ? 'No se encontraron órdenes que coincidan con la búsqueda.' : 'No hay órdenes registradas.'}
+                                            {searchQuery ? 'No se encontraron Ã³rdenes que coincidan con la bÃºsqueda.' : 'No hay Ã³rdenes registradas.'}
                                         </td>
                                     </tr>
                                 ) : (
@@ -1176,7 +1176,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                     {(order.subject || order.address) && (
                                                         <span className="text-[10px] text-slate-400 truncate max-w-[280px] leading-tight">
                                                             {order.subject}
-                                                            {order.subject && order.address ? ' • ' : ''}
+                                                            {order.subject && order.address ? ' â€¢ ' : ''}
                                                             {order.address}
                                                         </span>
                                                     )}
@@ -1189,17 +1189,17 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                             </td>
                                             <td className="px-4 py-2 text-center">
                                                 {(() => {
-                                                    const s = order.status === 'Gestión de Acopio' ? 'En Proceso' : (order.status || 'En Proceso');
+                                                    const s = order.status === 'GestiÃ³n de Acopio' ? 'En Proceso' : (order.status || 'En Proceso');
                                                     let color = 'text-slate-400 bg-white/5 border-white/10';
                                                     if (s === 'En Pintura') color = 'text-pink-400 bg-pink-400/10 border-pink-400/20';
                                                     if (s === 'En Proceso') color = 'text-blue-400 bg-blue-400/10 border-blue-400/20';
                                                     if (s === 'Para Facturar') color = 'text-emerald-600 dark:text-emerald-400 bg-emerald-600/10 dark:bg-emerald-400/10 border-emerald-600/20 dark:border-emerald-400/20';
                                                     if (s === 'Terminada') color = 'text-slate-500 bg-white/5 border-white/10';
-                                                    if (s === 'En Diseño') color = 'text-purple-400 bg-purple-400/10 border-purple-400/20';
+                                                    if (s === 'En DiseÃ±o') color = 'text-purple-400 bg-purple-400/10 border-purple-400/20';
                                                     if (s === 'Detenido Comercial' || s === 'Detenido SST') color = 'text-red-400 bg-red-400/10 border-red-400/20';
-                                                    if (s === 'En Herrería') color = 'text-orange-400 bg-orange-400/10 border-orange-400/20';
-                                                    if (s === 'En Corpóreas') color = 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20';
-                                                    if (s === 'En Impresión') color = 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
+                                                    if (s === 'En HerrerÃ­a') color = 'text-orange-400 bg-orange-400/10 border-orange-400/20';
+                                                    if (s === 'En CorpÃ³reas') color = 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20';
+                                                    if (s === 'En ImpresiÃ³n') color = 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20';
                                                     if (s === 'Para Relevar') color = 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
                                                     if (s === 'Para Instalar') color = 'text-emerald-600 dark:text-emerald-400 bg-emerald-600/10 dark:bg-emerald-400/10 border-emerald-600/20 dark:border-emerald-400/20';
                                                     if (s === 'Para Entregar') color = 'text-teal-600 dark:text-teal-400 bg-teal-600/10 dark:bg-teal-400/10 border-teal-600/20 dark:border-teal-400/20';
@@ -1241,9 +1241,9 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                             let colorClass = 'bg-slate-400/10 text-slate-400 border-slate-400/20 hover:bg-slate-400/20';
                                                             
                                                             if (section === 'Instalaciones') { letter = 'I'; colorClass = 'bg-emerald-600/10 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 border-emerald-600/20 dark:border-emerald-400/20 hover:bg-emerald-600/20 dark:hover:bg-emerald-400/20'; }
-                                                            else if (section === 'Herrería') { letter = 'H'; colorClass = 'bg-orange-400/10 text-orange-400 border-orange-400/20 hover:bg-orange-400/20'; }
-                                                             else if (section === 'Carpintería') { letter = 'CP'; colorClass = 'bg-amber-400/10 text-amber-400 border-amber-400/20 hover:bg-amber-400/20'; }
-                                                            else if (section === 'Corpóreas') { letter = 'C'; colorClass = 'bg-indigo-400/10 text-indigo-400 border-indigo-400/20 hover:bg-indigo-400/20'; }
+                                                            else if (section === 'HerrerÃ­a') { letter = 'H'; colorClass = 'bg-orange-400/10 text-orange-400 border-orange-400/20 hover:bg-orange-400/20'; }
+                                                             else if (section === 'CarpinterÃ­a') { letter = 'CP'; colorClass = 'bg-amber-400/10 text-amber-400 border-amber-400/20 hover:bg-amber-400/20'; }
+                                                            else if (section === 'CorpÃ³reas') { letter = 'C'; colorClass = 'bg-indigo-400/10 text-indigo-400 border-indigo-400/20 hover:bg-indigo-400/20'; }
                                                             else if (section === 'Lonas') { letter = 'L'; colorClass = 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20 hover:bg-cyan-400/20'; }
                                                             else if (section === 'Pintura') { letter = 'P'; colorClass = 'bg-pink-400/10 text-pink-400 border-pink-400/20 hover:bg-pink-400/20'; }
                                                             
@@ -1270,7 +1270,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                         <button
                                                             onClick={() => {
                                                                 setIsTaggingOrder(order);
-                                                                // Si no tiene seguidores configurados (null o vacío), pre-seleccionar todos los usuarios por defecto
+                                                                // Si no tiene seguidores configurados (null o vacÃ­o), pre-seleccionar todos los usuarios por defecto
                                                                 const hasFollowers = Array.isArray(order.followers) && order.followers.length > 0;
                                                                 setTaggingSelection(hasFollowers ? order.followers : profiles.map((p: any) => p.email));
                                                             }}
@@ -1288,7 +1288,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                         </button>
                                                         <button
                                                             onClick={() => {
-                                                                if (confirm(`¿Eliminar la orden ${order.opNumber}?`)) {
+                                                                if (confirm(`Â¿Eliminar la orden ${order.opNumber}?`)) {
                                                                     deleteProductionOrder(order.id);
                                                                 }
                                                             }}
@@ -1328,7 +1328,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                     <OrderTasksPanel
                                                         order={order}
                                                         linkedTasks={orderLinkedTasks}
-                                                        onAddTask={async ({ name, sector, date }) => {
+                                                        onAddTask={async ({ name, sector, date, estimatedHours }) => {
                                                             try {
                                                                 const taskType = sectorToTaskType(sector);
                                                                 const section = sectorToSection(sector);
@@ -1338,8 +1338,9 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                                     client: order.client || '',
                                                                     address: order.address || '',
                                                                     date: date || '',
-                                                                    totalHours: 8,
-                                                                    duration: 8,
+                                                                    totalHours: estimatedHours || 8,
+                                                                    estimatedHours: estimatedHours || 8,
+                                                                    duration: estimatedHours || 8,
                                                                     teamId: null,
                                                                     type: taskType,
                                                                     section,
@@ -1388,7 +1389,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         <div className="flex justify-between items-center mb-8">
                             <h3 className="text-xl font-bold flex items-center gap-3">
                                 {isEditing ? <Edit2 className="text-blue-400" size={20} /> : <Plus className="text-blue-400" size={20} />}
-                                {isEditing ? 'EDITAR ORDEN DE PRODUCCIÓN' : 'NUEVA ORDEN DE PRODUCCIÓN'}
+                                {isEditing ? 'EDITAR ORDEN DE PRODUCCIÃ“N' : 'NUEVA ORDEN DE PRODUCCIÃ“N'}
                             </h3>
                             <button onClick={closeModal} className="p-2 hover:bg-white/5 transition-colors text-slate-400 hover:text-white">
                                 <X size={20} />
@@ -1398,7 +1399,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Número de OP</label>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">NÃºmero de OP</label>
                                     <div className="relative group">
                                         <ClipboardList size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                                         <input
@@ -1479,7 +1480,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                     <AlignLeft size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                                     <input
                                         className="input w-full pl-12"
-                                        placeholder="Ej: Instalación de cartel luminoso en local..."
+                                        placeholder="Ej: InstalaciÃ³n de cartel luminoso en local..."
                                         value={formData.subject}
                                         onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                                         maxLength={200}
@@ -1489,19 +1490,19 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Dirección</label>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">DirecciÃ³n</label>
                                     <div className="relative group">
                                         <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                                         <input
                                             className="input w-full pl-12"
-                                            placeholder="Dirección de entrega/obra"
+                                            placeholder="DirecciÃ³n de entrega/obra"
                                             value={formData.address}
                                             onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Categoría</label>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">CategorÃ­a</label>
                                     <div className="relative group">
                                         <Layers size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                                         <select
@@ -1522,7 +1523,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                             {formData.category === 'Outdoor' && (
                                 <>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Soporte (4 dígitos - Opcional)</label>
+                                        <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Soporte (4 dÃ­gitos - Opcional)</label>
                                         <div className="relative group">
                                             <Layers size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
                                             <input
@@ -1548,19 +1549,19 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                         </div>
                                         <p className="text-[11px] text-slate-400 leading-relaxed">
                                             {isEditing 
-                                                ? 'Al guardar con categoría Outdoor se verificarán y cargarán automáticamente las tareas de la plantilla que aún no hayan sido creadas:'
-                                                : 'Al guardar esta orden se cargarán automáticamente las siguientes 4 tareas pendientes:'}
+                                                ? 'Al guardar con categorÃ­a Outdoor se verificarÃ¡n y cargarÃ¡n automÃ¡ticamente las tareas de la plantilla que aÃºn no hayan sido creadas:'
+                                                : 'Al guardar esta orden se cargarÃ¡n automÃ¡ticamente las siguientes 4 tareas pendientes:'}
                                         </p>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
                                             <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900/60 rounded-lg border border-white/5 text-[11px]">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
                                                 <span className="text-slate-400">Lonas + Vinilos:</span>
-                                                <span className="text-white font-medium truncate">Muestra de impresión</span>
+                                                <span className="text-white font-medium truncate">Muestra de impresiÃ³n</span>
                                             </div>
                                             <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900/60 rounded-lg border border-white/5 text-[11px]">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
                                                 <span className="text-slate-400">Lonas + Vinilos:</span>
-                                                <span className="text-white font-medium truncate">Impresión de lona</span>
+                                                <span className="text-white font-medium truncate">ImpresiÃ³n de lona</span>
                                             </div>
                                             <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900/60 rounded-lg border border-white/5 text-[11px]">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
@@ -1570,7 +1571,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                             <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-900/60 rounded-lg border border-white/5 text-[11px]">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></span>
                                                 <span className="text-slate-400">Instalaciones:</span>
-                                                <span className="text-white font-medium truncate">Instalación de lona</span>
+                                                <span className="text-white font-medium truncate">InstalaciÃ³n de lona</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1597,7 +1598,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center mr-1">
-                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">Descripción</label>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 ml-1">DescripciÃ³n</label>
                                     <div className="flex gap-2 mb-1">
                                         <button
                                             type="button"
@@ -1689,7 +1690,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                     <p className="text-sm text-slate-200 whitespace-pre-wrap">{c.text}</p>
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-[9px] font-bold text-slate-500 uppercase flex items-center gap-1">
-                                                            {c.author && <span className="text-blue-500 dark:text-blue-400">{c.author} •</span>}
+                                                            {c.author && <span className="text-blue-500 dark:text-blue-400">{c.author} â€¢</span>}
                                                             {new Date(c.date).toLocaleString('es-UY', {
                                                                 day: '2-digit', month: '2-digit', year: 'numeric',
                                                                 hour: '2-digit', minute: '2-digit'
@@ -1739,7 +1740,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                             <>
                                                 <Upload size={24} className="text-slate-400" />
                                                 <span className="text-sm font-bold">Click para subir archivos</span>
-                                                <span className="text-[10px] text-slate-500">Imágenes → WebP · PDF · Excel (.xls, .xlsx)</span>
+                                                <span className="text-[10px] text-slate-500">ImÃ¡genes â†’ WebP Â· PDF Â· Excel (.xls, .xlsx)</span>
                                             </>
                                         )}
                                     </button>
@@ -1856,7 +1857,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/8 flex-shrink-0 bg-slate-50/80 dark:bg-[#0f172a]/80 backdrop-blur-sm">
                             <div className="flex-1">
                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 mb-0.5 block">
-                                    ORDEN DE PRODUCCIÓN
+                                    ORDEN DE PRODUCCIÃ“N
                                 </span>
                                 <h3 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
                                     OP <span className="text-blue-600 dark:text-blue-400">#{viewingOrder.opNumber}</span>
@@ -1869,7 +1870,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                     <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white leading-none">{viewingOrder.client}</span>
                                 </div>
                                 <div className="text-right hidden sm:block">
-                                    <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-1">CATEGORÍA</label>
+                                    <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-1">CATEGORÃA</label>
                                     <span className="text-slate-700 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider block bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded-sm border border-slate-200 dark:border-white/5 w-fit ml-auto">
                                         {viewingOrder.category}
                                     </span>
@@ -1881,7 +1882,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                             onClick={() => navigateOrder(-1)}
                                             disabled={viewingOrderIndex <= 0}
                                             className="px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/8 transition-colors text-slate-400 hover:text-slate-700 dark:hover:text-white disabled:opacity-25 disabled:cursor-not-allowed"
-                                            title="OP anterior (←)"
+                                            title="OP anterior (â†)"
                                         >
                                             <ChevronDown size={16} className="rotate-90" />
                                         </button>
@@ -1892,7 +1893,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                             onClick={() => navigateOrder(1)}
                                             disabled={viewingOrderIndex >= filteredOrders.length - 1}
                                             className="px-3 py-2 hover:bg-slate-100 dark:hover:bg-white/8 transition-colors text-slate-400 hover:text-slate-700 dark:hover:text-white disabled:opacity-25 disabled:cursor-not-allowed"
-                                            title="OP siguiente (→)"
+                                            title="OP siguiente (â†’)"
                                         >
                                             <ChevronDown size={16} className="-rotate-90" />
                                         </button>
@@ -1911,13 +1912,13 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         <div className="px-6 py-4 border-b border-slate-100 dark:border-white/5 flex-shrink-0 bg-sky-50/30 dark:bg-white/[0.015]">
                             <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
                                 <div>
-                                    <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-0.5">DIRECCIÓN</label>
+                                    <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-0.5">DIRECCIÃ“N</label>
                                     <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{viewingOrder.address || 'No especificada'}</p>
                                 </div>
                                 <div>
                                     <label className="text-[9px] uppercase font-black tracking-widest text-slate-500 block mb-0.5">ESTADO</label>
                                     {(() => {
-                                        const s = viewingOrder.status === 'Gestión de Acopio' ? 'En Proceso' : (viewingOrder.status || '');
+                                        const s = viewingOrder.status === 'GestiÃ³n de Acopio' ? 'En Proceso' : (viewingOrder.status || '');
                                         let color = 'text-slate-600 bg-slate-100 border-slate-200 dark:text-slate-400 dark:bg-white/5 dark:border-white/10';
                                         if (s === 'En Pintura') color = 'text-pink-700 bg-pink-500/10 border-pink-500/20 dark:text-pink-400 dark:bg-pink-400/10 dark:border-pink-400/20';
                                         if (s === 'En Proceso') color = 'text-blue-700 bg-blue-500/10 border-blue-500/20 dark:text-blue-400 dark:bg-blue-400/10 dark:border-blue-400/20';
@@ -1964,7 +1965,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                     </span>
                                                     {(matchedSoporte?.tipo || matchedSoporte?.ubicacion || matchedSoporte?.localidad) && (
                                                         <span className="text-[9px] text-slate-500 dark:text-slate-500 truncate max-w-[160px]">
-                                                            {[matchedSoporte.tipo, matchedSoporte.localidad || matchedSoporte.ubicacion].filter(Boolean).join(' · ')}
+                                                            {[matchedSoporte.tipo, matchedSoporte.localidad || matchedSoporte.ubicacion].filter(Boolean).join(' Â· ')}
                                                         </span>
                                                     )}
                                                 </a>
@@ -1980,7 +1981,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                     </span>
                                                     {matchedSoporte && (matchedSoporte.tipo || matchedSoporte.ubicacion || matchedSoporte.localidad) && (
                                                         <span className="text-[9px] text-slate-500 truncate max-w-[160px]">
-                                                            {[matchedSoporte.tipo, matchedSoporte.localidad || matchedSoporte.ubicacion].filter(Boolean).join(' · ')}
+                                                            {[matchedSoporte.tipo, matchedSoporte.localidad || matchedSoporte.ubicacion].filter(Boolean).join(' Â· ')}
                                                         </span>
                                                     )}
                                                     {!matchedSoporte && (
@@ -2000,7 +2001,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                             </div>
                         </div>
 
-                        {/* Body – two columns */}
+                        {/* Body â€“ two columns */}
                         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_380px]">
 
                             {/* Left: Description + Comments */}
@@ -2009,12 +2010,12 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
                                 {/* Description */}
                                 <div>
-                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">DESCRIPCIÓN DEL PROYECTO</label>
+                                    <label className="text-[10px] uppercase font-black tracking-widest text-slate-500 block mb-3">DESCRIPCIÃ“N DEL PROYECTO</label>
                                     <div className="p-5 bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-xl text-slate-800 dark:text-slate-300 leading-relaxed min-h-[120px] text-sm">
                                         {viewingOrder.description ? (
                                             renderFormattedText(viewingOrder.description)
                                         ) : (
-                                            <span className="italic text-slate-500">Sin descripción detallada.</span>
+                                            <span className="italic text-slate-500">Sin descripciÃ³n detallada.</span>
                                         )}
                                     </div>
                                 </div>
@@ -2042,9 +2043,9 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {linkedTasks.map((task: any) => {
                                                 let badgeColor = 'text-blue-600 bg-blue-400/10 border-blue-400/20 dark:text-blue-400 dark:bg-blue-400/10 dark:border-blue-400/20';
-                                                if (task.section === 'Herrería') badgeColor = 'text-orange-600 bg-orange-400/10 border-orange-400/20 dark:text-orange-400 dark:bg-orange-400/10 dark:border-orange-400/20';
-                                                 if (task.section === 'Carpintería') badgeColor = 'text-amber-600 bg-amber-400/10 border-amber-400/20 dark:text-amber-400 dark:bg-amber-400/10 dark:border-amber-400/20';
-                                                if (task.section === 'Corpóreas') badgeColor = 'text-purple-600 bg-purple-400/10 border-purple-400/20 dark:text-purple-400 dark:bg-purple-400/10 dark:border-purple-400/20';
+                                                if (task.section === 'HerrerÃ­a') badgeColor = 'text-orange-600 bg-orange-400/10 border-orange-400/20 dark:text-orange-400 dark:bg-orange-400/10 dark:border-orange-400/20';
+                                                 if (task.section === 'CarpinterÃ­a') badgeColor = 'text-amber-600 bg-amber-400/10 border-amber-400/20 dark:text-amber-400 dark:bg-amber-400/10 dark:border-amber-400/20';
+                                                if (task.section === 'CorpÃ³reas') badgeColor = 'text-purple-600 bg-purple-400/10 border-purple-400/20 dark:text-purple-400 dark:bg-purple-400/10 dark:border-purple-400/20';
                                                 if (task.section === 'Lonas') badgeColor = 'text-pink-600 bg-pink-400/10 border-pink-400/20 dark:text-pink-400 dark:bg-pink-400/10 dark:border-pink-400/20';
                                                 if (task.section === 'Pintura') badgeColor = 'text-teal-600 bg-teal-400/10 border-teal-400/20 dark:text-teal-400 dark:bg-teal-400/10 dark:border-teal-400/20';
 
@@ -2111,7 +2112,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                         </div>
                                     ) : (
                                         <div className="p-6 bg-slate-50/50 dark:bg-white/[0.01] border border-dashed border-slate-200 dark:border-white/8 text-slate-400 dark:text-slate-500 italic text-sm text-center rounded-xl">
-                                            No hay tareas registradas para esta Orden de Producción.
+                                            No hay tareas registradas para esta Orden de ProducciÃ³n.
                                         </div>
                                     )}
                                 </div>
@@ -2157,7 +2158,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                 <div key={i} className="p-4 bg-slate-50 dark:bg-white/[0.025] border border-slate-200 dark:border-white/5 rounded-xl space-y-1.5 hover:bg-slate-100/50 dark:hover:bg-white/[0.04] transition-colors">
                                                     <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{c.text}</p>
                                                     <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                                                        {c.author && <span className="text-blue-500 dark:text-blue-400">{c.author} •</span>}
+                                                        {c.author && <span className="text-blue-500 dark:text-blue-400">{c.author} â€¢</span>}
                                                         {new Date(c.date).toLocaleString('es-UY', {
                                                             day: '2-digit', month: '2-digit', year: 'numeric',
                                                             hour: '2-digit', minute: '2-digit'
@@ -2294,7 +2295,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                                 rel="noopener noreferrer"
                                                                 onClick={(e) => e.stopPropagation()}
                                                                 className="p-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg flex items-center justify-center transition-colors"
-                                                                title={isExcel ? 'Descargar Excel' : 'Abrir en nueva pestaña'}
+                                                                title={isExcel ? 'Descargar Excel' : 'Abrir en nueva pestaÃ±a'}
                                                                 download={isExcel ? fileName : undefined}
                                                             >
                                                                 {isExcel ? <Download size={12} /> : <ExternalLink size={12} />}
@@ -2396,7 +2397,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                     {isPrintingAnalysis ? (
                                         <><Loader2 size={15} className="animate-spin" /> GENERANDO...</>
                                     ) : (
-                                        <><BarChart2 size={15} /> ANÁLISIS DE HORAS</>
+                                        <><BarChart2 size={15} /> ANÃLISIS DE HORAS</>
                                     )}
                                 </button>
                             )}
@@ -2481,8 +2482,8 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
                         {/* Footer info */}
                         <div className="px-6 py-2.5 border-t border-white/5 bg-[#0a1120]/70 flex-shrink-0 flex items-center justify-between text-[10px] text-slate-400">
-                            <span>🟢 <strong>Visor Microsoft Office Web:</strong> Visualización exacta con formatos de celda, colores, fuentes, anchos de columna y solapas en la parte inferior.</span>
-                            <span className="text-slate-500 italic hidden sm:inline">Usá el botón "Imprimir" para enviar a la impresora.</span>
+                            <span>ðŸŸ¢ <strong>Visor Microsoft Office Web:</strong> VisualizaciÃ³n exacta con formatos de celda, colores, fuentes, anchos de columna y solapas en la parte inferior.</span>
+                            <span className="text-slate-500 italic hidden sm:inline">UsÃ¡ el botÃ³n "Imprimir" para enviar a la impresora.</span>
                         </div>
                     </div>
                 </div>
@@ -2516,7 +2517,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                             <button
                                 onClick={(e) => { e.stopPropagation(); lightboxPrev(); }}
                                 className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/8 hover:bg-white/18 text-white rounded-full transition-all border border-white/10 hover:scale-110 active:scale-95 cursor-pointer z-10"
-                                title="Anterior (←)"
+                                title="Anterior (â†)"
                             >
                                 <ChevronDown size={22} className="rotate-90" />
                             </button>
@@ -2536,7 +2537,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                             <button
                                 onClick={(e) => { e.stopPropagation(); lightboxNext(); }}
                                 className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/8 hover:bg-white/18 text-white rounded-full transition-all border border-white/10 hover:scale-110 active:scale-95 cursor-pointer z-10"
-                                title="Siguiente (→)"
+                                title="Siguiente (â†’)"
                             >
                                 <ChevronDown size={22} className="-rotate-90" />
                             </button>
@@ -2569,7 +2570,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                 rel="noopener noreferrer"
                                 className="px-5 py-2 bg-white/10 hover:bg-white/18 text-white font-semibold rounded-full transition-all border border-white/10 flex items-center gap-2 text-sm cursor-pointer"
                             >
-                                <ExternalLink size={14} /> Abrir en nueva pestaña
+                                <ExternalLink size={14} /> Abrir en nueva pestaÃ±a
                             </a>
                             <button
                                 onClick={() => printFile(current.url)}
@@ -2614,7 +2615,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                         <div className="bg-white/[0.015] border border-white/5 p-3 rounded-xl space-y-2">
                                             <div className="grid grid-cols-2 gap-2">
                                                 <div className="space-y-0.5">
-                                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">SECCIÓN</label>
+                                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">SECCIÃ“N</label>
                                                     <select
                                                         className="input w-full text-sm py-1.5"
                                                         value={taskFormData.section}
@@ -2622,9 +2623,9 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                         required
                                                     >
                                                         <option value="Instalaciones">Instalaciones</option>
-                                                        <option value="Herrería">Herrería</option>
-                                                         <option value="Carpintería">Carpintería</option>
-                                                        <option value="Corpóreas">Corpóreas</option>
+                                                        <option value="HerrerÃ­a">HerrerÃ­a</option>
+                                                         <option value="CarpinterÃ­a">CarpinterÃ­a</option>
+                                                        <option value="CorpÃ³reas">CorpÃ³reas</option>
                                                         <option value="Lonas">Lonas</option>
                                                         <option value="Pintura">Pintura</option>
                                                     </select>
@@ -2641,7 +2642,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                             </div>
 
                                             <div className="space-y-0.5">
-                                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">DESCRIPCIÓN / TAREA</label>
+                                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">DESCRIPCIÃ“N / TAREA</label>
                                                 <input
                                                     type="text"
                                                     className="input w-full text-sm py-1.5"
@@ -2664,7 +2665,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                     />
                                                 </div>
                                                 <div className="space-y-0.5">
-                                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">DIRECCIÓN</label>
+                                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block">DIRECCIÃ“N</label>
                                                     <input
                                                         type="text"
                                                         className="input w-full text-sm py-1.5"
@@ -2686,9 +2687,9 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                     {linkedTasks.map(at => {
                                                         const sectionLabels: Record<string, string> = {
                                                             instalacion: 'Instalaciones',
-                                                            herreria: 'Herrería',
-                                                             carpinteria: 'Carpintería',
-                                                            corporeas: 'Corpóreas',
+                                                            herreria: 'HerrerÃ­a',
+                                                             carpinteria: 'CarpinterÃ­a',
+                                                            corporeas: 'CorpÃ³reas',
                                                             lonas: 'Lonas',
                                                             pintura: 'Pintura'
                                                         };
@@ -2737,11 +2738,11 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                                     <span className="text-xs font-normal text-slate-500">hs</span>
                                                                     {estimated > 0 && (
                                                                         <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${isOver ? 'bg-red-500/20 text-red-400' : isUnder ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                                                                            {isOver ? `+${(realHoursComputed - estimated).toFixed(1)} sobre` : isUnder ? `-${(estimated - realHoursComputed).toFixed(1)} faltan` : '✓ OK'}
+                                                                            {isOver ? `+${(realHoursComputed - estimated).toFixed(1)} sobre` : isUnder ? `-${(estimated - realHoursComputed).toFixed(1)} faltan` : 'âœ“ OK'}
                                                                         </span>
                                                                     )}
                                                                 </div>
-                                                                <p className="text-[8px] text-slate-500 leading-tight">Suma automática de hs de operarios asignados.</p>
+                                                                <p className="text-[8px] text-slate-500 leading-tight">Suma automÃ¡tica de hs de operarios asignados.</p>
                                                             </div>
                                                             <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded hover:bg-white/5 transition-colors border border-white/5">
                                                                 <input
@@ -2759,7 +2760,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
                                             {/* Vehicles */}
                                             <div className="bg-orange-500/[0.02] border border-orange-500/10 p-3 rounded-xl space-y-2">
-                                                <label className="text-[9px] font-black uppercase tracking-widest text-orange-400 block">VEHÍCULOS ASIGNADOS</label>
+                                                <label className="text-[9px] font-black uppercase tracking-widest text-orange-400 block">VEHÃCULOS ASIGNADOS</label>
                                                 <select
                                                     className="input w-full text-xs py-1.5"
                                                     value=""
@@ -2856,7 +2857,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                                 })}
                                             </div>
                                             {!(members || []).some(m => m.sector === taskFormData.section) && (
-                                                <span className="text-[10px] text-slate-500 italic block text-center py-6">Sin integrantes en esta sección</span>
+                                                <span className="text-[10px] text-slate-500 italic block text-center py-6">Sin integrantes en esta secciÃ³n</span>
                                             )}
                                         </div>
                                     </div>
@@ -2894,7 +2895,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
                             <h3 className="text-sm font-bold text-white flex items-center gap-2">
                                 <User size={16} className="text-blue-400" />
-                                Etiquetar Usuarios — OP {isTaggingOrder.opNumber}
+                                Etiquetar Usuarios â€” OP {isTaggingOrder.opNumber}
                             </h3>
                             <button onClick={() => setIsTaggingOrder(null)} className="text-slate-400 hover:text-white transition-colors">
                                 <X size={18} />
@@ -2976,3 +2977,4 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
         </div>
     );
 };
+

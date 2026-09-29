@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Plus, Trash2, Calendar, ChevronLeft, ChevronRight, CornerDownRight, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Calendar, ChevronLeft, ChevronRight, CornerDownRight, GripVertical, Clock } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, isToday as isTodayFn } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { type SectorTaskStatus, SECTOR_TASK_STATUSES, getStatusBadgeStyle } from '../utils/taskStatusUtils';
@@ -289,6 +289,7 @@ interface OrderTasksPanelProps {
         name: string;
         sector: SectorType;
         date: string;
+        estimatedHours?: number;
     }) => void;
     /** Update an existing task */
     onUpdateTask: (task: any) => void;
@@ -309,6 +310,7 @@ export const OrderTasksPanel: React.FC<OrderTasksPanelProps> = ({
     const [newName, setNewName] = useState('');
     const [newSector, setNewSector] = useState<SectorType>('Instalaciones');
     const [newDate, setNewDate] = useState('');
+    const [newHours, setNewHours] = useState('');
     const [calendarTaskId, setCalendarTaskId] = useState<string | null>(null); // 'new' or taskId
     const calendarAnchorRef = useRef<HTMLElement | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -387,13 +389,16 @@ export const OrderTasksPanel: React.FC<OrderTasksPanelProps> = ({
     const handleAdd = () => {
         const trimmed = newName.trim();
         if (!trimmed) return;
+        const parsedHours = newHours.trim() ? Math.min(9999, Math.max(0, parseInt(newHours, 10) || 0)) : undefined;
         onAddTask({
             name: trimmed,
             sector: newSector,
             date: newDate,
+            estimatedHours: parsedHours,
         });
         setNewName('');
         setNewDate('');
+        setNewHours('');
         setNewSector('Instalaciones');
         inputRef.current?.focus();
     };
@@ -511,6 +516,29 @@ export const OrderTasksPanel: React.FC<OrderTasksPanelProps> = ({
                                         </div>
                                     </div>
 
+                                    {/* Horas cotizadas input */}
+                                    <div
+                                        className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-white/10 px-2 py-0.5 rounded-full shrink-0"
+                                        title="Horas cotizadas"
+                                    >
+                                        <Clock size={10} className="text-slate-400 dark:text-slate-500" />
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="9999"
+                                            value={task.estimatedHours ?? task.totalHours ?? ''}
+                                            onChange={(e) => {
+                                                const raw = e.target.value;
+                                                if (raw.length > 4) return;
+                                                const val = raw === '' ? 0 : Math.min(9999, Math.max(0, parseInt(raw, 10) || 0));
+                                                onUpdateTask({ ...task, estimatedHours: val, totalHours: val });
+                                            }}
+                                            className="w-10 text-[10px] font-bold text-center bg-transparent text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500/40 rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            placeholder="0"
+                                        />
+                                        <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500">hs</span>
+                                    </div>
+
                                     {/* Date button */}
                                     <button
                                         ref={(el) => {
@@ -594,6 +622,24 @@ export const OrderTasksPanel: React.FC<OrderTasksPanelProps> = ({
                             </option>
                         ))}
                     </select>
+
+                    {/* Horas cotizadas input for new task */}
+                    <div className="relative inline-flex items-center gap-1 bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-white/10 rounded-lg px-2 py-1.5" title="Horas cotizadas">
+                        <Clock size={11} className="text-slate-400 dark:text-slate-500" />
+                        <input
+                            type="number"
+                            min="0"
+                            max="9999"
+                            value={newHours}
+                            onChange={(e) => {
+                                if (e.target.value.length <= 4) {
+                                    setNewHours(e.target.value);
+                                }
+                            }}
+                            placeholder="Hs"
+                            className="w-10 text-xs font-bold text-center bg-transparent text-slate-800 dark:text-slate-200 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                    </div>
 
                     {/* Date picker button */}
                     <button

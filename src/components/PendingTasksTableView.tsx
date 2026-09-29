@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, Plus, ChevronUp, ChevronDown, ClipboardList, Filter, Check, X, Calendar } from 'lucide-react';
+﻿import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { Search, Plus, ChevronUp, ChevronDown, ClipboardList, Filter, Check, X, Calendar, Clock } from 'lucide-react';
 import { format, addDays, isWeekend } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { sileo } from 'sileo';
-import { type SectorTaskStatus, SECTOR_TASK_STATUSES, getTaskStatus, getStatusBadgeStyle } from '../utils/taskStatusUtils';
+import { type SectorTaskStatus, SECTOR_TASK_STATUSES, getTaskStatus, getStatusBadgeStyle, STATUS_PRIORITY } from '../utils/taskStatusUtils';
 import { SubtasksPanel, getSubtasksCount } from './SubtasksPanel';
 import { MiniCalendar } from './OrderTasksPanel';
 
@@ -24,12 +24,12 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
     onStatusChange,
     onNewPendingClick
 }) => {
-    const { productionOrders, subtasks = [], updateTaskLocal } = useStore();
+    const { productionOrders, subtasks = [], updateTaskLocal, updateTask } = useStore();
     const [search, setSearch] = useState('');
     const [selectedStatuses, setSelectedStatuses] = useState<SectorTaskStatus[]>([]);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const filterRef = useRef<HTMLDivElement>(null);
-    const [sort, setSort] = useState<{ col: string; dir: 'asc' | 'desc' }>({ col: 'date', dir: 'asc' });
+    const [sort, setSort] = useState<{ col: string; dir: 'asc' | 'desc' }>({ col: 'status', dir: 'asc' });
     const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
 
     // Calendar modal state
@@ -196,9 +196,12 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
             } else if (sort.col === 'name') {
                 valA = (a.name || '').toLowerCase();
                 valB = (b.name || '').toLowerCase();
+            } else if (sort.col === 'estimatedHours') {
+                valA = Number(a.estimatedHours ?? a.totalHours ?? 0);
+                valB = Number(b.estimatedHours ?? b.totalHours ?? 0);
             } else if (sort.col === 'status') {
-                valA = getTaskStatus(a);
-                valB = getTaskStatus(b);
+                valA = STATUS_PRIORITY[getTaskStatus(a)] ?? 99;
+                valB = STATUS_PRIORITY[getTaskStatus(b)] ?? 99;
             } else {
                 valA = '';
                 valB = '';
@@ -373,11 +376,12 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
                             <tr>
                                 {[
                                     { label: 'N° OP', col: 'opNumber', width: 'w-24' },
-                                    { label: 'Cliente', col: 'client', width: 'w-48' },
-                                    { label: 'Dirección', col: 'address', width: 'w-56' },
+                                    { label: 'Cliente', col: 'client', width: 'w-44' },
+                                    { label: 'Dirección', col: 'address', width: 'w-48' },
                                     { label: 'Descripción de tarea', col: 'name', width: 'w-auto' },
-                                    { label: 'Estado', col: 'status', width: 'w-40' },
-                                    { label: 'Fecha de ejecución', col: 'date', width: 'w-48' }
+                                    { label: 'Horas cotizadas', col: 'estimatedHours', width: 'w-32' },
+                                    { label: 'Estado', col: 'status', width: 'w-36' },
+                                    { label: 'Fecha de ejecución', col: 'date', width: 'w-44' }
                                 ].map(({ label, col, width }) => (
                                     <th
                                         key={col}
@@ -439,6 +443,16 @@ export const PendingTasksTableView: React.FC<PendingTasksTableViewProps> = ({
                                                 <span className="text-slate-800 dark:text-slate-300 truncate block text-xs font-medium" title={task.name}>
                                                     {task.name || <span className="text-slate-400 dark:text-slate-600 italic">Sin descripción</span>}
                                                 </span>
+                                            </td>
+                                            <td className="px-3 py-2 align-middle">
+                                                {task.estimatedHours || task.totalHours ? (
+                                                    <span className="inline-flex items-center gap-1 font-mono font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-md text-[11px] border border-slate-200 dark:border-white/10">
+                                                        <Clock size={11} className="text-slate-400 dark:text-slate-500 shrink-0" />
+                                                        {task.estimatedHours ?? task.totalHours} hs
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-slate-400 dark:text-slate-600 italic text-xs">—</span>
+                                                )}
                                             </td>
                                             <td className="px-3 py-2 align-middle" onClick={(e) => e.stopPropagation()}>
                                                 <div className="relative inline-flex items-center">
