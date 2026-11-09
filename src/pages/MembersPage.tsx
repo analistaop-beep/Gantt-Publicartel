@@ -1,429 +1,274 @@
-import React, { useState } from 'react';
-import { useStore } from '../store/useStore';
-import { Plus, Trash2, Edit2, User, Search, DollarSign, Printer, Paperclip, X, FileText, Loader2 } from 'lucide-react';
-import { getInitials } from '../utils/stringUtils';
+import React, { useMemo, useState } from 'react';
+import { AlertTriangle, ChevronDown, ChevronRight, Download, Edit2, FilePlus2, FileText, Loader2, Plus, Printer, Search, Trash2, User, X } from 'lucide-react';
 import { sileo } from 'sileo';
-import { useSectionRates, SECTIONS } from '../hooks/useSectionRates';
+import { useStore } from '../store/useStore';
+import { getInitials } from '../utils/stringUtils';
 import { generateWorkerPDF } from '../utils/pdfGenerator';
 
+type WorkerDocument = { url: string; document: string; originalName?: string; uploadedAt: string; expiresAt: string };
+type WorkerForm = { name: string; code: string; ci: string; sector: string };
+type DocumentEditor = { memberId: string; index: number | null; document: string; expiresAt: string; url: string };
+
+const EMPTY_WORKER: WorkerForm = { name: '', code: '', ci: '', sector: '' };
+const WORKER_SECTORS = ['Instalaciones', 'Herrería', 'Vinilos', 'Pintura', 'Impresión', 'Lonas', 'Carpintería', 'Corpóreas'];
+
+const fileNameFromUrl = (url: string) => {
+    const rawName = url.split('/').pop()?.split('?')[0] || 'Documento adjunto';
+    try { return decodeURIComponent(rawName); } catch { return rawName; }
+};
+
+const normalizeDocument = (file: string | Partial<WorkerDocument>): WorkerDocument => {
+    if (typeof file === 'string') {
+        return { url: file, document: fileNameFromUrl(file), originalName: fileNameFromUrl(file), uploadedAt: '', expiresAt: '' };
+    }
+    const url = file.url || '';
+    return {
+        url,
+        document: file.document || fileNameFromUrl(url),
+        originalName: file.originalName || file.document || fileNameFromUrl(url),
+        uploadedAt: file.uploadedAt || '',
+        expiresAt: file.expiresAt || '',
+    };
+};
+
+const formatDate = (value: string) => {
+    if (!value) return 'Sin registro';
+    const date = new Date(value.length === 10 ? `${value}T00:00:00` : value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat('es-UY', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+};
+
+const isExpired = (value: string) => {
+    if (!value) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiration = new Date(`${value.slice(0, 10)}T00:00:00`);
+    return !Number.isNaN(expiration.getTime()) && expiration < today;
+};
+
 export const MembersPage: React.FC = () => {
-    const { members, addMember, updateMember, deleteMember, uploadMemberFile } = useStore();
-    const [isEditing, setIsEditing] = useState<string | null>(null);
-    const [formData, setFormData] = useState<{ name: string; role: string; sector: string; ci: string; code: string; files: string[] }>({ name: '', role: '', sector: '', ci: '', code: '', files: [] });
-    const [uploading, setUploading] = useState(false);
+    const { members, addMember, updateMember, deleteMember, uploadMemberFile, checkMemberDocumentAlerts } = useStore();
     const [searchQuery, setSearchQuery] = useState('');
-    const { rates, setRate } = useSectionRates();
+    const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+    const [workerEditorId, setWorkerEditorId] = useState<string | 'new' | null>(null);
+    const [workerForm, setWorkerForm] = useState<WorkerForm>(EMPTY_WORKER);
+    const [documentEditor, setDocumentEditor] = useState<DocumentEditor | null>(null);
+    const [documentFile, setDocumentFile] = useState<File | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     React.useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                if (isEditing) {
-                    setIsEditing(null);
-                }
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isEditing]);
-
-    const filteredMembers = members.filter(member => 
-        member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (member.role || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (member.sector || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (member.ci || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (member.code || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const finalCode = formData.code?.trim() ? formData.code.trim().toUpperCase() : getInitials(formData.name);
-            const dataToSave = { ...formData, code: finalCode };
-
-            if (isEditing) {
-                await updateMember({ id: isEditing, ...dataToSave, files: formData.files });
-                setIsEditing(null);
-                sileo.success({ title: "Integrante actualizado" });
-            } else {
-                await addMember({ ...dataToSave, files: formData.files });
-                sileo.success({ title: "Integrante agregado" });
-            }
-            setFormData({ name: '', role: '', sector: '', ci: '', code: '', files: [] });
-        } catch (err: any) {
-            sileo.error({ 
-                title: "Error al guardar",
-                description: err.message || "No se pudo procesar la solicitud"
+        if (members.length > 0) {
+            void checkMemberDocumentAlerts().catch((error) => {
+                console.error('Error checking RRHH document alerts:', error);
             });
         }
+    }, [members, checkMemberDocumentAlerts]);
+
+    const filteredMembers = useMemo(() => {
+        const query = searchQuery.trim().toLocaleLowerCase('es');
+        if (!query) return members;
+        return members.filter((member) => [member.name, member.code, member.ci, member.sector]
+            .some((value) => String(value || '').toLocaleLowerCase('es').includes(query)));
+    }, [members, searchQuery]);
+
+    const closeWorkerEditor = () => { setWorkerEditorId(null); setWorkerForm(EMPTY_WORKER); };
+    const openNewWorker = () => { setWorkerForm(EMPTY_WORKER); setWorkerEditorId('new'); };
+    const openWorkerEditor = (member: any) => {
+        setWorkerForm({ name: member.name || '', code: member.code || '', ci: member.ci || '', sector: member.sector || '' });
+        setWorkerEditorId(member.id);
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files || files.length === 0) return;
-        setUploading(true);
+    const handleWorkerSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        setIsSaving(true);
         try {
-            const uploadedUrls: string[] = [];
-            for (let i = 0; i < files.length; i++) {
-                const url = await uploadMemberFile(files[i], files[i].name);
-                uploadedUrls.push(url);
+            const code = workerForm.code.trim().toUpperCase() || getInitials(workerForm.name);
+            if (workerEditorId === 'new') {
+                await addMember({ ...workerForm, code, role: '', files: [] } as any);
+                sileo.success({ title: 'Trabajador agregado' });
+            } else if (workerEditorId) {
+                const currentMember = members.find((member) => member.id === workerEditorId);
+                await updateMember({ ...currentMember, ...workerForm, code });
+                sileo.success({ title: 'Trabajador actualizado' });
             }
-            setFormData(prev => ({ ...prev, files: [...(prev.files || []), ...uploadedUrls] }));
-            sileo.success({ title: "Archivos subidos exitosamente" });
-        } catch (err: any) {
-            sileo.error({ title: "Error al subir", description: err.message });
-        } finally {
-            setUploading(false);
-        }
+            closeWorkerEditor();
+        } catch (error: any) {
+            sileo.error({ title: 'No se pudo guardar', description: error.message });
+        } finally { setIsSaving(false); }
     };
 
-    const removeFile = (index: number) => {
-        setFormData(prev => {
-            const newFiles = [...(prev.files || [])];
-            newFiles.splice(index, 1);
-            return { ...prev, files: newFiles };
+    const toggleRow = (memberId: string) => {
+        setExpandedRows((current) => {
+            const next = new Set(current);
+            if (next.has(memberId)) next.delete(memberId); else next.add(memberId);
+            return next;
         });
+    };
+
+    const openNewDocument = (memberId: string) => {
+        setDocumentFile(null);
+        setDocumentEditor({ memberId, index: null, document: '', expiresAt: '', url: '' });
+    };
+    const openDocumentEditor = (memberId: string, index: number, file: WorkerDocument) => {
+        setDocumentFile(null);
+        setDocumentEditor({ memberId, index, document: file.document, expiresAt: file.expiresAt, url: file.url });
+    };
+    const closeDocumentEditor = () => { setDocumentEditor(null); setDocumentFile(null); };
+
+    const handleDocumentSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        if (!documentEditor) return;
+        if (documentEditor.index === null && !documentFile) {
+            sileo.error({ title: 'Seleccioná un archivo' });
+            return;
+        }
+        const member = members.find((item) => item.id === documentEditor.memberId);
+        if (!member) return;
+        setIsSaving(true);
+        try {
+            const existingFiles = (member.files || []).map(normalizeDocument);
+            let url = documentEditor.url;
+            if (documentFile) url = await uploadMemberFile(documentFile, documentFile.name);
+            const nextDocument: WorkerDocument = {
+                url,
+                document: documentEditor.document.trim() || documentFile?.name || fileNameFromUrl(url),
+                originalName: documentFile?.name || (documentEditor.index !== null ? existingFiles[documentEditor.index]?.originalName : '') || fileNameFromUrl(url),
+                uploadedAt: documentEditor.index === null ? new Date().toISOString() : existingFiles[documentEditor.index]?.uploadedAt || new Date().toISOString(),
+                expiresAt: documentEditor.expiresAt,
+            };
+            if (documentEditor.index === null) existingFiles.push(nextDocument); else existingFiles[documentEditor.index] = nextDocument;
+            await updateMember({ ...member, files: existingFiles });
+            setExpandedRows((current) => new Set(current).add(member.id));
+            sileo.success({ title: documentEditor.index === null ? 'Documento cargado' : 'Documento actualizado' });
+            closeDocumentEditor();
+        } catch (error: any) {
+            sileo.error({ title: 'No se pudo guardar el documento', description: error.message });
+        } finally { setIsSaving(false); }
     };
 
     const handlePrint = async (member: any) => {
         try {
-            sileo.info({ title: "Generando Ficha..." });
             await generateWorkerPDF(member);
-            sileo.success({ title: "Ficha generada exitosamente" });
-        } catch (err: any) {
-            sileo.error({ title: "Error", description: "No se pudo generar el PDF" });
-        }
+            sileo.success({ title: 'Ficha generada' });
+        } catch { sileo.error({ title: 'No se pudo generar la ficha' }); }
     };
 
     return (
         <div className="h-full flex flex-col">
-            <div className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-4 py-4 md:px-10 md:py-6 border-b border-white/5 sticky-header-custom">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
-                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 flex-1 w-full">
-                        <h2 className="text-2xl font-bold whitespace-nowrap">Integrantes</h2>
-                        
-                        {/* Search Bar */}
-                        <div className="relative flex-1 max-w-md group">
-                            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
-                            <input
-                                type="text"
-                                className="input-sm w-full pl-12 bg-white/5 border-white/10"
-                                placeholder="Buscar por nombre, sector, C.I. o rol..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    {!isEditing && (
-                        <form onSubmit={handleSubmit} className="flex flex-wrap gap-2 items-center w-full md:w-auto mt-4 md:mt-0">
-                        <input
-                            className="input text-sm flex-1 sm:flex-none sm:w-auto"
-                            placeholder="Nombre"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            required
-                        />
-
-                        <input
-                            className="input text-sm flex-1 sm:flex-none w-full sm:w-32"
-                            placeholder="N° C.I."
-                            value={formData.ci}
-                            onChange={(e) => setFormData({ ...formData, ci: e.target.value })}
-                        />
-
-                        <input
-                            className="input text-sm flex-1 sm:flex-none w-full sm:w-20 uppercase font-bold"
-                            placeholder="Cód."
-                            value={formData.code}
-                            maxLength={4}
-                            title="Código de operario (Autogenerado si está vacío)"
-                            onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                        />
-
-
-                        <select
-                            className="input text-sm w-full sm:w-auto"
-                            value={formData.sector}
-                            onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
-                            required
-                        >
-                            <option value="" disabled>Seleccionar Sector</option>
-                            <option value="Instalaciones">Instalaciones</option>
-                            <option value="Herrería">Herrería</option>
-                            <option value="Vinilos">Vinilos</option>
-                            <option value="Pintura">Pintura</option>
-                            <option value="Impresión">Impresión</option>
-                            <option value="Lonas">Lonas</option>
-                            <option value="Carpintería">Carpintería</option>
-                            <option value="Corpóreas">Corpóreas</option>
-                        </select>
-                        <button type="submit" className="btn btn-primary flex items-center gap-2 w-full sm:w-auto justify-center">
-                            <Plus size={18} /> Agregar
-                        </button>
-                    </form>
-                )}
-            </div>
-        </div>
-        <div className="flex-1 min-h-0 overflow-auto custom-scrollbar p-4 md:p-10">
-            <div className="glass rounded-[1.25rem] overflow-hidden shadow-2xl border-white/10">
-                <div className="overflow-x-auto custom-scrollbar">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-white/5 border-b border-white/10">
-                                <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Integrante</th>
-                                <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Código</th>
-                                <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">N° C.I.</th>
-
-
-                                <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">Sector</th>
-                                <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Rol / Especialidad</th>
-                                <th className="px-8 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {filteredMembers.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="px-8 py-20 text-center text-slate-500 italic">
-                                        {searchQuery ? 'No se encontraron integrantes que coincidan con la búsqueda.' : 'No hay integrantes registrados en el sistema.'}
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredMembers.map((member) => (
-                                    <tr key={member.id} className="hover:bg-white/[0.02] transition-colors group">
-                                        <td className="px-8 py-1.5">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform duration-300">
-                                                    <User size={16} />
-                                                </div>
-                                                <span className="font-bold text-white text-sm">{member.name}</span>
-                                            </div>
-                                        </td>
-
-                                        <td className="px-8 py-1.5 text-blue-400 font-bold text-xs uppercase">
-                                            {member.code || getInitials(member.name)}
-                                        </td>
-
-                                        <td className="px-8 py-1.5 text-slate-400 font-mono text-[10px]">
-                                            {member.ci || '—'}
-                                        </td>
-
-
-                                        <td className="px-8 py-1.5 text-center">
-                                            {member.sector && (
-                                                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-full text-[9px] font-black uppercase tracking-widest border border-blue-500/20">
-                                                    {member.sector}
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="px-8 py-1.5 text-slate-400 text-xs italic font-medium">
-                                            {member.role || ''}
-                                        </td>
-                                        <td className="px-8 py-1.5 text-right">
-                                            <div className="flex gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                                <button
-                                                    onClick={() => handlePrint(member)}
-                                                    className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all hover:scale-110"
-                                                    title="Imprimir Ficha"
-                                                >
-                                                    <Printer size={14} />
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setIsEditing(member.id);
-                                                        setFormData({ name: member.name, role: member.role, sector: member.sector || '', ci: member.ci || '', code: member.code || '', files: member.files || [] });
-                                                    }}
-                                                    className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all hover:scale-110"
-                                                    title="Editar integrante"
-                                                >
-                                                    <Edit2 size={14} />
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        if (confirm(`¿Eliminar a ${member.name}?`)) {
-                                                            deleteMember(member.id);
-                                                        }
-                                                    }}
-                                                    className="p-1.5 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-400 transition-all hover:scale-110"
-                                                    title="Eliminar integrante"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        {/* ─── Hourly Rates Panel ─── */}
-        <div className="px-4 pb-8 md:px-10">
-            <div className="glass rounded-[1.25rem] overflow-hidden shadow-2xl border-white/10">
-                <div className="px-8 py-5 border-b border-white/10 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                        <DollarSign size={16} className="text-emerald-400" />
-                    </div>
+            <header className="sticky top-0 z-30 bg-[#0f172a]/80 backdrop-blur-md px-4 py-4 md:px-10 md:py-6 border-b border-white/5 sticky-header-custom">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Configuración</p>
-                        <h3 className="text-base font-black text-white">Costo por Hora por Sección</h3>
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400 mb-1">Gestión de personal</p>
+                        <h2 className="text-2xl font-bold">RRHH</h2>
                     </div>
-                    <span className="ml-auto text-[10px] text-slate-500 italic">Se guarda automáticamente</span>
-                </div>
-                <div className="p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    {SECTIONS.map(section => (
-                        <div key={section} className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">{section}</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400 font-bold text-sm pointer-events-none">$</span>
-                                <input
-                                    type="number"
-                                    min={0}
-                                    step={10}
-                                    className="input w-full pl-8 font-mono font-bold text-emerald-400"
-                                    placeholder="0"
-                                    value={rates[section] ?? ''}
-                                    onChange={(e) => {
-                                        const val = e.target.value === '' ? null : parseFloat(e.target.value);
-                                        setRate(section, val);
-                                    }}
-                                />
-                                {rates[section] ? (
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-slate-500 font-bold">/h</span>
-                                ) : null}
-                            </div>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                        <div className="relative sm:w-80">
+                            <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                            <input type="search" className="input-sm w-full pl-11 bg-white/5 border-white/10" placeholder="Buscar trabajador..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} />
                         </div>
-                    ))}
+                        <button type="button" onClick={openNewWorker} className="btn btn-primary flex items-center justify-center gap-2"><Plus size={18} /> Nuevo trabajador</button>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </header>
 
-            {isEditing && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-[#1e293b] p-4 md:p-8 rounded-sm w-full max-w-[95vw] md:max-w-[80vw] shadow-2xl border border-white/10">
-                        <h3 className="text-xl font-bold mb-6">EDITAR INTEGRANTE</h3>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nombre</label>
-                                <input
-                                    className="input w-full"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Rol</label>
-                                <input
-                                    className="input w-full"
-                                    value={formData.role}
-                                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">N° C.I. (Opcional)</label>
-                                <input
-                                    className="input w-full font-mono"
-                                    value={formData.ci}
-                                    onChange={(e) => setFormData({ ...formData, ci: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Código</label>
-                                <input
-                                    className="input w-full uppercase font-bold"
-                                    value={formData.code}
-                                    maxLength={4}
-                                    placeholder="Dejar vacío para usar iniciales"
-                                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                                />
-                            </div>
-
-
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Sector</label>
-                                <select
-                                    className="input w-full"
-                                    value={formData.sector}
-                                    onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
-                                    required
-                                >
-                                    <option value="" disabled>Seleccionar Sector</option>
-                                    <option value="Instalaciones">Instalaciones</option>
-                                    <option value="Herrería">Herrería</option>
-                                    <option value="Vinilos">Vinilos</option>
-                                    <option value="Pintura">Pintura</option>
-                                    <option value="Impresión">Impresión</option>
-                                    <option value="Lonas">Lonas</option>
-                                    <option value="Carpintería">Carpintería</option>
-                                    <option value="Corpóreas">Corpóreas</option>
-                                </select>
-                            </div>
-
-                            <div className="space-y-2 pt-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Documentación (Fotos, PDFs)</label>
-                                
-                                {formData.files && formData.files.length > 0 && (
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2">
-                                        {formData.files.map((fileUrl, index) => (
-                                            <div key={index} className="relative group bg-white/5 rounded-lg p-2 flex items-center gap-2 border border-white/10">
-                                                {fileUrl.toLowerCase().match(/\.(jpg|jpeg|png|webp|gif)$/) ? (
-                                                    <img src={fileUrl} alt="doc" className="w-8 h-8 object-cover rounded" />
-                                                ) : (
-                                                    <div className="w-8 h-8 bg-blue-500/20 rounded flex items-center justify-center text-blue-400">
-                                                        <FileText size={14} />
+            <main className="flex-1 min-h-0 overflow-auto custom-scrollbar p-4 md:p-10">
+                <div className="glass rounded-[1.25rem] overflow-hidden shadow-2xl border-white/10">
+                    <div className="overflow-x-auto custom-scrollbar">
+                        <table className="w-full min-w-[850px] text-left border-collapse">
+                            <thead>
+                                <tr className="bg-white/5 border-b border-white/10">
+                                    <th className="w-14 px-5 py-4"><span className="sr-only">Desplegar</span></th>
+                                    <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Nombre completo</th>
+                                    <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Código</th>
+                                    <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Número de C.I.</th>
+                                    <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Sector</th>
+                                    <th className="px-5 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {filteredMembers.length === 0 ? (
+                                    <tr><td colSpan={6} className="px-8 py-20 text-center text-slate-500 italic">{searchQuery ? 'No se encontraron trabajadores.' : 'No hay trabajadores registrados.'}</td></tr>
+                                ) : filteredMembers.map((member) => {
+                                    const isExpanded = expandedRows.has(member.id);
+                                    const documents = (member.files || []).map(normalizeDocument);
+                                    const hasExpiredDocument = documents.some((file: WorkerDocument) => isExpired(file.expiresAt));
+                                    return (
+                                        <React.Fragment key={member.id}>
+                                            <tr className={`group cursor-pointer transition-colors border-l-4 ${hasExpiredDocument ? 'bg-red-500/20 hover:bg-red-500/25 border-red-500' : isExpanded ? 'bg-blue-500/[0.05] border-blue-500/40' : 'hover:bg-white/[0.025] border-transparent'}`} onClick={() => toggleRow(member.id)}>
+                                                <td className="px-5 py-3"><button type="button" className="p-2 rounded-lg text-slate-400 hover:text-blue-400 hover:bg-blue-500/10" aria-label={isExpanded ? 'Ocultar documentos' : 'Ver documentos'} aria-expanded={isExpanded}>{isExpanded ? <ChevronDown size={17} /> : <ChevronRight size={17} />}</button></td>
+                                                <td className="px-4 py-3"><div className="flex items-center gap-3"><div className={`w-9 h-9 rounded-full flex items-center justify-center ${hasExpiredDocument ? 'bg-red-500/20 text-red-300' : 'bg-blue-500/10 text-blue-400'}`}><User size={17} /></div><span className="font-bold text-white text-sm">{member.name}</span>{hasExpiredDocument && <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 border border-red-400/30 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-red-200"><AlertTriangle size={11} /> Documento vencido</span>}</div></td>
+                                                <td className="px-4 py-3 text-blue-400 font-black text-xs uppercase tracking-wider">{member.code || getInitials(member.name)}</td>
+                                                <td className="px-4 py-3 text-slate-300 font-mono text-xs">{member.ci || '—'}</td>
+                                                <td className="px-4 py-3"><span className="inline-flex px-2.5 py-1 bg-blue-500/10 text-blue-400 rounded-full text-[9px] font-black uppercase tracking-widest border border-blue-500/20">{member.sector || 'Sin sector'}</span></td>
+                                                <td className="px-5 py-3"><div className="flex gap-1 justify-end" onClick={(event) => event.stopPropagation()}>
+                                                    <button type="button" onClick={() => handlePrint(member)} className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white" title="Imprimir ficha"><Printer size={15} /></button>
+                                                    <button type="button" onClick={() => openWorkerEditor(member)} className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white" title="Modificar trabajador"><Edit2 size={15} /></button>
+                                                    <button type="button" onClick={() => { if (confirm(`¿Eliminar a ${member.name}?`)) deleteMember(member.id); }} className="p-2 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-400" title="Eliminar trabajador"><Trash2 size={15} /></button>
+                                                </div></td>
+                                            </tr>
+                                            {isExpanded && (
+                                                <tr className="bg-black/10"><td colSpan={6} className="p-0">
+                                                    <div className="mx-5 mb-5 ml-16 rounded-xl border border-white/10 overflow-hidden bg-[#0f172a]/60">
+                                                        <div className="px-5 py-3 border-b border-white/10 flex items-center gap-2"><FileText size={15} className="text-blue-400" /><span className="text-xs font-black uppercase tracking-wider text-slate-300">Archivos adjuntos</span><span className="text-[10px] text-slate-500">{documents.length} {documents.length === 1 ? 'documento' : 'documentos'}</span></div>
+                                                        <table className="w-full text-left">
+                                                            <thead><tr className="border-b border-white/5">
+                                                                <th className="px-5 py-3 text-[9px] uppercase tracking-widest text-slate-500">Documento</th>
+                                                                <th className="px-5 py-3 text-[9px] uppercase tracking-widest text-slate-500">Fecha subido</th>
+                                                                <th className="px-5 py-3 text-[9px] uppercase tracking-widest text-slate-500">Fecha vencimiento</th>
+                                                                <th className="px-5 py-3 text-right"><span className="sr-only">Modificar</span></th>
+                                                            </tr></thead>
+                                                            <tbody className="divide-y divide-white/5">
+                                                                {documents.map((file: WorkerDocument, index: number) => (
+                                                                    <tr key={`${file.url}-${index}`} className="hover:bg-white/[0.025]">
+                                                                        <td className="px-5 py-3"><a href={file.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs font-semibold text-slate-200 hover:text-blue-400"><Download size={14} /> {file.document}</a></td>
+                                                                        <td className="px-5 py-3 text-xs text-slate-400">{formatDate(file.uploadedAt)}</td>
+                                                                        <td className={`px-5 py-3 text-xs ${isExpired(file.expiresAt) ? 'font-black text-red-400' : 'text-slate-400'}`}>{file.expiresAt ? formatDate(file.expiresAt) : 'Sin vencimiento'}</td>
+                                                                        <td className="px-5 py-3 text-right"><button type="button" onClick={() => openDocumentEditor(member.id, index, file)} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-blue-500/10 text-slate-300 hover:text-blue-400 text-[10px] font-bold uppercase tracking-wider"><Edit2 size={13} /> Modificar</button></td>
+                                                                    </tr>
+                                                                ))}
+                                                                {documents.length === 0 && <tr><td colSpan={4} className="px-5 py-6 text-center text-xs text-slate-500 italic">Este trabajador todavía no tiene documentos.</td></tr>}
+                                                                <tr><td colSpan={4} className="px-5 py-3 bg-white/[0.015]"><button type="button" onClick={() => openNewDocument(member.id)} className="inline-flex items-center gap-2 text-xs font-bold text-blue-400 hover:text-blue-300"><FilePlus2 size={16} /> Cargar archivo nuevo</button></td></tr>
+                                                            </tbody>
+                                                        </table>
                                                     </div>
-                                                )}
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-[10px] truncate text-slate-300">Adjunto {index + 1}</p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeFile(index)}
-                                                    className="p-1 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded transition-colors"
-                                                >
-                                                    <X size={12} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                                
-                                <div className="relative">
-                                    <input 
-                                        type="file" 
-                                        multiple 
-                                        onChange={handleFileUpload}
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                                        disabled={uploading}
-                                    />
-                                    <div className="flex items-center justify-center gap-2 w-full px-4 py-3 border border-dashed border-white/20 rounded-lg text-slate-400 hover:bg-white/5 hover:border-white/40 transition-all">
-                                        {uploading ? (
-                                            <><Loader2 size={16} className="animate-spin" /> Subiendo...</>
-                                        ) : (
-                                            <><Paperclip size={16} /> Seleccionar archivos</>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                                                </td></tr>
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-                            <div className="flex gap-3 pt-6">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsEditing(null)}
-                                    className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-bold transition-all border border-white/10 flex-1"
-                                >
-                                    CANCELAR
-                                </button>
-                                <button type="submit" className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all flex-1">
-                                    GUARDAR
-                                </button>
+            </main>
+
+            {workerEditorId && (
+                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onMouseDown={closeWorkerEditor}>
+                    <div className="bg-[#1e293b] w-full max-w-xl rounded-2xl shadow-2xl border border-white/10" onMouseDown={(event) => event.stopPropagation()}>
+                        <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">RRHH</p><h3 className="text-lg font-bold">{workerEditorId === 'new' ? 'Nuevo trabajador' : 'Modificar trabajador'}</h3></div><button type="button" onClick={closeWorkerEditor} className="p-2 text-slate-400 hover:text-white"><X size={19} /></button></div>
+                        <form onSubmit={handleWorkerSubmit} className="p-6 space-y-4">
+                            <div><label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nombre completo</label><input className="input w-full mt-1" value={workerForm.name} onChange={(event) => setWorkerForm({ ...workerForm, name: event.target.value })} required /></div>
+                            <div className="grid sm:grid-cols-2 gap-4">
+                                <div><label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Código</label><input className="input w-full mt-1 uppercase font-bold" maxLength={4} placeholder="Se genera si queda vacío" value={workerForm.code} onChange={(event) => setWorkerForm({ ...workerForm, code: event.target.value })} /></div>
+                                <div><label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Número de C.I.</label><input className="input w-full mt-1 font-mono" value={workerForm.ci} onChange={(event) => setWorkerForm({ ...workerForm, ci: event.target.value })} required /></div>
                             </div>
+                            <div><label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Sector</label><select className="input w-full mt-1" value={workerForm.sector} onChange={(event) => setWorkerForm({ ...workerForm, sector: event.target.value })} required><option value="" disabled>Seleccionar sector</option>{WORKER_SECTORS.map((sector) => <option key={sector} value={sector}>{sector}</option>)}</select></div>
+                            <div className="flex gap-3 pt-3"><button type="button" onClick={closeWorkerEditor} className="btn flex-1 bg-white/5 hover:bg-white/10 border border-white/10">Cancelar</button><button type="submit" disabled={isSaving} className="btn btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50">{isSaving && <Loader2 size={16} className="animate-spin" />} Guardar</button></div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {documentEditor && (
+                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onMouseDown={closeDocumentEditor}>
+                    <div className="bg-[#1e293b] w-full max-w-xl rounded-2xl shadow-2xl border border-white/10" onMouseDown={(event) => event.stopPropagation()}>
+                        <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Archivo adjunto</p><h3 className="text-lg font-bold">{documentEditor.index === null ? 'Cargar documento' : 'Modificar documento'}</h3></div><button type="button" onClick={closeDocumentEditor} className="p-2 text-slate-400 hover:text-white"><X size={19} /></button></div>
+                        <form onSubmit={handleDocumentSubmit} className="p-6 space-y-4">
+                            <div><label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Documento</label><input className="input w-full mt-1" placeholder="Ej.: Carné de salud" value={documentEditor.document} onChange={(event) => setDocumentEditor({ ...documentEditor, document: event.target.value })} /></div>
+                            <div><label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Fecha vencimiento</label><input type="date" className="input w-full mt-1" value={documentEditor.expiresAt} onChange={(event) => setDocumentEditor({ ...documentEditor, expiresAt: event.target.value })} /><p className="text-[10px] text-slate-500 mt-1">Dejar vacío si el documento no vence.</p></div>
+                            <div><label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Archivo {documentEditor.index !== null && '(opcional)'}</label><input type="file" className="block w-full mt-1 text-xs text-slate-400 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-500/10 file:px-4 file:py-2.5 file:font-bold file:text-blue-400 hover:file:bg-blue-500/20" onChange={(event) => setDocumentFile(event.target.files?.[0] || null)} required={documentEditor.index === null} />{documentEditor.index !== null && <p className="text-[10px] text-slate-500 mt-1">Elegí un archivo sólo si querés reemplazar el actual.</p>}</div>
+                            <div className="flex gap-3 pt-3"><button type="button" onClick={closeDocumentEditor} className="btn flex-1 bg-white/5 hover:bg-white/10 border border-white/10">Cancelar</button><button type="submit" disabled={isSaving} className="btn btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50">{isSaving && <Loader2 size={16} className="animate-spin" />} Guardar documento</button></div>
                         </form>
                     </div>
                 </div>

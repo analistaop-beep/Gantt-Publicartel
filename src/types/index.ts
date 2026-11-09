@@ -13,7 +13,7 @@ export interface Member {
     sector?: string;
     code?: string;
     ci?: string;
-    files?: string[];
+    files?: Array<string | { url: string; document: string; originalName?: string; uploadedAt: string; expiresAt: string }>;
 }
 
 export interface Vehicle {
@@ -96,7 +96,7 @@ export interface Notification {
     id: string;
     title: string;
     message: string;
-    type: 'new_op' | 'status_change' | 'comment';
+    type: 'new_op' | 'status_change' | 'comment' | 'document_expiry';
     createdAt: string;
     targetUsers?: string[] | null; // null if broadcast, array of emails if targeted
     opId?: string | null;          // ID de la OP relacionada (para navegar al hacer click)
@@ -148,5 +148,4 @@ export interface OpTemplate {
     description?: string;
     defaultTasks: OpTemplateTask[];
 }
-
 

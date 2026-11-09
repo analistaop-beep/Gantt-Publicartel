@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Check, LogOut, MessageSquare, Activity, ClipboardList, Mail, Send, Loader2 } from 'lucide-react';
+import { AlertTriangle, Bell, Check, LogOut, MessageSquare, Activity, ClipboardList, Mail, Send, Loader2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -11,6 +11,7 @@ interface NotificationsSidebarProps {
 }
 
 const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
+    if (type === 'document_expiry') return <AlertTriangle size={13} className="text-red-400 flex-shrink-0 mt-0.5" />;
     if (type === 'comment') return <MessageSquare size={13} className="text-purple-400 flex-shrink-0 mt-0.5" />;
     if (type === 'status_change') return <Activity size={13} className="text-amber-400 flex-shrink-0 mt-0.5" />;
     return <ClipboardList size={13} className="text-blue-400 flex-shrink-0 mt-0.5" />;
@@ -188,10 +189,13 @@ export const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ onNo
                                         new_op:       { bar: 'bg-blue-500',   icon: 'text-blue-400',   bg: 'bg-blue-500/[0.04]',  hover: 'hover:bg-blue-500/[0.08]',  label: 'Nueva OP',    labelColor: 'text-blue-500 dark:text-blue-400' },
                                         status_change:{ bar: 'bg-amber-500',  icon: 'text-amber-400',  bg: 'bg-amber-500/[0.04]', hover: 'hover:bg-amber-500/[0.08]', label: statusLabel,   labelColor: 'text-amber-600 dark:text-amber-400' },
                                         comment:      { bar: 'bg-purple-500', icon: 'text-purple-400', bg: 'bg-purple-500/[0.04]',hover: 'hover:bg-purple-500/[0.08]',label: 'Comentario', labelColor: 'text-purple-600 dark:text-purple-400' },
+                                        document_expiry: { bar: 'bg-red-500', icon: 'text-red-400', bg: 'bg-red-500/[0.06]', hover: 'hover:bg-red-500/[0.1]', label: 'Vencimiento', labelColor: 'text-red-600 dark:text-red-400' },
                                     }[notification.type];
 
                                     // Extraer cliente del título: "OP #N — Cliente" → "Cliente"
-                                    const clientName = notification.title.includes('—')
+                                    const clientName = notification.type === 'document_expiry'
+                                        ? notification.message
+                                        : notification.title.includes('—')
                                         ? notification.title.split('—').slice(1).join('—').trim()
                                         : notification.title;
                                     const opNum = notification.opNumber ? `#${notification.opNumber}` : '';

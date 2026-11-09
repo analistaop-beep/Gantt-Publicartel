@@ -1,6 +1,6 @@
 ﻿import { create } from 'zustand';
 import { supabase } from '../utils/supabaseClient';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
 import type { Team, ProductionOrder, Notification, Profile, Soporte, TareaDisa, DisaEstado } from '../types';
 import { getOpTemplateByCategory } from '../utils/opTemplates';
 
@@ -48,9 +48,10 @@ interface AppState {
     fetchData: () => Promise<void>;
 
     // Members
-    addMember: (member: { name: string; role: string; sector?: string; ci?: string; files?: string[] }) => Promise<void>;
+    addMember: (member: { name: string; role: string; sector?: string; ci?: string; code?: string; files?: any[] }) => Promise<void>;
     updateMember: (member: any) => Promise<void>;
     deleteMember: (id: string) => Promise<void>;
+    checkMemberDocumentAlerts: () => Promise<void>;
 
     // Vehicles
     addVehicle: (vehicle: { name: string; plate: string }) => Promise<void>;
@@ -487,6 +488,68 @@ export const useStore = create<AppState>((set, get) => ({
         const { error } = await supabase.from('members').delete().eq('id', id);
         if (error) throw error;
         await get().fetchData();
+    },
+    checkMemberDocumentAlerts: async () => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const createdNotifications: Notification[] = [];
+
+        for (const member of get().members) {
+            for (const rawFile of member.files || []) {
+                if (typeof rawFile === 'string' || !rawFile?.expiresAt) continue;
+                const expiration = new Date(`${rawFile.expiresAt.slice(0, 10)}T00:00:00`);
+                if (Number.isNaN(expiration.getTime())) continue;
+
+                const daysRemaining = Math.round((expiration.getTime() - today.getTime()) / 86400000);
+                const threshold = daysRemaining >= 0 && daysRemaining <= 5
+                    ? 5
+                    : daysRemaining >= 6 && daysRemaining <= 10
+                        ? 10
+                        : null;
+                if (!threshold) continue;
+
+                const documentName = rawFile.document || rawFile.name || 'Documento';
+                const notificationId = uuidv5(
+                    `rrhh-document|${member.id}|${rawFile.url || documentName}|${rawFile.expiresAt}|${threshold}`,
+                    uuidv5.URL
+                );
+                const createdAt = new Date().toISOString();
+                const message = `${member.name} — ${documentName} — vence el ${expiration.toLocaleDateString('es-UY')} (${daysRemaining === 0 ? 'vence hoy' : `${daysRemaining} días`}).`;
+                const notification: Notification = {
+                    id: notificationId,
+                    title: 'Documento por vencer',
+                    message,
+                    type: 'document_expiry',
+                    createdAt,
+                    targetUsers: null,
+                };
+
+                const { error } = await supabase.from('notifications').insert([{
+                    id: notification.id,
+                    title: notification.title,
+                    message: notification.message,
+                    type: notification.type,
+                    targetUsers: null,
+                }]);
+                if (error) {
+                    if (error.code === '23505') continue;
+                    console.error('Error creating document expiration alert:', error.message);
+                    continue;
+                }
+
+                createdNotifications.push(notification);
+                await get().sendEmailNotification({
+                    ...notification,
+                    targetUsers: ['sst@publicartel.com'],
+                });
+            }
+        }
+
+        if (createdNotifications.length > 0) {
+            set(state => ({
+                notifications: [...createdNotifications.reverse(), ...state.notifications].slice(0, 50),
+            }));
+        }
     },
 
     addVehicle: async (vehicle) => {
@@ -954,7 +1017,9 @@ export const useStore = create<AppState>((set, get) => ({
                     ? notification.targetUsers 
                     : JSON.parse(notification.targetUsers as any);
                 // Filtrar usuarios que hayan desactivado las notificaciones
-                recipients = targets.filter((email: string) => !optedOutEmails.has(email));
+                recipients = targets.filter((email: string) =>
+                    notification.type === 'document_expiry' || !optedOutEmails.has(email)
+                );
             } else {
                 // Notificación broadcast (Nueva OP o cambio de estado sin followers)
                 const envEmails = import.meta.env.VITE_BROADCAST_EMAILS;
@@ -1496,11 +1561,14 @@ export const useStore = create<AppState>((set, get) => ({
 }));
 
 function generateNotificationHtml(notification: Notification, origin: string): string {
-    const opLink = notification.opId ? `${origin}/orders?opId=${notification.opId}` : `${origin}/orders`;
+    const isDocumentExpiry = notification.type === 'document_expiry';
+    const opLink = isDocumentExpiry ? origin : notification.opId ? `${origin}/orders?opId=${notification.opId}` : `${origin}/orders`;
     const capitalizedType = notification.type === 'new_op'
         ? 'Nueva Orden de Producción'
         : notification.type === 'status_change'
         ? 'Cambio de Estado'
+        : notification.type === 'document_expiry'
+        ? 'Documento por vencer'
         : 'Nuevo Comentario';
 
     const isNewOp = notification.type === 'new_op';
@@ -1633,7 +1701,7 @@ function generateNotificationHtml(notification: Notification, origin: string): s
 
         <!-- Botón CTA -->
         <div style="text-align:center;margin-top:8px;">
-            <a href="${opLink}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#ffffff;text-decoration:none;padding:15px 36px;font-size:14px;font-weight:700;border-radius:10px;box-shadow:0 4px 14px rgba(37,99,235,0.35);letter-spacing:0.02em;">Ver Orden en el Sistema &rarr;</a>
+            <a href="${opLink}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#ffffff;text-decoration:none;padding:15px 36px;font-size:14px;font-weight:700;border-radius:10px;box-shadow:0 4px 14px rgba(37,99,235,0.35);letter-spacing:0.02em;">${isDocumentExpiry ? 'Abrir RRHH' : 'Ver Orden en el Sistema'} &rarr;</a>
         </div>
     </div>
 

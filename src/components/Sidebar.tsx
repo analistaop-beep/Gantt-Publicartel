@@ -26,7 +26,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     const orderMenuItem = { id: 'orders', label: 'Órdenes', icon: ClipboardList };
 
     const configMenuItems = [
-        { id: 'members', label: 'Integrantes', icon: Users },
+        { id: 'members', label: 'RRHH', icon: Users },
         { id: 'vehicles', label: 'Vehículos', icon: Truck },
         { id: 'soportes', label: 'Soportes', icon: Signpost },
         { id: 'disa', label: 'Disa', icon: Zap },
