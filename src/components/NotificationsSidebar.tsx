@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Bell, Check, LogOut, MessageSquare, Activity, ClipboardList, Mail, Send, Loader2 } from 'lucide-react';
+import { AlertTriangle, Bell, Check, LogOut, MessageSquare, Activity, ClipboardList, Mail, Send, Loader2, ChevronDown, ArrowRight } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -22,8 +22,10 @@ const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
 
 export const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ onNotificationClick }) => {
     const [activeTab, setActiveTab] = useState<'list' | 'settings'>('list');
+    const [expandedNotificationId, setExpandedNotificationId] = useState<string | null>(null);
 
     const allNotifications = useStore(state => state.notifications);
+    const productionOrders = useStore(state => state.productionOrders);
     const readNotifications = useStore(state => state.readNotifications);
     const markNotificationAsRead = useStore(state => state.markNotificationAsRead);
     const markAllNotificationsAsRead = useStore(state => state.markAllNotificationsAsRead);
@@ -110,13 +112,15 @@ export const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ onNo
         }
     };
 
-    const handleNotificationClick = (notification: Notification) => {
+    const handleNotificationToggle = (notification: Notification) => {
         if (!readNotifications.includes(notification.id)) {
             markNotificationAsRead(notification.id);
         }
-        if (notification.opId && onNotificationClick) {
-            onNotificationClick(notification);
-        }
+        setExpandedNotificationId(currentId => currentId === notification.id ? null : notification.id);
+    };
+
+    const handleOpenOrder = (notification: Notification) => {
+        onNotificationClick?.(notification);
     };
 
     return (
@@ -179,7 +183,24 @@ export const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ onNo
                                 )}
                                 {notifications.map(notification => {
                                     const isRead = readNotifications.includes(notification.id);
-                                    const isClickable = !!notification.opId || /OP #\S+/.test(notification.title);
+                                    const hasLinkedOrder = !!notification.opId || !!notification.opNumber || /OP #\S+/.test(notification.title);
+                                    const isExpanded = expandedNotificationId === notification.id;
+                                    const relatedOrder = productionOrders.find(order =>
+                                        (notification.opId && order.id === notification.opId) ||
+                                        (notification.opNumber && String(order.opNumber) === String(notification.opNumber))
+                                    );
+
+                                    const closestComment = notification.type === 'comment' && relatedOrder?.comments?.length
+                                        ? [...relatedOrder.comments].sort((a, b) => {
+                                            const notificationTime = new Date(notification.createdAt).getTime();
+                                            const distanceA = Math.abs(new Date(a.date).getTime() - notificationTime);
+                                            const distanceB = Math.abs(new Date(b.date).getTime() - notificationTime);
+                                            return distanceA - distanceB;
+                                        })[0]
+                                        : null;
+                                    const commentText = notification.opComment || closestComment?.text || notification.message;
+                                    const orderClient = notification.opClient || relatedOrder?.client;
+                                    const orderSubject = notification.opSubject || relatedOrder?.subject;
 
                                     // Color accent por tipo
                                     const statusLabel = notification.type === 'status_change'
@@ -203,31 +224,84 @@ export const NotificationsSidebar: React.FC<NotificationsSidebarProps> = ({ onNo
                                     return (
                                         <div
                                             key={notification.id}
-                                            className={`pl-3 pr-3 py-2.5 border-b border-slate-200/50 dark:border-white/5 transition-all relative flex items-center gap-2.5 ${
-                                                isRead ? 'opacity-55 hover:opacity-90' : `${typeAccent.bg} ${typeAccent.hover}`
-                                            } ${isClickable ? 'cursor-pointer' : 'cursor-default'}`}
-                                            onClick={() => handleNotificationClick(notification)}
+                                            className={`border-b border-slate-200/50 dark:border-white/5 transition-all relative ${
+                                                isRead && !isExpanded ? 'opacity-55 hover:opacity-90' : `${typeAccent.bg} ${typeAccent.hover}`
+                                            }`}
                                         >
                                             {/* Barra de color izquierda */}
                                             <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${typeAccent.bar} ${isRead ? 'opacity-30' : 'opacity-100'}`} />
 
-                                            {/* Icono tipo */}
-                                            <NotificationIcon type={notification.type} />
+                                            <button
+                                                type="button"
+                                                className="w-full pl-3 pr-3 py-2.5 flex items-center gap-2.5 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+                                                onClick={() => handleNotificationToggle(notification)}
+                                                aria-expanded={isExpanded}
+                                                aria-controls={`notification-details-${notification.id}`}
+                                            >
+                                                {/* Icono tipo */}
+                                                <NotificationIcon type={notification.type} />
 
-                                            {/* Contenido */}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-baseline justify-between gap-1 mb-0.5">
-                                                    <span className={`text-[10px] font-black uppercase tracking-wider flex-shrink-0 ${typeAccent.labelColor}`}>
-                                                        {typeAccent.label}
-                                                    </span>
-                                                    <span className="text-[9px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                                                        {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: es })}
-                                                    </span>
+                                                {/* Contenido */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-baseline justify-between gap-1 mb-0.5">
+                                                        <span className={`text-[10px] font-black uppercase tracking-wider flex-shrink-0 ${typeAccent.labelColor}`}>
+                                                            {typeAccent.label}
+                                                        </span>
+                                                        <span className="text-[9px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                                                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: es })}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">
+                                                        {opNum && <span className="font-black">{opNum} </span>}
+                                                        <span className="font-medium">{clientName}</span>
+                                                    </p>
                                                 </div>
-                                                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">
-                                                    {opNum && <span className="font-black">{opNum} </span>}
-                                                    <span className="font-medium">{clientName}</span>
-                                                </p>
+
+                                                <ChevronDown
+                                                    size={14}
+                                                    className={`flex-shrink-0 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                                                />
+                                            </button>
+
+                                            <div
+                                                id={`notification-details-${notification.id}`}
+                                                className={`grid transition-[grid-template-rows] duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+                                            >
+                                                <div className="overflow-hidden">
+                                                    <div className="ml-8 mr-3 mb-3 pt-2 border-t border-slate-200/70 dark:border-white/10">
+                                                        {notification.type === 'comment' ? (
+                                                            <div>
+                                                                <p className="text-[9px] font-black uppercase tracking-wider text-purple-500 dark:text-purple-400 mb-1">Comentario</p>
+                                                                <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words">{commentText}</p>
+                                                            </div>
+                                                        ) : notification.type === 'new_op' ? (
+                                                            <dl className="space-y-1.5 text-xs">
+                                                                <div>
+                                                                    <dt className="text-[9px] font-black uppercase tracking-wider text-slate-400">Nombre</dt>
+                                                                    <dd className="text-slate-700 dark:text-slate-200 font-semibold break-words">{orderClient || 'Sin nombre'}</dd>
+                                                                </div>
+                                                                <div>
+                                                                    <dt className="text-[9px] font-black uppercase tracking-wider text-slate-400">Asunto</dt>
+                                                                    <dd className="text-slate-700 dark:text-slate-300 break-words">{orderSubject || 'Sin asunto'}</dd>
+                                                                </div>
+                                                            </dl>
+                                                        ) : (
+                                                            <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words">{notification.message}</p>
+                                                        )}
+
+                                                        {hasLinkedOrder && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleOpenOrder(notification)}
+                                                                className="mt-2.5 ml-auto flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                                                aria-label={`Abrir OP ${notification.opNumber ? `#${notification.opNumber}` : 'asociada'}`}
+                                                                title="Abrir OP asociada"
+                                                            >
+                                                                Abrir OP <ArrowRight size={13} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     );
