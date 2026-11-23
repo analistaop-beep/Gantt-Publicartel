@@ -207,27 +207,27 @@ export const MembersPage: React.FC = () => {
                                                 </div></td>
                                             </tr>
                                             {isExpanded && (
-                                                <tr className="bg-black/10"><td colSpan={6} className="p-0">
-                                                    <div className="mx-5 mb-5 ml-16 rounded-xl border border-white/10 overflow-hidden bg-[#0f172a]/60">
-                                                        <div className="px-5 py-3 border-b border-white/10 flex items-center gap-2"><FileText size={15} className="text-blue-400" /><span className="text-xs font-black uppercase tracking-wider text-slate-300">Archivos adjuntos</span><span className="text-[10px] text-slate-500">{documents.length} {documents.length === 1 ? 'documento' : 'documentos'}</span></div>
+                                                <tr className="bg-slate-50/80 dark:bg-black/10"><td colSpan={6} className="p-0">
+                                                    <div className="mx-5 mb-5 ml-16 rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden bg-white dark:bg-[#0f172a]/60 shadow-sm dark:shadow-none">
+                                                        <div className="px-5 py-3 border-b border-slate-200 dark:border-white/10 flex items-center gap-2 bg-slate-50/70 dark:bg-transparent"><FileText size={15} className="text-blue-600 dark:text-blue-400" /><span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">Archivos adjuntos</span><span className="text-[10px] text-slate-500">{documents.length} {documents.length === 1 ? 'documento' : 'documentos'}</span></div>
                                                         <table className="w-full text-left">
-                                                            <thead><tr className="border-b border-white/5">
+                                                            <thead><tr className="border-b border-slate-200 dark:border-white/5 bg-slate-50/40 dark:bg-transparent">
                                                                 <th className="px-5 py-3 text-[9px] uppercase tracking-widest text-slate-500">Documento</th>
                                                                 <th className="px-5 py-3 text-[9px] uppercase tracking-widest text-slate-500">Fecha subido</th>
                                                                 <th className="px-5 py-3 text-[9px] uppercase tracking-widest text-slate-500">Fecha vencimiento</th>
                                                                 <th className="px-5 py-3 text-right"><span className="sr-only">Modificar</span></th>
                                                             </tr></thead>
-                                                            <tbody className="divide-y divide-white/5">
+                                                            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                                                                 {documents.map((file: WorkerDocument, index: number) => (
-                                                                    <tr key={`${file.url}-${index}`} className="hover:bg-white/[0.025]">
-                                                                        <td className="px-5 py-3"><a href={file.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs font-semibold text-slate-200 hover:text-blue-400"><Download size={14} /> {file.document}</a></td>
-                                                                        <td className="px-5 py-3 text-xs text-slate-400">{formatDate(file.uploadedAt)}</td>
-                                                                        <td className={`px-5 py-3 text-xs ${isExpired(file.expiresAt) ? 'font-black text-red-400' : 'text-slate-400'}`}>{file.expiresAt ? formatDate(file.expiresAt) : 'Sin vencimiento'}</td>
-                                                                        <td className="px-5 py-3 text-right"><button type="button" onClick={() => openDocumentEditor(member.id, index, file)} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-blue-500/10 text-slate-300 hover:text-blue-400 text-[10px] font-bold uppercase tracking-wider"><Edit2 size={13} /> Modificar</button></td>
+                                                                    <tr key={`${file.url}-${index}`} className="hover:bg-slate-50 dark:hover:bg-white/[0.025] transition-colors">
+                                                                        <td className="px-5 py-3"><a href={file.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400"><Download size={14} /> {file.document}</a></td>
+                                                                        <td className="px-5 py-3 text-xs text-slate-600 dark:text-slate-400">{formatDate(file.uploadedAt)}</td>
+                                                                        <td className={`px-5 py-3 text-xs ${isExpired(file.expiresAt) ? 'font-black text-red-600 dark:text-red-400' : 'text-slate-600 dark:text-slate-400'}`}>{file.expiresAt ? formatDate(file.expiresAt) : 'Sin vencimiento'}</td>
+                                                                        <td className="px-5 py-3 text-right"><button type="button" onClick={() => openDocumentEditor(member.id, index, file)} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 hover:bg-blue-50 dark:hover:bg-blue-500/10 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 text-[10px] font-bold uppercase tracking-wider transition-colors"><Edit2 size={13} /> Modificar</button></td>
                                                                     </tr>
                                                                 ))}
                                                                 {documents.length === 0 && <tr><td colSpan={4} className="px-5 py-6 text-center text-xs text-slate-500 italic">Este trabajador todavía no tiene documentos.</td></tr>}
-                                                                <tr><td colSpan={4} className="px-5 py-3 bg-white/[0.015]"><button type="button" onClick={() => openNewDocument(member.id)} className="inline-flex items-center gap-2 text-xs font-bold text-blue-400 hover:text-blue-300"><FilePlus2 size={16} /> Cargar archivo nuevo</button></td></tr>
+                                                                <tr><td colSpan={4} className="px-5 py-3 bg-slate-50/70 dark:bg-white/[0.015]"><button type="button" onClick={() => openNewDocument(member.id)} className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"><FilePlus2 size={16} /> Cargar archivo nuevo</button></td></tr>
                                                             </tbody>
                                                         </table>
                                                     </div>

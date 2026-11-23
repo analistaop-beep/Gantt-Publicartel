@@ -191,7 +191,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
         'Para Instalar', 'Para Entregar', 'Para Facturar', 'Terminada', 'En muestras de color', 
         'Soldando lona'
     ];
-    const sellers = ["W. Maciel", "P. Goicoechea", "N. Mannise", "F. Cruz", "P. Lizuain", "V. Castellucci", "Otro"];
+    const sellers = ["W. Maciel", "P. Goicoechea", "N. Mannise", "F. Cruz", "P. Lizuain", "V. Castellucci", "Ubicaciones", "Otro"];
 
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string[]>(statuses);
